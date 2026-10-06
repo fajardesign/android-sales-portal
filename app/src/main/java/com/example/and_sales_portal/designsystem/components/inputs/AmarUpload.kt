@@ -41,6 +41,8 @@ import com.example.and_sales_portal.designsystem.components.actions.AmarButton
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
 import com.example.and_sales_portal.designsystem.components.feedback.AmarSpinner
+import com.example.and_sales_portal.designsystem.components.layout.AmarCard
+import com.example.and_sales_portal.designsystem.components.layout.AmarCardStyle
 import com.example.and_sales_portal.designsystem.theme.AmarButtonTokens
 import com.example.and_sales_portal.designsystem.theme.AmarSpace
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
@@ -361,6 +363,39 @@ fun AmarUpload(
 }
 
 /**
+ * Upload Files: [AmarUpload] inside a `Card` (Type=Custom, Style=Border), as used in the product screens.
+ *
+ * Figma: [Upload Files 1060:11764](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1060-11764)
+ * (File Added × Multiple Files = 4 variants, 328 wide). The variants only pass `File Added` and
+ * `Multiple Files` to the nested Element / Upload; all parameters are those of [AmarUpload].
+ */
+@Composable
+fun AmarUploadFiles(
+    label: String,
+    buttonLabel: String,
+    onUploadClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    multipleFiles: Boolean = false,
+    buttonIcon: Painter = painterResource(R.drawable.ds_ic_camera_24),
+    helperText: String? = null,
+    supportingLabel: String? = null,
+    files: (@Composable ColumnScope.() -> Unit)? = null,
+) {
+    AmarCard(modifier = modifier, style = AmarCardStyle.Border) {
+        AmarUpload(
+            label = label,
+            buttonLabel = buttonLabel,
+            onUploadClick = onUploadClick,
+            multipleFiles = multipleFiles,
+            buttonIcon = buttonIcon,
+            helperText = helperText,
+            supportingLabel = supportingLabel,
+            files = files,
+        )
+    }
+}
+
+/**
  * Dropzone: the Figma `Button` (Primary, Small, Left Icon) overridden with `Component/Upload/Dropzone/…`:
  * `Background/Brand Subtle` fill, dashed `Border/Color/Focus` border, `Icon/Brand` icon 16.
  * The label uses `Content/Link` (Primary 700) instead of the Figma Primary 600 (CLAUDE.md rule 6). No ripple, as for Button.
@@ -426,6 +461,33 @@ private fun AmarUploadPreview() {
                 AmarProgressPhotos("filename.jpg", AmarProgressPhotosStatus.Waiting, fileSize = "3.2 MB", onDelete = {})
             }
             AmarUpload("Change Label", "Button", {}, supportingLabel = "Supporting Label")
+        }
+    }
+}
+
+/** All 4 Figma variants of Upload Files (File Added × Multiple Files), 328 wide. */
+@Preview(name = "Upload Files", widthDp = 360)
+@Composable
+private fun AmarUploadFilesPreview() {
+    AmarTheme {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(AmarTheme.colors.background.canvas)
+                .padding(AmarSpace.S16),
+            verticalArrangement = Arrangement.spacedBy(AmarSpace.S16),
+        ) {
+            val loading: @Composable ColumnScope.() -> Unit = {
+                AmarProgressPhotos("filename.jpg", AmarProgressPhotosStatus.Loading, fileSize = "3.2 MB", progress = 0.1f, onDelete = {})
+            }
+            val helper = "Kamu bisa upload foto sebanyak 3 kali"
+            AmarUploadFiles("Change Label", "Button", {})
+            AmarUploadFiles("Change Label", "Button", {}, files = loading)
+            AmarUploadFiles("Change Label", "Button", {}, multipleFiles = true, helperText = helper)
+            AmarUploadFiles("Change Label", "Button", {}, multipleFiles = true, helperText = helper) {
+                loading()
+                AmarProgressPhotos("filename.jpg", AmarProgressPhotosStatus.Waiting, fileSize = "3.2 MB", onDelete = {})
+            }
         }
     }
 }

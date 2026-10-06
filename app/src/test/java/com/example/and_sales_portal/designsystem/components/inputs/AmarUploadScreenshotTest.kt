@@ -15,7 +15,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Renders the 4 Element / Upload variants at 1x, 296 wide as in Figma, with the Figma sample copy. */
+/**
+ * Renders the 4 Element / Upload variants (296 wide) and the 4 Upload Files variants (328 wide)
+ * at 1x, as in Figma, with the Figma sample copy.
+ */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w360dp-h640dp-mdpi")
@@ -23,6 +26,9 @@ class AmarUploadScreenshotTest {
 
     /** Width of the component in Figma (sample size, not a token). */
     private val FigmaWidth = 296.dp
+
+    /** Width of Upload Files in Figma (sample size, not a token). */
+    private val FigmaFilesWidth = 328.dp
 
     /** Progress shown in the Figma Loading row (24.2 of 240). */
     private val FigmaProgress = 24.2f / 240f
@@ -47,6 +53,24 @@ class AmarUploadScreenshotTest {
         }
     }
 
+    private fun captureFiles(name: String, multiple: Boolean, files: (@Composable ColumnScope.() -> Unit)?) {
+        captureRoboImage("build/outputs/roborazzi/upload_files_$name.png") {
+            AmarTheme {
+                Box(Modifier.background(AmarTheme.colors.background.base)) {
+                    AmarUploadFiles(
+                        label = "Change Label",
+                        buttonLabel = "Button",
+                        onUploadClick = {},
+                        multipleFiles = multiple,
+                        helperText = if (multiple) helper else null,
+                        files = files,
+                        modifier = Modifier.width(FigmaFilesWidth),
+                    )
+                }
+            }
+        }
+    }
+
     @Test
     fun allVariants() {
         val loading: @Composable ColumnScope.() -> Unit = {
@@ -56,6 +80,13 @@ class AmarUploadScreenshotTest {
         capture("Single_Added", multiple = false, files = loading)
         capture("Multiple_Empty", multiple = true, files = null)
         capture("Multiple_Added", multiple = true) {
+            loading()
+            AmarProgressPhotos("filename.jpg", AmarProgressPhotosStatus.Waiting, fileSize = "3.2 MB", onDelete = {})
+        }
+        captureFiles("Single_Empty", multiple = false, files = null)
+        captureFiles("Single_Added", multiple = false, files = loading)
+        captureFiles("Multiple_Empty", multiple = true, files = null)
+        captureFiles("Multiple_Added", multiple = true) {
             loading()
             AmarProgressPhotos("filename.jpg", AmarProgressPhotosStatus.Waiting, fileSize = "3.2 MB", onDelete = {})
         }

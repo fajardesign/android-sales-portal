@@ -74,7 +74,7 @@ Kolom **Rencana** (disetujui 2026-10-06, mengikuti rekomendasi): `✅ bangun` / 
 | Selection Control | [466:277](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=466-277) | 32 | Type=Checkbox/Radio · Checked · Size=Medium/Small · Disabled · Icon Only | ✅ |
 | Element / Icon (checkbox/radio) | [463:320](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=463-320) | 24 ⚠ (dari 32) | Type · Checked · Indeterminate · Size · Disabled | ✅ |
 | Element / Toggle | [671:2227](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=671-2227) | 8 | State=Default/Disabled · Size=Small/Medium · Active | ✅ |
-| Upload Files | [1060:11764](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1060-11764) | 4 | File Added · Multiple Files | ✅ prioritas 3 (dipakai 45×, Multiple Files=False saja; Multiple ditunda) |
+| Upload Files | [1060:11764](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1060-11764) | 4 | File Added · Multiple Files | ✅ **dibangun** 2026-10-06 (`AmarUploadFiles`; dipakai 45×) |
 | Element / Upload | [1052:8467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-8467) | 4 | File Added · Multiple Files · Supporting Label | ✅ **dibangun** 2026-10-06 (`AmarUpload`; dipakai 45× lewat Upload Files) |
 | Element / Progress Photos | [1052:6555](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-6555) | 5 | Status=Uploaded/Waiting/Loading/Failed/Uploaded Default | ✅ **dibangun** 2026-10-06 (`AmarProgressPhotos`; dipakai 16×) |
 

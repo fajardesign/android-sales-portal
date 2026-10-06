@@ -69,6 +69,7 @@ import com.example.and_sales_portal.designsystem.components.inputs.AmarSelection
 import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressPhotos
 import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressPhotosStatus
 import com.example.and_sales_portal.designsystem.components.inputs.AmarUpload
+import com.example.and_sales_portal.designsystem.components.inputs.AmarUploadFiles
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionIcon
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionSize
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionType
@@ -444,6 +445,27 @@ private fun InputsSection() {
                 )
             }
         }
+    }
+    Group("Upload Files (seperti layar Document Upload)") {
+        var uploaded by remember { mutableStateOf(false) }
+        AmarUploadFiles(
+            label = "Anggaran Dasar Perusahaan",
+            buttonLabel = "Ambil Dokumen",
+            onUploadClick = { uploaded = true },
+            buttonIcon = painterResource(R.drawable.ds_ic_upload_document_24),
+            modifier = Modifier.fillMaxWidth(),
+            files = if (uploaded) {
+                {
+                    AmarProgressPhotos(
+                        "Anggaran_Dasar_PT_Nusantara.pdf",
+                        AmarProgressPhotosStatus.UploadedDefault,
+                        onDelete = { uploaded = false },
+                    )
+                }
+            } else {
+                null
+            },
+        )
     }
     Group("Element / Progress Photos") {
         AmarProgressPhotosStatus.entries.forEach { status ->

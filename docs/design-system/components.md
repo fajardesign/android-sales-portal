@@ -28,6 +28,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Inputs | Element / Icon | [463:320](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=463-320) | 24 | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionIcon` | 24 varian | ✅ lewat Selection Control |
 | Inputs | Element / Progress Photos | [1052:6555](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-6555) | 5 (Status) | `components/inputs/AmarUpload.kt` | `AmarProgressPhotos` | 5 varian | ✅ Terverifikasi visual (5 varian: ukuran sama; ikon, progress bar, aksi selisih ≤1,9/255, 2026-10-06) |
 | Inputs | Element / Upload | [1052:8467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-8467) | 4 (File Added × Multiple Files) | `components/inputs/AmarUpload.kt` | `AmarUpload` | 4 varian + Show Supporting | ✅ Terverifikasi visual (4 varian: ukuran sama; isi dropzone 1,0/255, posisi konten ±1 px; fase dash berbeda, 2026-10-06) |
+| Inputs | Upload Files | [1060:11764](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1060-11764) | 4 (File Added × Multiple Files) | `components/inputs/AmarUpload.kt` | `AmarUploadFiles` | 4 varian | ✅ Terverifikasi visual (4 varian: ukuran sama, border Card selisih 0; isi = Element / Upload, 2026-10-06) |
 | Actions | Button | [60:337](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=60-337) | 180 (Type × Size × State × Icon Only × Inverse) | `components/actions/AmarButton.kt` | `AmarButton` | 10 (Type × Inverse), masing-masing 18 varian | ✅ Terverifikasi visual (8 varian representatif, 2026-10-06) |
 | Actions | Elements / Button Group | [455:432](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=455-432) | 2 (Stack, Side) | `components/actions/AmarButtonGroup.kt` | `AmarButtonGroup` | 5 kombinasi | ✅ Terverifikasi visual (geometri sama persis) |
 | Feedback | Spinner (ikon) | [536:1213](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=536-1213) | 1 | `components/feedback/AmarSpinner.kt` | `AmarSpinner` | lewat Button | ✅ Geometri & opacity sama |
@@ -207,6 +208,13 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   3. Slot di `Type=Default` lebarnya tetap 326 (bukan Fill 296 seperti di Custom). Di kode slot mengisi lebar konten.
   4. Label heading tidak diekspos sebagai properti TEXT di Figma; di kode tetap menjadi parameter `label`.
 - **Pemakaian di layar produk**: Custom/Border (Document Upload, 45×), Custom/Shadow (TL Dashboard, 8×).
+
+### Upload Files
+- **Komposisi**: `AmarCard(style = Border)` (Type=Custom, Style=Border) berisi `AmarUpload`. Tidak ada token atau override tambahan.
+- **Properti Figma → parameter**: `File Added` dan `Multiple Files` diteruskan ke Element / Upload, sama seperti di Figma. Semua parameter lain sama dengan `AmarUpload`.
+- **Lebar**: 328 di Figma; komponen tidak mengunci lebar (di layar pakai `fillMaxWidth()` dengan margin 16).
+- **Verifikasi** (`AmarUploadScreenshotTest`, 1x, lebar 328): ukuran keempat varian sama (328×104/112/128/256), border Card selisih 0. Selisih sisanya berasal dari isi Element / Upload (fase dash dan glyph teks), lihat catatan Element / Upload.
+- **Pemakaian di layar produk**: 45× di Document Upload, semuanya Single (29 kosong, 16 dengan file Uploaded Default).
 
 ### Element / Upload
 - **Properti Figma → parameter**:
