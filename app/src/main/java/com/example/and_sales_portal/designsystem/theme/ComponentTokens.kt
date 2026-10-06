@@ -93,3 +93,44 @@ object AmarSelectionTokens {
     /** Layer opacity of disabled `Element / Icon` (raw value in Figma, no token). */
     const val DisabledOpacity = 0.5f
 }
+
+/** `Component/Text Field/...` tokens shared by Input, Dropdown, Area and Code Verification. */
+object AmarTextFieldTokens {
+    /** `Layout/Height` → Space/48. */
+    val Height = AmarSpace.S48
+    /** `Layout/Radius` → Radius/Field. */
+    val Radius = AmarRadius.R10
+    /** `Layout/Padding Left` → Spacing/Padding/SM. */
+    val PaddingLeft = AmarSpace.S12
+    /** `Layout/Padding Right` → Spacing/Padding/XS. */
+    val PaddingRight = AmarSpace.S10
+    /** `Layout/Padding Y` → Spacing/Padding/SM. */
+    val PaddingVertical = AmarSpace.S12
+    /** `Layout/Gap Input` → Spacing/Gap/SM: between items inside the field. */
+    val GapInput = AmarSpace.S8
+    /** `Layout/Gap` → Spacing/Gap/XS: between label, field and hint. */
+    val Gap = AmarSpace.S4
+    /** `Border/Width Focus` (raw value in Figma). */
+    val BorderWidthFocus = 1.5.dp
+    /** Gap between label, asterisk and sub label in `Input / Label` (raw value in Figma). */
+    val LabelGap = 1.dp
+    /** Layer opacity of the value text in `Disabled - Filled` (raw value in Figma). */
+    const val DisabledValueOpacity = 0.7f
+    /** Layer opacity of the placeholder in `Disabled` (raw value in Figma). */
+    const val DisabledPlaceholderOpacity = 0.6f
+    /** Fixed field height of `Area` (raw value in Figma). */
+    val AreaHeight = 96.dp
+}
+
+/** `Code Verification` / `Element / Digit` tokens. */
+object AmarCodeVerificationTokens {
+    /** Number of digits in every Figma variant. */
+    const val Length = 6
+    /** `Element / Digit` box size (raw value in Figma). */
+    val DigitSize = 44.dp
+    /** Digit padding: Spacing/Padding/2XS × Spacing/Padding/SM. */
+    val DigitPaddingX = AmarSpace.S8
+    val DigitPaddingY = AmarSpace.S12
+    /** Gap between digits (`Layout/Gap Input`) and between digits and hint (Spacing/Gap/SM). */
+    val Gap = AmarSpace.S8
+}

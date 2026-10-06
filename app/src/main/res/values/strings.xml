@@ -5,4 +5,9 @@
     <string name="title_notifications">Notifications</string>
     <!-- Design system -->
     <string name="ds_alert_dismiss">Tutup</string>
+    <string name="ds_input_prefix_currency">Rp</string>
+    <string name="ds_input_prefix_phone">+62</string>
+    <string name="ds_input_password_show">Tampilkan kata sandi</string>
+    <string name="ds_input_password_hide">Sembunyikan kata sandi</string>
+    <string name="ds_input_required">*</string>
 </resources>

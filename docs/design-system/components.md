@@ -5,6 +5,13 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 
 | Kelompok | Komponen Figma | Node | Varian | File Kotlin | Composable | Preview | Status |
 |---|---|---|---|---|---|---|---|
+| Inputs | Input | [236:235](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=236-235) | 60 (Type × State × Error) | `components/inputs/AmarTextField.kt` | `AmarTextField` | 5 (per Type), masing-masing 8 state statis | ✅ Terverifikasi visual (8 varian) |
+| Inputs | Dropdown | [640:1400](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=640-1400) | 8 (State × Error) | `components/inputs/AmarDropdown.kt` | `AmarDropdown` | 8 varian | ✅ Terverifikasi visual (2 varian) |
+| Inputs | Area | [311:744](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=311-744) | 12 (State × Error) | `components/inputs/AmarTextArea.kt` | `AmarTextArea` | 8 state statis | ✅ Terverifikasi visual (2 varian) |
+| Inputs | Code Verification | [321:502](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=321-502) | 16 (Type × State) | `components/inputs/AmarCodeVerification.kt` | `AmarCodeVerification` | state statis OTP & PIN | ✅ Terverifikasi visual (3 varian) |
+| Inputs | Element / Digit | [317:1499](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=317-1499) | 12 (State × Masking) | `components/inputs/AmarCodeVerification.kt` | `AmarDigit` | 12 varian | ✅ lewat Code Verification |
+| Inputs | Input / Label | [200:539](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=200-539) | 1 | `components/inputs/AmarFieldParts.kt` | `AmarInputLabel` | ya | ✅ lewat field |
+| Inputs | Input / Hint | [206:511](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=206-511) | 1 | `components/inputs/AmarFieldParts.kt` | `AmarInputHint` | ya | ✅ lewat field |
 | Inputs | Element / Toggle | [671:2227](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=671-2227) | 8 (State × Size × Active) | `components/inputs/AmarToggle.kt` | `AmarToggle` | 8 varian | ✅ Terverifikasi visual (frame 304×100) |
 | Inputs | Selection Control | [466:277](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=466-277) | 32 (Checked × Size × Type × Disabled × Icon Only) | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionControl` | 4 (Type × Size), masing-masing 8 | ✅ Terverifikasi visual (6 varian) |
 | Inputs | Element / Icon | [463:320](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=463-320) | 24 | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionIcon` | 24 varian | ✅ lewat Selection Control |
@@ -93,3 +100,45 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 - **Aset**: `ds_selection_{check,minus}_{md,sm}.xml` digambar dalam koordinat kotak. Alasannya, Figma mempertahankan ketebalan stroke (2 / 1,67) saat ikon diperkecil, dan koordinat kotak menghindari pembulatan offset 3,6dp. Titik radio digambar sebagai lingkaran float.
 - **Verifikasi**: kotak, tanda centang, dan titik radio cocok (rata-rata selisih ≤1,2/255). Posisi X teks sama; Y 1 px lebih tinggi; lebar deskripsi 3 px lebih sempit (rasterizer).
 - **Temuan Figma**: varian Radio + `Indeterminate` ada, tetapi tampilannya sama dengan Checked.
+
+### Input, Dropdown, Area (field bersama)
+- **State Figma diturunkan otomatis**:
+  - Default: kosong.
+  - Active: fokus dan kosong (Dropdown: `expanded`).
+  - Typing: fokus dan berisi.
+  - Filled: tidak fokus dan berisi.
+  - Disabled / Disabled - Filled: `enabled = false`.
+  - `Error` → `error`.
+- **Token** (`Component/Text Field/...` → semantik):
+  - Latar `surface.base` / Disabled `background.subtle`.
+  - Border `border.strong` (1), fokus `border.focus` (1,5), error `feedback.error.border`, disabled `border.disabled`.
+  - Teks `content.primary`, placeholder `content.quaternary`, kursor `border.focus`.
+  - Field tinggi 48, radius 10, padding 12/10 × 12, gap 8.
+  - Label / field / hint dipisah gap 4.
+  - Area: field tetap 96, counter `Caption/SM` rata kanan.
+- **Perilaku per Type**:
+  - Currency: prefix "Rp", hanya digit, format 24.000.000. Format ini tidak ada di Figma dan diambil dari panduan konten bundle.
+  - Phone: prefix "+62", hanya digit.
+  - Password: masking "• " (bullet + spasi) seperti di Figma, dengan tombol mata.
+  - Search: ikon search di kiri.
+- **Aset**: `ds_ic_{search,eye_reveal,eye_hide,chevron_down,info_2}_24.xml`, `ds_ic_info_sm_20.xml`.
+- **Verifikasi**:
+  - Ukuran semua varian sama.
+  - Warna teks Disabled cocok (±1/255).
+  - Teks 1 px lebih tinggi (rasterizer).
+
+### Code Verification dan Element / Digit
+- 6 kotak 44×44 (radius 10, gap 8). Digit memakai `Heading/SM`. PIN (`Masking`) memakai titik 20 (`Icon/Primary`). Active menampilkan caret statis "|".
+- Hint: non-error `Caption/MD` + `Helper/Default` (ikon opsional), error `Caption/SM` + `Helper/Error`.
+- Border error: master `Element / Digit` 1,5, tetapi instance di Code Verification di-override ke 1. Keduanya diikuti (`AmarDigit` = 1,5, `AmarCodeVerification` = 1).
+
+### Temuan Figma di kelompok Inputs (mengikuti Figma kecuali disebut lain)
+1. **Tidak diikuti, perlu konfirmasi**: jarak antar item di field berubah dari 8 menjadi 4 saat fokus (Input Active/Typing, Dropdown Active). Di kode tetap 8 agar teks dan prefix tidak bergeser saat field diketuk.
+2. Label memakai `Label/Default` di semua state. Token `Label/Focused`, `Label/Error`, dan `Label/Disabled` ada tetapi tidak dipakai.
+3. Master `Input / Label` memakai `Label/MD Medium`, tetapi semua instance di field memakai `Label/Button/MD` (semibold). Field mengikuti instance.
+4. Teks Disabled memakai opacity layer mentah: 0,7 untuk nilai, 0,6 untuk placeholder.
+5. Border error setebal 1 saat tidak fokus dan 1,5 saat fokus.
+6. Ikon search dan chevron memakai `Icon/Primary` juga saat disabled.
+7. Instance ikon info di `Input / Label` kosong (tidak merender apa pun). Kode memakai master `info sm` (`Icon/Primary`).
+8. Code Verification `Disabled - Error` (OTP dan PIN) tidak berisi kotak digit, hanya hint. Di kode: digit disabled + hint error.
+9. Placeholder `content.quaternary` (#CDD5DC) di atas putih kontrasnya sekitar 1,5:1, di bawah pedoman aksesibilitas.
