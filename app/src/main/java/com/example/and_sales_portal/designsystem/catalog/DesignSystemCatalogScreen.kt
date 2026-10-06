@@ -68,6 +68,7 @@ import com.example.and_sales_portal.designsystem.components.inputs.AmarCodeVerif
 import com.example.and_sales_portal.designsystem.components.inputs.AmarDigit
 import com.example.and_sales_portal.designsystem.components.inputs.AmarDigitState
 import com.example.and_sales_portal.designsystem.components.inputs.AmarDropdown
+import com.example.and_sales_portal.designsystem.components.inputs.AmarDropdownPicker
 import com.example.and_sales_portal.designsystem.components.inputs.AmarInputHint
 import com.example.and_sales_portal.designsystem.components.inputs.AmarInputLabel
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionControl
@@ -418,6 +419,33 @@ private fun InputsSection() {
                 }
             }
         }
+    }
+    Group("Dropdown picker (ketuk untuk membuka sheet)") {
+        val provinces = listOf(
+            "Aceh", "Sumatera Utara", "Sumatera Barat", "Riau", "Jambi", "Sumatera Selatan", "Bengkulu", "Lampung",
+            "Kepulauan Bangka Belitung", "Kepulauan Riau", "DKI Jakarta", "Jawa Barat", "Jawa Tengah", "DI Yogyakarta",
+        )
+        val regencies = listOf("Kabupaten Deli Serdang", "Kota Medan", "Kota Binjai")
+        var province by remember { mutableStateOf<String?>(null) }
+        var regency by remember { mutableStateOf<String?>(null) }
+        AmarDropdownPicker(
+            province, provinces, { province = it; regency = null }, "Pilih Provinsi",
+            label = "Provinsi", required = true, placeholder = "Pilih provinsi",
+        )
+        AmarDropdownPicker(
+            regency, regencies, { regency = it }, "Pilih Kabupaten/Kota",
+            label = "Kabupaten/Kota", required = true, placeholder = "Pilih kabupaten/kota", enabled = province != null,
+        )
+        var bank by remember { mutableStateOf<String?>(null) }
+        AmarDropdownPicker(
+            bank,
+            listOf(
+                "Bank Central Asia (BCA)", "Bank Rakyat Indonesia (BRI)", "Bank Mandiri", "Bank Negara Indonesia (BNI)",
+                "Bank Tabungan Negara (BTN)", "Bank CIMB Niaga", "Bank Danamon", "Bank Permata",
+            ),
+            { bank = it }, "Pilih Bank",
+            label = "Bank", required = true, placeholder = "Pilih bank", searchPlaceholder = "Cari bank",
+        )
     }
     Group("Element / Upload (ketuk untuk menambah file)") {
         var single by remember { mutableStateOf(false) }

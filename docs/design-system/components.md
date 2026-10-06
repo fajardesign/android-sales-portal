@@ -23,6 +23,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Feedback | Element / Sheet / Selection | [1284:2123](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1284-2123) | 1 | `components/feedback/AmarBottomSheet.kt` | `AmarSheetSelection` | ya | ✅ Terverifikasi visual (selisih rata-rata 2,67/255) |
 | Inputs | Input | [236:235](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=236-235) | 60 (Type × State × Error) | `components/inputs/AmarTextField.kt` | `AmarTextField` | 5 (per Type), masing-masing 8 state statis | ✅ Terverifikasi visual (8 varian) |
 | Inputs | Dropdown | [640:1400](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=640-1400) | 8 (State × Error) | `components/inputs/AmarDropdown.kt` | `AmarDropdown` | 8 varian | ✅ Terverifikasi visual (2 varian) |
+| Inputs | Pola: Dropdown + Bottom Sheet + Option | [640:1400](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=640-1400) | — (pola layar produk) | `components/inputs/AmarDropdownPicker.kt` | `AmarDropdownPicker` | field 3 state | ✅ Logika diuji (`AmarDropdownPickerTest`) + dicoba di emulator API 34 |
 | Inputs | Area | [311:744](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=311-744) | 12 (State × Error) | `components/inputs/AmarTextArea.kt` | `AmarTextArea` | 8 state statis | ✅ Terverifikasi visual (2 varian) |
 | Inputs | Code Verification | [321:502](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=321-502) | 16 (Type × State) | `components/inputs/AmarCodeVerification.kt` | `AmarCodeVerification` | state statis OTP & PIN | ✅ Terverifikasi visual (3 varian) |
 | Inputs | Element / Digit | [317:1499](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=317-1499) | 12 (State × Masking) | `components/inputs/AmarCodeVerification.kt` | `AmarDigit` | 12 varian | ✅ lewat Code Verification |
@@ -258,6 +259,22 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
 - **Lebar**: 328 di Figma; komponen tidak mengunci lebar (di layar pakai `fillMaxWidth()` dengan margin 16).
 - **Verifikasi** (`AmarUploadScreenshotTest`, 1x, lebar 328): ukuran keempat varian sama (328×104/112/128/256), border Card selisih 0. Selisih sisanya berasal dari isi Element / Upload (fase dash dan glyph teks), lihat catatan Element / Upload.
 - **Pemakaian di layar produk**: 45× di Document Upload, semuanya Single (29 kosong, 16 dengan file Uploaded Default).
+
+### Dropdown picker (pola)
+- **Bukan komponen Figma baru**: ini gabungan `AmarDropdown` + `AmarBottomSheet` (Compact) + `AmarSheetOption`, dengan susunan sama seperti layar produk (Pilih Provinsi/Kabupaten/Kecamatan/Kelurahan, Pilih Bank). Padanan bundle: `[Dropdown]` dan `[Dropdown / Search]` (CLAUDE.md §2). Tidak ada token baru.
+- **Perilaku**:
+  - Field `State=Active` selama sheet terbuka.
+  - Sheet dengan handle, tanpa close, tanpa tombol.
+  - Memilih opsi memanggil `onSelect` lalu menutup sheet dengan animasi (`amarBottomSheetDismiss()`).
+  - `searchPlaceholder` menambah Input `Type=Search` di baris pertama slot; filter berdasarkan label, tanpa membedakan huruf besar-kecil.
+- **Kapan `Scroll=True`**: selalu bila ada pencarian (seperti Pilih Bank); selain itu bila layout tanpa scroll (24 + baris judul 28 + 16 + n×52 + (n−1)×12 + 24) melebihi 600. Dengan token sekarang: mulai 9 opsi. Rumus ini cocok dengan layar produk: Kelurahan 6 opsi = 464 (Scroll=False), Provinsi 38 opsi (Scroll=True).
+- **`amarBottomSheetDismiss()`** (baru di `AmarBottomSheet.kt`): fungsi untuk isi sheet yang menyembunyikan sheet dengan animasi lalu memanggil `onDismissRequest`. Tombol close memakai jalur yang sama.
+- **Verifikasi**:
+  - `AmarDropdownPickerTest`: aturan Scroll terhadap tiga layar produk dan batas 8/9 opsi; filter pencarian.
+  - Emulator Pixel 6 API 34 (katalog DS): Provinsi → sheet Scroll terbuka, memilih "Sumatera Utara" mengisi field, menutup sheet, dan mengaktifkan Kabupaten/Kota. Bank → pencarian "mandiri" menyisakan "Bank Mandiri", sheet naik di atas keyboard; memilihnya mengisi field dan menutup sheet serta keyboard.
+- **Belum ditentukan desain**:
+  1. Tampilan bila pencarian tidak menemukan hasil. Saat ini daftar kosong. DS punya ilustrasi `Medium / Empty Search`, tetapi tidak ada spesifikasi untuk sheet.
+  2. Daftar opsi memakai `Column` yang di-scroll, cukup untuk daftar per wilayah (puluhan opsi). Untuk ratusan opsi perlu `LazyColumn`.
 
 ### Element / Upload
 - **Properti Figma → parameter**:

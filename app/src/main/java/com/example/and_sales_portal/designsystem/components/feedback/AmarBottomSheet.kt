@@ -30,6 +30,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -185,6 +187,9 @@ fun AmarBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val overlay = AmarTheme.colors.overlay
+    val dismiss: () -> Unit = {
+        scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) onDismissRequest() }
+    }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
@@ -197,29 +202,36 @@ fun AmarBottomSheet(
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0) },
     ) {
-        AmarBottomSheetContent(
-            type = type,
-            title = title,
-            description = description,
-            illustration = illustration,
-            illustrationFullscreen = illustrationFullscreen,
-            showHandle = showHandle,
-            onClose = if (showClose) {
-                { scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) onDismissRequest() } }
-            } else {
-                null
-            },
-            scroll = scroll,
-            primaryLabel = primaryLabel,
-            onPrimaryClick = onPrimaryClick,
-            secondLabel = secondLabel,
-            onSecondClick = onSecondClick,
-            thirdLabel = thirdLabel,
-            onThirdClick = onThirdClick,
-            slot = slot,
-        )
+        CompositionLocalProvider(LocalAmarBottomSheetDismiss provides dismiss) {
+            AmarBottomSheetContent(
+                type = type,
+                title = title,
+                description = description,
+                illustration = illustration,
+                illustrationFullscreen = illustrationFullscreen,
+                showHandle = showHandle,
+                onClose = if (showClose) dismiss else null,
+                scroll = scroll,
+                primaryLabel = primaryLabel,
+                onPrimaryClick = onPrimaryClick,
+                secondLabel = secondLabel,
+                onSecondClick = onSecondClick,
+                thirdLabel = thirdLabel,
+                onThirdClick = onThirdClick,
+                slot = slot,
+            )
+        }
     }
 }
+
+private val LocalAmarBottomSheetDismiss = staticCompositionLocalOf<() -> Unit> { {} }
+
+/**
+ * Inside the content of an [AmarBottomSheet]: a function that hides the sheet with its animation,
+ * then calls its `onDismissRequest` (e.g. after an [AmarSheetOption] is picked). Outside a sheet it does nothing.
+ */
+@Composable
+fun amarBottomSheetDismiss(): () -> Unit = LocalAmarBottomSheetDismiss.current
 
 @Composable
 private fun DefaultLayout(
