@@ -68,6 +68,7 @@ import com.example.and_sales_portal.designsystem.components.inputs.AmarInputLabe
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionControl
 import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressPhotos
 import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressPhotosStatus
+import com.example.and_sales_portal.designsystem.components.inputs.AmarUpload
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionIcon
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionSize
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionType
@@ -409,6 +410,38 @@ private fun InputsSection() {
                     AmarSelectionIcon(true, type = type, size = size, indeterminate = true)
                     AmarSelectionIcon(true, type = type, size = size, enabled = false)
                 }
+            }
+        }
+    }
+    Group("Element / Upload (ketuk untuk menambah file)") {
+        var single by remember { mutableStateOf(false) }
+        AmarUpload(
+            label = "KTP / Paspor",
+            buttonLabel = "Ambil Foto",
+            onUploadClick = { single = true },
+            buttonIcon = painterResource(R.drawable.ds_ic_upload_document_24),
+            files = if (single) {
+                { AmarProgressPhotos("ktp.jpg", AmarProgressPhotosStatus.UploadedDefault, onDelete = { single = false }) }
+            } else {
+                null
+            },
+        )
+        var count by remember { mutableIntStateOf(1) }
+        AmarUpload(
+            label = "Foto toko",
+            buttonLabel = "Ambil Foto",
+            onUploadClick = { if (count < 3) count++ },
+            multipleFiles = true,
+            helperText = "Kamu bisa upload foto sebanyak 3 kali",
+            supportingLabel = "Supporting Label",
+        ) {
+            repeat(count) { i ->
+                AmarProgressPhotos(
+                    "foto_toko_${i + 1}.jpg",
+                    AmarProgressPhotosStatus.Uploaded,
+                    thumbnail = painterResource(R.drawable.ds_ill_medium_in_process),
+                    onDelete = { count-- },
+                )
             }
         }
     }

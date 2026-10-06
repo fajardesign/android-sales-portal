@@ -282,4 +282,15 @@ object AmarUploadTokens {
     val ThumbnailRadius = AmarRadius.R8
     /** Spinner next to the status text (raw value in Figma). */
     val SpinnerSize = AmarSpace.S14
+
+    /** `Element / Upload`: Spacing/Gap/MD label ↔ content, Spacing/Gap/SM section ↔ supporting label and helper ↔ dropzone. */
+    val LabelGap = AmarSpace.S12
+    val SectionGap = AmarSpace.S8
+    /** Spacing/Gap/LG between file rows and between the rows and the dropzone (Multiple Files). */
+    val FileGap = AmarSpace.S16
+    /** Dropzone (Button instance override): `Radius/CTA`, dashed `Component/Upload/Dropzone/Border` 1.5 inside, dash 6 / gap 6 (raw values). */
+    val DropzoneRadius = AmarRadius.R16
+    val DropzoneBorderWidth = 1.5.dp
+    val DropzoneDash = 6.dp
+    val DropzoneDashGap = 6.dp
 }

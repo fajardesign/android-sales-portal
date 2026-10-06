@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -20,12 +21,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.and_sales_portal.R
@@ -33,6 +41,7 @@ import com.example.and_sales_portal.designsystem.components.actions.AmarButton
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
 import com.example.and_sales_portal.designsystem.components.feedback.AmarSpinner
+import com.example.and_sales_portal.designsystem.theme.AmarButtonTokens
 import com.example.and_sales_portal.designsystem.theme.AmarSpace
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.designsystem.theme.AmarUploadTokens
@@ -279,6 +288,144 @@ private fun AmarProgressPhotosPreview() {
                     onDelete = {},
                 )
             }
+        }
+    }
+}
+
+/**
+ * Element / Upload: label, upload dropzone and the uploaded file rows.
+ *
+ * Figma: [Element / Upload 1052:8467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-8467)
+ * (File Added × Multiple Files = 4 variants). Fills the width of its parent (296 in Figma).
+ *
+ * `File Added` follows [files]: single-file mode shows either the dropzone or the file rows;
+ * Multiple Files always keeps the dropzone (with [helperText] above it) below the rows.
+ *
+ * @param label Field label (`Label/Button/MD`, `Text Field/Label/Default`).
+ * @param buttonLabel Dropzone label, e.g. "Ambil Foto" or "Ambil Dokumen" in the product screens.
+ * @param onUploadClick Dropzone click: open the camera or the document picker.
+ * @param multipleFiles Figma `Multiple Files`.
+ * @param buttonIcon Dropzone icon (Figma default `camera`; product screens use `upload document`).
+ * @param helperText Text above the dropzone in Multiple Files (Figma sample: "Kamu bisa upload foto sebanyak 3 kali"); `null` hides it.
+ * @param supportingLabel Figma `Show Supporting` + `Supporting Label` (`Caption/SM`, centred); `null` hides it.
+ * @param files Figma `Slot`: the file rows, usually [AmarProgressPhotos]; `null` = `File Added=False`.
+ */
+@Composable
+fun AmarUpload(
+    label: String,
+    buttonLabel: String,
+    onUploadClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    multipleFiles: Boolean = false,
+    buttonIcon: Painter = painterResource(R.drawable.ds_ic_camera_24),
+    helperText: String? = null,
+    supportingLabel: String? = null,
+    files: (@Composable ColumnScope.() -> Unit)? = null,
+) {
+    val c = AmarTheme.colors
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AmarUploadTokens.SectionGap)) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AmarUploadTokens.LabelGap)) {
+            AmarInputLabel(label, style = AmarTheme.typography.labelButtonMd)
+            if (!multipleFiles) {
+                if (files != null) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AmarUploadTokens.FileGap), content = files)
+                } else {
+                    UploadDropzone(buttonLabel, buttonIcon, onUploadClick)
+                }
+            } else {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(AmarUploadTokens.FileGap)) {
+                    files?.invoke(this)
+                    Column(
+                        Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(AmarUploadTokens.SectionGap),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        helperText?.let {
+                            Text(it, style = AmarTheme.typography.captionSm, color = c.content.tertiary, textAlign = TextAlign.Center)
+                        }
+                        UploadDropzone(buttonLabel, buttonIcon, onUploadClick)
+                    }
+                }
+            }
+        }
+        supportingLabel?.let {
+            Text(
+                it,
+                style = AmarTheme.typography.captionSm,
+                color = c.content.tertiary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
+ * Dropzone: the Figma `Button` (Primary, Small, Left Icon) overridden with `Component/Upload/Dropzone/…`:
+ * `Background/Brand Subtle` fill, dashed `Border/Color/Focus` border, `Icon/Brand` icon 16.
+ * The label uses `Content/Link` (Primary 700) instead of the Figma Primary 600 (CLAUDE.md rule 6). No ripple, as for Button.
+ */
+@Composable
+private fun UploadDropzone(label: String, icon: Painter, onClick: () -> Unit) {
+    val c = AmarTheme.colors
+    val size = AmarButtonTokens.Small
+    val shape = RoundedCornerShape(AmarUploadTokens.DropzoneRadius)
+    val borderColor = c.border.focus
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(size.height)
+            .clip(shape)
+            .background(c.background.brandSubtle)
+            .drawBehind {
+                val w = AmarUploadTokens.DropzoneBorderWidth.toPx()
+                val radius = AmarUploadTokens.DropzoneRadius.toPx() - w / 2
+                drawRoundRect(
+                    color = borderColor,
+                    topLeft = Offset(w / 2, w / 2),
+                    size = Size(this.size.width - w, this.size.height - w),
+                    cornerRadius = CornerRadius(radius, radius),
+                    style = Stroke(
+                        width = w,
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(AmarUploadTokens.DropzoneDash.toPx(), AmarUploadTokens.DropzoneDashGap.toPx()),
+                        ),
+                    ),
+                )
+            }
+            .clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onClick)
+            .padding(horizontal = size.paddingX),
+        horizontalArrangement = Arrangement.spacedBy(size.gap, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = c.icon.brand, modifier = Modifier.size(AmarTheme.iconSizes.sm))
+        Text(label, style = AmarTheme.typography.labelButtonSm, color = c.content.link, maxLines = 1)
+    }
+}
+
+/** All 4 Figma variants (File Added × Multiple Files) with the Figma sample copy, plus Show Supporting. */
+@Preview(name = "Upload", widthDp = 360)
+@Composable
+private fun AmarUploadPreview() {
+    AmarTheme {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(AmarTheme.colors.background.base)
+                .padding(horizontal = AmarSpace.S32, vertical = AmarSpace.S16),
+            verticalArrangement = Arrangement.spacedBy(AmarSpace.S24),
+        ) {
+            val loading: @Composable ColumnScope.() -> Unit = {
+                AmarProgressPhotos("filename.jpg", AmarProgressPhotosStatus.Loading, fileSize = "3.2 MB", progress = 0.1f, onDelete = {})
+            }
+            AmarUpload("Change Label", "Button", {})
+            AmarUpload("Change Label", "Button", {}, files = loading)
+            AmarUpload("Change Label", "Button", {}, multipleFiles = true, helperText = "Kamu bisa upload foto sebanyak 3 kali")
+            AmarUpload("Change Label", "Button", {}, multipleFiles = true, helperText = "Kamu bisa upload foto sebanyak 3 kali") {
+                loading()
+                AmarProgressPhotos("filename.jpg", AmarProgressPhotosStatus.Waiting, fileSize = "3.2 MB", onDelete = {})
+            }
+            AmarUpload("Change Label", "Button", {}, supportingLabel = "Supporting Label")
         }
     }
 }

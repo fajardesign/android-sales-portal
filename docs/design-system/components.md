@@ -27,6 +27,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Inputs | Selection Control | [466:277](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=466-277) | 32 (Checked × Size × Type × Disabled × Icon Only) | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionControl` | 4 (Type × Size), masing-masing 8 | ✅ Terverifikasi visual (6 varian) |
 | Inputs | Element / Icon | [463:320](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=463-320) | 24 | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionIcon` | 24 varian | ✅ lewat Selection Control |
 | Inputs | Element / Progress Photos | [1052:6555](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-6555) | 5 (Status) | `components/inputs/AmarUpload.kt` | `AmarProgressPhotos` | 5 varian | ✅ Terverifikasi visual (5 varian: ukuran sama; ikon, progress bar, aksi selisih ≤1,9/255, 2026-10-06) |
+| Inputs | Element / Upload | [1052:8467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-8467) | 4 (File Added × Multiple Files) | `components/inputs/AmarUpload.kt` | `AmarUpload` | 4 varian + Show Supporting | ✅ Terverifikasi visual (4 varian: ukuran sama; isi dropzone 1,0/255, posisi konten ±1 px; fase dash berbeda, 2026-10-06) |
 | Actions | Button | [60:337](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=60-337) | 180 (Type × Size × State × Icon Only × Inverse) | `components/actions/AmarButton.kt` | `AmarButton` | 10 (Type × Inverse), masing-masing 18 varian | ✅ Terverifikasi visual (8 varian representatif, 2026-10-06) |
 | Actions | Elements / Button Group | [455:432](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=455-432) | 2 (Stack, Side) | `components/actions/AmarButtonGroup.kt` | `AmarButtonGroup` | 5 kombinasi | ✅ Terverifikasi visual (geometri sama persis) |
 | Feedback | Spinner (ikon) | [536:1213](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=536-1213) | 1 | `components/feedback/AmarSpinner.kt` | `AmarSpinner` | lewat Button | ✅ Geometri & opacity sama |
@@ -206,6 +207,35 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   3. Slot di `Type=Default` lebarnya tetap 326 (bukan Fill 296 seperti di Custom). Di kode slot mengisi lebar konten.
   4. Label heading tidak diekspos sebagai properti TEXT di Figma; di kode tetap menjadi parameter `label`.
 - **Pemakaian di layar produk**: Custom/Border (Document Upload, 45×), Custom/Shadow (TL Dashboard, 8×).
+
+### Element / Upload
+- **Properti Figma → parameter**:
+  - `File Added` → diturunkan dari `files` (`null` = False).
+  - `Multiple Files` → `multipleFiles`.
+  - `Slot` → `files` (biasanya `AmarProgressPhotos`).
+  - `Show Supporting` + `Supporting Label` → `supportingLabel`.
+- **Parameter tambahan**: `label`, `buttonLabel`, `onUploadClick`, `buttonIcon` (default `camera`), `helperText` (teks di atas dropzone pada Multiple Files; di Figma teks tetap "Kamu bisa upload foto sebanyak 3 kali", tanpa properti).
+- **Perilaku**:
+  - Single: dropzone **atau** baris file.
+  - Multiple: baris file (gap 16), lalu helper + dropzone yang selalu tampil.
+  - Batas jumlah file diatur pemanggil.
+- **Dropzone**: di Figma ini instance `Button` (Primary, Small, Left Icon) yang di-override, bukan varian Button. Karena itu dibuat sebagai composable privat:
+  - Latar `Component/Upload/Dropzone/Background` (`Background/Brand Subtle`).
+  - Border putus-putus `Component/Upload/Dropzone/Border` (`Border/Color/Focus`) 1,5 di sisi dalam, dash 6 / jarak 6.
+  - Radius `Radius/CTA` 16, tinggi 40, padding 12, gap 4.
+  - Ikon 16 `Icon/Brand`; label `Label/Button/SM`.
+- **Token**: `AmarUploadTokens` (gap label 12 `Spacing/Gap/MD`, seksi 8 `Spacing/Gap/SM`, baris file 16 `Spacing/Gap/LG`; nilai mentah dropzone: tebal border 1,5 dan dash 6/6). Ukuran tombol diambil dari `AmarButtonTokens.Small`.
+- **Keputusan**: label dropzone memakai `Content/Link` (Primary 700), bukan Primary 600 seperti di Figma (`Action/Primary/Background`), sesuai aturan kontras teks #6 (sama dengan Navigation Bar).
+- **Verifikasi** (`AmarUploadScreenshotTest`, 1x, lebar 296):
+  - Ukuran keempat varian sama (296×72/80/96/224).
+  - Isi dropzone selisih 1,0/255; posisi ikon, teks, dan label ±1 px.
+  - **Fase dash berbeda**: periodenya sama (6/6), tetapi titik mulai dan arah jalur garis di Figma dan Android berbeda, sehingga tidak ada satu fase yang cocok untuk keempat sisi. Percobaan fase 6 memperbaiki tepi atas tetapi memperburuk tepi bawah (rata-rata 9,48 → 10,69), jadi tetap memakai fase 0.
+- **Temuan Figma**:
+  1. Teks dropzone Primary 600 (gagal AA untuk teks); di kode Primary 700.
+  2. `Supporting Label` lebarnya tetap 326, melebihi komponen (296). Di kode mengisi lebar komponen, rata tengah.
+  3. Helper "Kamu bisa upload foto sebanyak 3 kali" berupa teks tetap tanpa properti.
+  4. Ikon kamera di dropzone tetap memakai stroke 1,2 (skala dari 1,8 di master 24), sama dengan aset `ds_ic_camera_24` di ukuran 16.
+- **Pemakaian di layar produk**: 45× lewat Upload Files, semuanya Single. Label tombol "Ambil Dokumen" / "Ambil Foto", ikon `upload document`.
 
 ### Element / Progress Photos
 - **Properti Figma → parameter**: `Status` → `AmarProgressPhotosStatus` (Uploaded, UploadedDefault, Waiting, Loading, Failed); `Edit Name` → `fileName`; `File Size` → `fileSize` (string yang sudah diformat).
