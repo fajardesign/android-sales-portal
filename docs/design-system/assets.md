@@ -100,7 +100,7 @@ Catatan: `star_filled` (1655:7501) = geometri `star` dengan warna #F2CF53 → pa
 
 | Aset | Node | Alasan | Alternatif |
 |---|---|---|---|
-| Permission / Accessibility, Tracking, Camera, Photos, Microphone, Contact, Location; Face ID (80×80) | 406:562, 406:744, 406:742, 406:740, 406:743, 406:741, 412:172, 452:278 | Berisi **gambar raster tertanam**; SVG 1,6–3,6 MB per aset. Tidak bisa menjadi vector, dan terlalu berat. | Ekspor WebP 1x/2x/3x dari Figma (±5–20 KB). Perlu keputusan; belum dibuat. |
+| Permission / Accessibility, Tracking, Camera, Photos, Microphone, Contact, Location; Face ID (80×80) | 406:562, 406:744, 406:742, 406:740, 406:743, 406:741, 412:172, 452:278 | Berisi **gambar raster tertanam**; SVG 1,6–3,6 MB per aset. Tidak bisa menjadi vector, dan terlalu berat. | Desainer mengekspor WebP/PNG @2x/@3x dari Figma (±5–20 KB per densitas). Lewat MCP hanya tersedia screenshot 1x (80×80), yang buram di layar xxhdpi, jadi tidak dibuat dari sini. |
 | Medium / Max Attempt OTP, Biometric, PIN, Verif Activity | 1138:784, 1355:1450, 1163:1601, 1260:5318 | Tersusun dari banyak layer dengan **CSS mask + rotasi**; Figma tidak mengekspor satu SVG, dan VectorDrawable tidak mendukung mask. | Desainer meratakan (flatten) layer di Figma, lalu konversi ulang; atau WebP. |
 
 ## Sengaja tidak dibuat
