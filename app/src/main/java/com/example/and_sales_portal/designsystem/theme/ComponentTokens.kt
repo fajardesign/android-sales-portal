@@ -1,5 +1,6 @@
 package com.example.and_sales_portal.designsystem.theme
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -204,4 +205,38 @@ object AmarModalTokens {
     val IllustrationPaddingTop = AmarSpace.S24
     val IllustrationPaddingBottom = AmarSpace.S8
     val IllustrationSize = AmarSpace.S80
+}
+
+/** `Component/Tab/...` tokens. */
+object AmarTabTokens {
+    /** `Tab/Height`. */
+    val Height = AmarSpace.S48
+    /** `Tab/Container/Padding X` → Space/16. */
+    val ContainerPaddingX = AmarSpace.S16
+    /** `Tab/Indicator/Height`. */
+    val IndicatorHeight = AmarSpace.S2
+    /** Gap between icon and label inside a Tab Item (raw value in Figma; `Tab/Gap` = 4 is not used there). */
+    val ContentGap = 6.dp
+    /** Scrim (loading) placeholder inside a Tab Item (raw values in Figma). */
+    val ScrimWidth = 109.dp
+    val ScrimHeight = AmarSpace.S20
+    val ScrimRadius = AmarRadius.R16
+    /** Scrim gradient stops (raw, left → right): #F1EFEF, #F9F8F8 at 53%, #E7E5E5. */
+    val ScrimColors = listOf(Color(0xFFF1EFEF), Color(0xFFF9F8F8), Color(0xFFE7E5E5))
+    val ScrimStops = listOf(0f, 0.53f, 0.99f)
+}
+
+/** `Component/App Bar/...` layout tokens (the status bar part of the Figma frame is the system status bar). */
+object AmarAppBarTokens {
+    /** Header height (`Navigation/Top/Height`); Primary + Transparent Inverse grows to fit title + subtitle. */
+    val HeaderHeight = AmarSpace.S56
+    /** `App Bar/Padding Horizontal`, `App Bar/Padding Vertical` → Space/16. */
+    val Padding = AmarSpace.S16
+    /** `App Bar/Gap` → Space/8; Primary + Transparent Inverse uses 16. */
+    val Gap = AmarSpace.S8
+    val GapTransparentInverse = AmarSpace.S16
+    /** Max title width in Figma (raw). */
+    val TitleMaxWidth = 294.dp
+    /** `Icon/Close Sheet/Padding` → 2: circular icon button (28 = 2 + 24 + 2). */
+    val RoundButtonPadding = AmarSpace.S2
 }

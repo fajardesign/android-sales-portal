@@ -5,6 +5,9 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 
 | Kelompok | Komponen Figma | Node | Varian | File Kotlin | Composable | Preview | Status |
 |---|---|---|---|---|---|---|---|
+| Navigation | App Bar | [133:32](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=133-32) | 8 (Type × State × Stepper) | `components/navigation/AmarAppBar.kt` | `AmarAppBar` | 6 (Type × State) | ✅ Terverifikasi visual (4 varian, posisi ikon sama persis) |
+| Navigation | Tab | [1833:13848](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1833-13848) | 2 (Scrim) | `components/navigation/AmarTab.kt` | `AmarTab` | 2 | ✅ Terverifikasi visual |
+| Navigation | Element / Tab Item | [1825:10926](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1825-10926) | 4 (Active × Scrim) | `components/navigation/AmarTab.kt` | `AmarTabItem` | lewat Tab | ✅ Terverifikasi visual (indikator, scrim) |
 | Feedback | Modal / Default | [1034:656](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1034-656) | 3 (Scroll State) | `components/feedback/AmarModal.kt` | `AmarModal` | Default + scroll | ✅ Terverifikasi visual (Default: ukuran & posisi tombol sama) |
 | Feedback | Element / Illustration Modal | [486:1867](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=486-1867) | 2 (Fullscreen) | `components/feedback/AmarModal.kt` | `AmarModalIllustration` | lewat Modal | ✅ dari spesifikasi Figma |
 | Feedback | Info Box | [676:2342](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=676-2342) | 20 (Type × Button × Show Label) | `components/feedback/AmarInfoBox.kt` | `AmarInfoBox` | 5 (per Type) × 4 | ✅ Terverifikasi visual (4 varian) |
@@ -189,3 +192,32 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
 - **Token**: radius 16 (`Radius/Container`), latar `background.base`, `Shadow/Modal`. Judul `Heading/MD` + `content.primary`; deskripsi `Body/LG` + `content.secondary`, rata tengah.
 - **Ilustrasi**: Fullscreen = selebar modal tanpa padding. Selain itu gambar 80 di tengah dengan padding atas 24, bawah 8.
 - **Temuan Figma**: frame teks (310) lebih lebar dari area konten (296).
+
+### App Bar
+- **Properti Figma → parameter**:
+  - `Type` → `AmarAppBarType`; `State` → `AmarAppBarState`.
+  - `Title` + `Change Label` → `title`; subjudul (Primary + Transparent Inverse) → `subtitle`.
+  - `Show Navigation` + `Change Navigation` → `onNavigationClick` + `navigationIcon`.
+  - `Right Icon` + `Change Icon` → `onActionClick` + `actionIcon`.
+  - `Stepper=True` + `Slot` → `slot`.
+- **Status bar**: frame Figma memuat status bar mock (24, gaya iOS). Di Android bar digambar di belakang status bar sistem lewat `windowInsets` (default `WindowInsets.statusBars`), dan yang di-layout hanya header 56.
+- **Warna (sesuai render Figma dan layar produk)**:
+  - Default: bar putih, judul dan ikon #000A14, `Shadow/Floating`.
+  - Transparent: Primary gelap, Secondary putih.
+  - Transparent Inverse: judul Neutral 900, ikon Neutral 700.
+  - **Temuan Figma**: fill bar terikat ke variabel `.../Title` (putih) dan judul ke `.../Background` (#000A14). Nama variabelnya tertukar, sedangkan nilai variabel `App Bar/Type/Default/*` menggambarkan bar gelap. Layar produk (Sales - Partner Dashboard - Android, 36 App Bar) semuanya putih, jadi render itulah yang diikuti.
+- **Layout**:
+  - Primary: judul kiri + aksi (notification).
+  - Secondary: back + judul tengah (maks 294) + aksi (help).
+  - Secondary + Transparent Inverse: judul kiri.
+  - Primary + Transparent Inverse: judul + subjudul + tombol bulat 28 (`Icon/Close Sheet/Background`).
+- **Aset**: `ds_ic_arrow_left_24`, `ds_ic_help_24`, `ds_ic_notification_24`, `ds_ic_search_2_24`. Ikon help dan notification diekspor Figma sebagai grup terpisah, lalu ditempatkan di bingkai 24 sesuai offset Figma.
+- **Temuan Figma**: varian Primary + `Stepper=True` identik dengan `Stepper=False` (tidak ada slot).
+
+### Tab dan Element / Tab Item
+- **Token**:
+  - Tinggi 48, padding samping container 16, divider bawah `Border/Color/Default`.
+  - Label aktif `Label/MD Semibold` Primary 700; nonaktif `Label/MD Medium` Neutral 500.
+  - Ikon 20: aktif Primary 600 (`icon.brand`), nonaktif `Icon/Tertiary`.
+  - Indikator 2 Primary 600, digambar di atas divider. Gap ikon ↔ label 6 (nilai mentah; token `Tab/Gap` = 4 tidak dipakai).
+- **Scrim** (`Scrim=True`): placeholder loading 109×20, radius 16, gradasi abu dengan nilai mentah di `AmarTabTokens.ScrimColors`.
