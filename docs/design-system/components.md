@@ -31,6 +31,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Feedback | Spinner (ikon) | [536:1213](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=536-1213) | 1 | `components/feedback/AmarSpinner.kt` | `AmarSpinner` | lewat Button | ✅ Geometri & opacity sama |
 | Feedback | Alert | [683:300](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=683-300) | 12 (Style × Type) | `components/feedback/AmarAlert.kt` | `AmarAlert` | 12 varian + opsi | ✅ Terverifikasi visual (Roborazzi vs Figma, 2026-10-06) |
 | Layout & Content | Divider | [1123:142](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1123-142) | 6 (Orientation × Weight) | `components/layout/AmarDivider.kt` | `AmarDivider` | 6 varian | ✅ Terverifikasi visual (warna & ukuran sama dengan Figma, 2026-10-06) |
+| Layout & Content | Card | [954:2473](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=954-2473) | 7 (Type × Style; Default + Selected tidak ada) | `components/layout/AmarCard.kt` | `AmarCard` (2 overload: Type=Default, Type=Custom) | 4 (per Style) = 7 varian | ✅ Terverifikasi visual (Default/Default & Custom/Selected: ukuran sama, selisih di luar teks rata-rata 0,17/255, 2026-10-06) |
 
 ## Catatan per komponen
 
@@ -183,6 +184,27 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 
 ### Catatan aset (berlaku umum)
 Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2, di Info Box 1,67, close 12 di Badge 1,5. Ikon `default` juga diekspor dengan potongan berbeda di 16/20/24. Karena itu aset diambil dari ekspor instance tiap komponen, bukan dari satu master yang diskalakan.
+
+### Card
+- **Properti Figma → parameter**:
+  - `Type` → overload: `AmarCard(label, …)` = Default, `AmarCard(style) { … }` = Custom (isi = `Slot`).
+  - `Style` → `AmarCardStyle` (Default, Border, Shadow, Selected). `Type=Default` + `Selected` tidak ada di Figma; overload Default menolaknya dengan `require`.
+  - Default: `Edit Description`/`Description` → `description`; `Show Icon`/`Icon` → `icon`; `Show Action` → `showAction` (chevron right); `Show Slot`/`Slot` → `slot`; `Button` → `buttonLabel` + `onButtonClick` (Primary Medium, lebar penuh).
+  - `onClick` (bukan properti Figma): seluruh kartu bisa diketuk, tanpa ripple (mengikuti keputusan Button). Selected memberi semantik `selected`.
+- **Token** (`AmarCardTokens`):
+  - Padding 16 (`Card/Padding`), gap 16 (`Spacing/Gap/LG`) antara heading, slot, dan tombol.
+  - Ikon ↔ teks 12 dan label ↔ deskripsi 4 (nilai mentah).
+  - Radius `Radius/Container` (16). Latar `Surface/Base`; Selected `Background/Brand Subtle`.
+  - Border 1 di sisi dalam: Border `Border/Color/Strong`, Selected `Action/Focus`. Shadow `Shadow/Floating`.
+  - Label `Heading/SM` + `Content/Primary`; deskripsi `Label/MD` + `Content/Secondary`; chevron `Icon/Primary`.
+- **Lebar**: komponen tidak mengunci lebar (328 di Figma).
+- **Verifikasi** (`AmarCardScreenshotTest`, 1x, margin 16): ukuran 328×144 dan 328×66 sama; selisih di luar teks rata-rata 0,17/255; selisih hanya di glyph teks (rasterizer) dan anti-aliasing sudut.
+- **Temuan Figma**:
+  1. `Type=Default, Style=Shadow` **tidak punya efek shadow** (tampil sama dengan Style=Default); hanya `Type=Custom, Style=Shadow` yang memakai `Shadow/Floating`. Kode memberi `Shadow/Floating` ke kedua Type agar Style konsisten. Perlu konfirmasi desainer.
+  2. `Show Icon` default `True` dengan slot 32 kosong, sehingga label di master bergeser 44. Di kode `icon = null` menyembunyikan slot.
+  3. Slot di `Type=Default` lebarnya tetap 326 (bukan Fill 296 seperti di Custom). Di kode slot mengisi lebar konten.
+  4. Label heading tidak diekspos sebagai properti TEXT di Figma; di kode tetap menjadi parameter `label`.
+- **Pemakaian di layar produk**: Custom/Border (Document Upload, 45×), Custom/Shadow (TL Dashboard, 8×).
 
 ### Modal / Default dan Element / Illustration Modal
 - **Properti Figma → parameter**: `Show Title`/`TItle` → `title`; `Show Description`/`Description` → `description`; `Show Illustration` → `illustration`; `Show Slot`/`Slot` → `slot`; Button Group Side → `primaryLabel` + `secondLabel`. `Scroll State` diturunkan otomatis.

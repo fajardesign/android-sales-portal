@@ -252,3 +252,15 @@ object AmarNavigationBarTokens {
     /** Top indicator of the active item (raw stroke weight in Figma). */
     val IndicatorHeight = AmarSpace.S4
 }
+
+/** `Card` layout tokens. Radius is `Radius/Container` ([AmarShapes.container]). */
+object AmarCardTokens {
+    /** `Card/Padding` → Spacing/Padding/MD → Space/16, all sides. */
+    val Padding = AmarSpace.S16
+    /** Spacing/Gap/LG → Space/16: heading ↔ slot ↔ button, and heading ↔ action chevron. */
+    val Gap = AmarSpace.S16
+    /** Icon slot ↔ text in the heading (raw value in Figma). */
+    val HeadingGap = AmarSpace.S12
+    /** Label ↔ description (raw value in Figma). */
+    val TextGap = AmarSpace.S4
+}

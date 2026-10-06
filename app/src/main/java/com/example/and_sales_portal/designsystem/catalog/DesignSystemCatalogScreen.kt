@@ -74,6 +74,8 @@ import com.example.and_sales_portal.designsystem.components.inputs.AmarTextField
 import com.example.and_sales_portal.designsystem.components.inputs.AmarTextFieldType
 import com.example.and_sales_portal.designsystem.components.inputs.AmarToggle
 import com.example.and_sales_portal.designsystem.components.inputs.AmarToggleSize
+import com.example.and_sales_portal.designsystem.components.layout.AmarCard
+import com.example.and_sales_portal.designsystem.components.layout.AmarCardStyle
 import com.example.and_sales_portal.designsystem.components.layout.AmarDivider
 import com.example.and_sales_portal.designsystem.components.layout.AmarDividerOrientation
 import com.example.and_sales_portal.designsystem.components.layout.AmarDividerWeight
@@ -516,6 +518,37 @@ private fun LayoutSection() {
         AmarDividerWeight.entries.forEach { AmarDivider(weight = it) }
         Row(Modifier.height(AmarSpace.S40), horizontalArrangement = Arrangement.spacedBy(AmarSpace.S16)) {
             AmarDividerWeight.entries.forEach { AmarDivider(orientation = AmarDividerOrientation.Vertical, weight = it) }
+        }
+    }
+    Group("Card / Type=Default") {
+        listOf(AmarCardStyle.Default, AmarCardStyle.Border, AmarCardStyle.Shadow).forEach { style ->
+            AmarCard(
+                label = "Card ${style.name}",
+                style = style,
+                description = "Insert the description here.",
+                icon = {
+                    Icon(
+                        painterResource(R.drawable.ds_ic_files_24), null,
+                        Modifier.size(AmarTheme.iconSizes.xl), tint = AmarTheme.colors.icon.brand,
+                    )
+                },
+                showAction = true,
+                buttonLabel = "Button",
+                onButtonClick = {},
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+    Group("Card / Type=Custom (ketuk untuk Selected)") {
+        var selected by remember { mutableStateOf(AmarCardStyle.Default) }
+        listOf(AmarCardStyle.Default, AmarCardStyle.Border, AmarCardStyle.Shadow).forEach { style ->
+            AmarCard(
+                style = if (selected == style) AmarCardStyle.Selected else style,
+                onClick = { selected = style },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Style=${style.name}", style = AmarTheme.typography.labelMd, color = AmarTheme.colors.content.primary)
+            }
         }
     }
 }
