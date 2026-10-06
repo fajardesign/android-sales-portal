@@ -5,6 +5,9 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 
 | Kelompok | Komponen Figma | Node | Varian | File Kotlin | Composable | Preview | Status |
 |---|---|---|---|---|---|---|---|
+| Inputs | Element / Toggle | [671:2227](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=671-2227) | 8 (State × Size × Active) | `components/inputs/AmarToggle.kt` | `AmarToggle` | 8 varian | ✅ Terverifikasi visual (frame 304×100) |
+| Inputs | Selection Control | [466:277](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=466-277) | 32 (Checked × Size × Type × Disabled × Icon Only) | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionControl` | 4 (Type × Size), masing-masing 8 | ✅ Terverifikasi visual (6 varian) |
+| Inputs | Element / Icon | [463:320](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=463-320) | 24 | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionIcon` | 24 varian | ✅ lewat Selection Control |
 | Actions | Button | [60:337](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=60-337) | 180 (Type × Size × State × Icon Only × Inverse) | `components/actions/AmarButton.kt` | `AmarButton` | 10 (Type × Inverse), masing-masing 18 varian | ✅ Terverifikasi visual (8 varian representatif, 2026-10-06) |
 | Actions | Elements / Button Group | [455:432](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=455-432) | 2 (Stack, Side) | `components/actions/AmarButtonGroup.kt` | `AmarButtonGroup` | 5 kombinasi | ✅ Terverifikasi visual (geometri sama persis) |
 | Feedback | Spinner (ikon) | [536:1213](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=536-1213) | 1 | `components/feedback/AmarSpinner.kt` | `AmarSpinner` | lewat Button | ✅ Geometri & opacity sama |
@@ -72,3 +75,21 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 ### Spinner
 - 8 batang 3,27 × 7,64 (radius 1,64) dalam bingkai 24, searah jarum jam dari atas, dengan opacity 1 / .15 / .27 / .39 / .51 / .63 / .75 / .87.
 - Diskalakan sesuai ukuran ikon. Animasi tidak ada di Figma (lihat keputusan Button).
+
+### Toggle
+- **Properti Figma → parameter**: `Active` → `checked`; `State` → `enabled`; `Size` → `AmarToggleSize`.
+- **Token**: track Active `action.primary.background`, Inactive `background.subtle`; knob `surface.base` dengan shadow `Shadow/Floating`. Ukuran 44×24 (knob 20) dan 36×20 (knob 16), padding 2.
+- **Disabled**: seluruh toggle opacity 0,5. Ini opacity layer mentah di Figma, tanpa token (`AmarToggleTokens.DisabledOpacity`).
+- Knob berpindah tanpa animasi karena Figma tidak mendefinisikan motion.
+- **Temuan Figma**: varian Disabled Small Active memakai `Background/Active`, sedangkan Medium memakai `Background/Disabled Active`. Nilainya sama, jadi tidak ada beda visual.
+
+### Selection Control dan Element / Icon
+- **Properti Figma → parameter**: `Checked` → `checked`; `Type` → `AmarSelectionType`; `Size` → `AmarSelectionSize`; `Disabled` → `enabled`; `Edit/Show Label` → `label`; `Edit/Show Description` → `description`; `Icon Only` → keduanya `null`. `Indeterminate` hanya ada di `AmarSelectionIcon`.
+- **Token**:
+  - Kotak checked `Selection/Background`, tanda `Selection/Icon`, border `Selection/Border Color` (1dp).
+  - Disabled: kotak opacity 0,5. Kotak unchecked disabled ditambah `Selection/Background Disabled`. Teks memakai `Content/Disabled`.
+  - Medium: kotak 24 (radius 6), gap 12, label `Label/LG Medium`, deskripsi `Label/LG`.
+  - Small: kotak 16 (radius 4), gap 8, label `Label/MD Medium`, deskripsi `Label/MD`.
+- **Aset**: `ds_selection_{check,minus}_{md,sm}.xml` digambar dalam koordinat kotak. Alasannya, Figma mempertahankan ketebalan stroke (2 / 1,67) saat ikon diperkecil, dan koordinat kotak menghindari pembulatan offset 3,6dp. Titik radio digambar sebagai lingkaran float.
+- **Verifikasi**: kotak, tanda centang, dan titik radio cocok (rata-rata selisih ≤1,2/255). Posisi X teks sama; Y 1 px lebih tinggi; lebar deskripsi 3 px lebih sempit (rasterizer).
+- **Temuan Figma**: varian Radio + `Indeterminate` ada, tetapi tampilannya sama dengan Checked.

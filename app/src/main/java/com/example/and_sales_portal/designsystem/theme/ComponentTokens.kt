@@ -50,3 +50,46 @@ object AmarButtonGroupTokens {
     /** Gap between buttons: `Component/Modal/Default/Gap/Button` → Space/12. */
     val Gap = AmarSpace.S12
 }
+
+/** `Element / Toggle` sizes for one Figma `Size`. */
+class AmarToggleSizeTokens internal constructor(val width: Dp, val height: Dp, val knob: Dp)
+
+/** `Component/Toggle/...` tokens. */
+object AmarToggleTokens {
+    val Medium = AmarToggleSizeTokens(width = 44.dp, height = AmarSpace.S24, knob = 20.dp)
+    val Small = AmarToggleSizeTokens(width = 36.dp, height = 20.dp, knob = AmarSpace.S16)
+    /** `Toggle/Padding` → Spacing/Padding/3XS. */
+    val Padding = AmarSpace.S2
+    /** Layer opacity of `State=Disabled` (raw value in Figma, no token). */
+    const val DisabledOpacity = 0.5f
+}
+
+/** `Element / Icon` + `Selection Control` sizes for one Figma `Size`. */
+class AmarSelectionSizeTokens internal constructor(
+    val box: Dp,
+    val radius: Dp,
+    /** Radio dot diameter. */
+    val dot: Dp,
+    /** `Selection/Gap/…`: gap between box and text. */
+    val gap: Dp,
+    /** Gap between label and description. */
+    val contentGap: Dp,
+)
+
+/** `Component/Selection/...` tokens. */
+object AmarSelectionTokens {
+    val Medium = AmarSelectionSizeTokens(
+        box = AmarSpace.S24, radius = AmarRadius.R6, dot = 9.6.dp,
+        gap = AmarSpace.S12, contentGap = AmarSpace.S2,
+    )
+    val Small = AmarSelectionSizeTokens(
+        box = AmarSpace.S16, radius = AmarRadius.R4, dot = 6.dp,
+        gap = AmarSpace.S8, contentGap = AmarSpace.S0,
+    )
+    /** Vertical padding of a Selection Control row (Icon Only has none). */
+    val PaddingVertical = AmarSpace.S12
+    /** Top padding of the box frame, aligning it with the first text line. */
+    val BoxOffsetTop = AmarSpace.S2
+    /** Layer opacity of disabled `Element / Icon` (raw value in Figma, no token). */
+    const val DisabledOpacity = 0.5f
+}

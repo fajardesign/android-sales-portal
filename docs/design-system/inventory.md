@@ -25,7 +25,7 @@ Kolom **Rencana** (disetujui 2026-10-06, mengikuti rekomendasi): `✅ bangun` / 
 | Divider | [1123:137](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1123-137) | 1 set |
 | Bottom Sheet | [706:139](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=706-139) | 3 set + 3 lepas |
 | Card | [837:683](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=837-683) | 4 set + 2 lepas |
-| Chip | [3241:2413](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2413) | 2 set |
+| Chip | [3241:2413](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2413) | ⛔ blocker |
 | Code | [622:137](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=622-137) | 3 set |
 | Info | [500:750](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=500-750) | 1 set |
 | Input Text | [152:1046](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=152-1046) | 3 set + 2 lepas |
@@ -57,7 +57,7 @@ Kolom **Rencana** (disetujui 2026-10-06, mengikuti rekomendasi): `✅ bangun` / 
 | Elements / Button Native | [191:250](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=191-250) | 3 | Type=Primary/Secondary/Destructive | ❌ |
 | Elements / Button Group Native | [191:280](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=191-280) | 2 | State=Stack/Side · 2nd/3rd Button | ❌ |
 | Chip | [3241:2467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2467) | 11 ⚠ (dari 12) | Supporting=Default/Close/Disabled/Counter/Dropdown/Delete · Selected | ✅ |
-| Filter (chip row) | [3241:2520](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2520) | 4 | Active · Scroll · Option (slot) | ✅ |
+| Filter (chip row) | [3241:2520](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2520) | 4 | Active · Scroll · Option (slot) | ⛔ blocker |
 
 ## Inputs
 
@@ -180,6 +180,7 @@ Tidak relevan untuk library aplikasi Android sales, atau bukan komponen aplikasi
 | Halaman Pages, Arrow Link, App Update | `791:535`, `3307:3992`, `417:2192` | Tidak berisi komponen |
 
 ## Temuan & hal ambigu
+0. **⛔ Chip & Filter (2026-10-06)**: semua binding `Component/Chip/*` adalah variabel **remote dari library lain** (bukan koleksi lokal file ini). Contoh: border → `Border/Color/Stronger` (tidak ada di DS ini), padding vertikal memakai `Selection/Radius Medium`. Ditunda sampai desainer mengikat ulang ke variabel lokal (aturan #1 dan #8).
 1. **Bottom Sheet `Inverse` hanya punya opsi `False`.** Deskripsi komponen dan aturan CLAUDE.md #7 mewajibkan `Inverse=True` untuk ilustrasi gelap, tetapi varian `True` tidak ada di Figma. Perlu konfirmasi desainer sebelum dibangun.
 2. **Set tidak lengkap** (jumlah varian < kombinasi): Chip 11/12, Card 7/8, App Bar 8/12, Element / Icon 24/32, Bottom Sheet 4/16. Kombinasi yang hilang tidak akan dibuat tanpa konfirmasi.
 3. **Nama ambigu / typo**: `Element / Stepper / Step` State=`State4`; `Elemet / User ID`; `Disabled - Fillled`; `TItle` (Modal / Default); `Pernission Device Data`; `Not Eligable Age`.
