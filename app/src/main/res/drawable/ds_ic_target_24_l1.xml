@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "target" 3110:7287 (24x24, layer 1 of 3; Figma colour #ffffff = Icon/Inverse). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M8.939,4.611C13.02,2.92 17.698,4.859 19.389,8.94C21.08,13.02 19.141,17.698 15.06,19.389C10.979,21.08 6.301,19.141 4.611,15.06C2.921,10.98 4.859,6.302 8.939,4.611Z"
+      android:fillColor="#FF000000"
+      android:fillType="evenOdd"/>
+</vector>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "logout" 1173:1599 (24x24; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M2.996,12H14.001"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M11,8.999L14.001,12L11,15.001"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M5.997,9.136V7.398C5.998,6.445 6.671,5.624 7.606,5.437L18.611,3.03C19.225,2.959 19.84,3.157 20.298,3.572C20.757,3.987 21.014,4.579 21.004,5.197V19.003C21.004,19.593 20.744,20.153 20.293,20.534C19.841,20.914 19.245,21.076 18.664,20.976L7.659,19.083C6.699,18.918 5.997,18.085 5.997,17.11V14.972"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+</vector>

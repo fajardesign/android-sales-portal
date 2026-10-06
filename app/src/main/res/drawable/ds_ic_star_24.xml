@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "star" 1655:7495 (24x24; Figma colour #cdd5dc = Content/Quaternary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M7.731,20.833C7.224,21.097 6.611,21.051 6.149,20.712C5.688,20.374 5.459,19.803 5.559,19.24L6.369,14.601L2.961,11.336C2.545,10.939 2.392,10.338 2.568,9.79C2.745,9.242 3.219,8.844 3.789,8.764L8.52,8.087L10.655,3.827C10.909,3.316 11.43,2.992 12,2.992C12.57,2.992 13.091,3.316 13.345,3.827L15.48,8.087L20.211,8.764C20.781,8.844 21.255,9.242 21.432,9.79C21.608,10.338 21.455,10.939 21.039,11.336L17.631,14.601L18.441,19.241C18.541,19.804 18.312,20.375 17.851,20.713C17.389,21.052 16.776,21.098 16.269,20.834L12,18.628L7.731,20.833Z"
+      android:fillColor="#FF000000"
+      android:fillType="evenOdd"/>
+</vector>

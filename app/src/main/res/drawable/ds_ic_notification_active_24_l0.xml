@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "notification_active" 954:1741 (24x24, layer 0 of 2; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M11.247,20.057L11.372,20.4C11.805,21.589 13.12,22.202 14.309,21.769C15.499,21.336 16.112,20.021 15.679,18.832L15.555,18.489"
+      android:fillColor="#FF000000"
+      android:fillType="evenOdd"/>
+  <path
+      android:pathData="M11.414,5.531L11.1,4.669C10.754,3.718 9.703,3.227 8.751,3.573C7.799,3.92 7.309,4.971 7.655,5.922L7.969,6.785"
+      android:fillColor="#FF000000"
+      android:fillType="evenOdd"/>
+  <path
+      android:pathData="M6.1,12.187C5.244,9.835 6.457,7.235 8.808,6.38L10.512,5.76C12.864,4.904 15.464,6.117 16.319,8.468L17.276,11.096C17.457,11.594 17.83,12 18.31,12.224L19.132,12.607C19.612,12.832 19.985,13.238 20.166,13.736C20.523,14.717 20.017,15.801 19.037,16.158L8.962,19.825C7.981,20.182 6.897,19.676 6.54,18.695C6.358,18.197 6.383,17.647 6.607,17.166L6.99,16.345C7.214,15.864 7.238,15.314 7.057,14.816L6.1,12.187Z"
+      android:fillColor="#FF000000"
+      android:fillType="evenOdd"/>
+</vector>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "warning" 509:747 (24x24, layer 0 of 2; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M14.029,4.173L21.689,17.518C22.579,19.069 21.454,21 19.66,21H4.341C2.546,21 1.421,19.069 2.312,17.518L9.971,4.173C10.868,2.609 13.132,2.609 14.029,4.173Z"
+      android:fillColor="#FF000000"
+      android:fillType="evenOdd"/>
+</vector>

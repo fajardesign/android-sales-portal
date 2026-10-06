@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "arrow_up_down" 3094:6795 (24x24; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M21.307,7.893C21.698,8.283 21.697,8.916 21.307,9.307C20.917,9.697 20.284,9.697 19.893,9.307L17,6.413L14.107,9.307C13.716,9.697 13.083,9.697 12.693,9.307C12.302,8.916 12.302,8.283 12.693,7.893L16.293,4.293C16.684,3.903 17.317,3.902 17.707,4.293L21.307,7.893Z"
+      android:fillColor="#FF000000"/>
+  <path
+      android:pathData="M18,19C18,19.552 17.552,20 17,20C16.448,20 16,19.552 16,19L16,5C16,4.448 16.448,4 17,4C17.552,4 18,4.448 18,5L18,19Z"
+      android:fillColor="#FF000000"/>
+  <path
+      android:pathData="M11.307,14.693C11.698,15.083 11.698,15.717 11.307,16.107L7.707,19.707C7.317,20.097 6.684,20.097 6.293,19.707L2.693,16.107C2.302,15.717 2.302,15.083 2.693,14.693C3.083,14.302 3.716,14.302 4.107,14.693L7,17.586L9.893,14.693C10.283,14.302 10.917,14.302 11.307,14.693Z"
+      android:fillColor="#FF000000"/>
+  <path
+      android:pathData="M8,19C8,19.552 7.552,20 7,20C6.448,20 6,19.552 6,19L6,5C6,4.448 6.448,4 7,4C7.552,4 8,4.448 8,5L8,19Z"
+      android:fillColor="#FF000000"/>
+</vector>
