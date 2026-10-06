@@ -98,7 +98,7 @@ Kolom **Rencana** (disetujui 2026-10-06, mengikuti rekomendasi): `✅ bangun` / 
 | Overlay | [163:334](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=163-334) | 2 | State=Default/Modal · Spinner | ✅ |
 | Modal / Biometric | [452:348](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=452-348) | 6 | Type=Attempts Exceeded/Permission/Not Recognized · Biometric=Face ID/Touch ID | ✅ |
 | Face ID / Process | [147:519](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=147-519) | 2 | State=Authenticating/Success | ✅ |
-| Modal / Permission | [417:2203](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=417-2203) | 14 | Permission=Location/Camera/Microphone/Gallery/Contact/Notification/Tracker · Disabled | ✅ |
+| Modal / Permission | [417:2203](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=417-2203) | 14 | Permission=Location/Camera/Microphone/Gallery/Contact/Notification/Tracker · Disabled | ❓ usul ❌ (dialog izin iOS; di Android dirender OS) |
 | Element / Permission / Location | [416:345](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=416-345) | 2 | Precise Location | ✅ |
 | Element / Permission / Illustration | [514:1416](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=514-1416) | 6 | Permission (6) | ✅ |
 | Bottom Sheet / Permission | [897:1421](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=897-1421) | lepas | — | ✅ |

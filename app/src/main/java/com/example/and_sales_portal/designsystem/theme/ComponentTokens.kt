@@ -134,3 +134,52 @@ object AmarCodeVerificationTokens {
     /** Gap between digits (`Layout/Gap Input`) and between digits and hint (Spacing/Gap/SM). */
     val Gap = AmarSpace.S8
 }
+
+/** `Info Box` layout tokens. */
+object AmarInfoBoxTokens {
+    /** Spacing/Padding/SM on all sides; bottom becomes Spacing/Padding/MD when the Button is shown. */
+    val Padding = AmarSpace.S12
+    val PaddingBottomWithButton = AmarSpace.S16
+    /** Spacing/Gap/MD: icon ↔ content ↔ close, and text ↔ button. */
+    val Gap = AmarSpace.S12
+    /** Spacing/Gap/XS: label ↔ description. */
+    val TextGap = AmarSpace.S4
+}
+
+/** Badge padding for one `Size` × `Supporting` combination (raw `Component/Badge/Size/...` values). */
+class AmarBadgePadding internal constructor(val start: Dp, val top: Dp, val end: Dp, val bottom: Dp, val gap: Dp)
+
+/** `Component/Badge/...` layout tokens, per Figma `Size`. */
+class AmarBadgeSizeTokens internal constructor(
+    val default: AmarBadgePadding,
+    val close: AmarBadgePadding,
+    val counter: AmarBadgePadding,
+    val leftIcon: AmarBadgePadding,
+)
+
+object AmarBadgeTokens {
+    val Small = AmarBadgeSizeTokens(
+        default = AmarBadgePadding(8.dp, 3.dp, 8.dp, 3.dp, 2.dp),
+        close = AmarBadgePadding(8.dp, 3.dp, 3.dp, 3.dp, 2.dp),
+        counter = AmarBadgePadding(8.dp, 3.dp, 3.dp, 3.dp, 4.dp),
+        leftIcon = AmarBadgePadding(6.dp, 2.dp, 8.dp, 2.dp, 2.dp),
+    )
+    val Medium = AmarBadgeSizeTokens(
+        default = AmarBadgePadding(10.dp, 2.dp, 10.dp, 2.dp, 2.dp),
+        close = AmarBadgePadding(10.dp, 2.dp, 4.dp, 2.dp, 2.dp),
+        counter = AmarBadgePadding(10.dp, 2.dp, 4.dp, 2.dp, 6.dp),
+        leftIcon = AmarBadgePadding(8.dp, 2.dp, 10.dp, 2.dp, 2.dp),
+    )
+    val Large = AmarBadgeSizeTokens(
+        default = AmarBadgePadding(12.dp, 4.dp, 12.dp, 4.dp, 2.dp),
+        close = AmarBadgePadding(12.dp, 4.dp, 6.dp, 4.dp, 2.dp),
+        counter = AmarBadgePadding(12.dp, 4.dp, 6.dp, 4.dp, 6.dp),
+        leftIcon = AmarBadgePadding(10.dp, 4.dp, 12.dp, 4.dp, 4.dp),
+    )
+    /** Close frame (16) with Spacing/Padding/3XS around the 12dp icon (`Badge/Icon Size`). */
+    val CloseFrame = AmarSpace.S16
+    val CloseIcon = AmarSpace.S12
+    /** Counter circle and left icon size. */
+    val CounterSize = AmarSpace.S16
+    val LeftIconSize = AmarSpace.S16
+}

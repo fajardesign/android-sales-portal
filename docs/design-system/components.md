@@ -5,6 +5,9 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 
 | Kelompok | Komponen Figma | Node | Varian | File Kotlin | Composable | Preview | Status |
 |---|---|---|---|---|---|---|---|
+| Feedback | Info Box | [676:2342](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=676-2342) | 20 (Type × Button × Show Label) | `components/feedback/AmarInfoBox.kt` | `AmarInfoBox` | 5 (per Type) × 4 | ✅ Terverifikasi visual (4 varian) |
+| Feedback | Badge | [981:4166](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=981-4166) | 96 (Type × Size × Supporting × Solid) | `components/feedback/AmarBadge.kt` | `AmarBadge` | 8 (Type × Solid) × 12 | ✅ Terverifikasi visual (7 varian) |
+| Feedback | Overlay | [163:334](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=163-334) | 2 (State) | `components/feedback/AmarOverlay.kt` | `AmarOverlay` | 3 | ✅ Warna token; ⚠ warna spinner menunggu konfirmasi |
 | Inputs | Input | [236:235](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=236-235) | 60 (Type × State × Error) | `components/inputs/AmarTextField.kt` | `AmarTextField` | 5 (per Type), masing-masing 8 state statis | ✅ Terverifikasi visual (8 varian) |
 | Inputs | Dropdown | [640:1400](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=640-1400) | 8 (State × Error) | `components/inputs/AmarDropdown.kt` | `AmarDropdown` | 8 varian | ✅ Terverifikasi visual (2 varian) |
 | Inputs | Area | [311:744](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=311-744) | 12 (State × Error) | `components/inputs/AmarTextArea.kt` | `AmarTextArea` | 8 state statis | ✅ Terverifikasi visual (2 varian) |
@@ -142,3 +145,33 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 7. Instance ikon info di `Input / Label` kosong (tidak merender apa pun). Kode memakai master `info sm` (`Icon/Primary`).
 8. Code Verification `Disabled - Error` (OTP dan PIN) tidak berisi kotak digit, hanya hint. Di kode: digit disabled + hint error.
 9. Placeholder `content.quaternary` (#CDD5DC) di atas putih kontrasnya sekitar 1,5:1, di bawah pedoman aksesibilitas.
+
+### Info Box
+- **Properti Figma → parameter**: `Type` → `AmarInfoBoxType` (termasuk Neutral); `Message` → `message`; `Show Label` + `Label` → `label`; `Icon` / `Change Icon` → `showIcon` / `icon`; `Button` → `buttonLabel` + `onButtonClick`; `Close` → `onClose`.
+- **Token**:
+  - Latar `feedback.<type>.surface`, border `feedback.<type>.border` (1), radius 12 (`Radius/Card`).
+  - Padding 12; padding bawah 16 bila ada tombol. Gap 12; label ↔ deskripsi 4.
+  - Label `Label/MD Medium` + `content.primary`; deskripsi `Label/MD` + `content.secondary`.
+  - Tombol: teks naked `Label/Button/MD` berwarna `feedback.<type>.text`.
+  - Close `icon.tertiary`.
+- **Aset**: ikon `info` dua warna = `ds_infobox_info_circle_20` (warna tipe) + `ds_infobox_info_mark_20` (`Info Box/Action Icon`, putih). Close memakai `ds_infobox_close_20` (stroke 1,67).
+
+### Badge
+- **`Supporting` → parameter opsional**: Default (tidak ada), Close (`onClose`), Counter (`count`), Left Icon (`leftIcon`).
+- **Padding** per Size × Supporting disalin dari Figma (`AmarBadgeTokens`). Contoh: Medium Default 10/2, Close 10/2/4/2.
+- **Teks**: Small `Label/Button/SM`, lainnya `Label/Button/MD`.
+- **Warna non-solid**:
+  - Latar `feedback.<t>.background` (50), border `borderSubtle` (1), teks `text` (700).
+  - Ikon kiri `iconStrong`, close `iconSubtle`, counter `text`.
+- **Warna solid**: latar `solidBackground`, teks dan ikon `solidText`, tanpa border.
+- **Counter**: lingkaran 16 dengan angka `Label/SM` yang "dilubangi" (Figma: Exclude). Di kode, angka digambar dengan warna latar badge.
+- **Aset**: `ds_badge_close_12` (stroke 1,5), `ds_ic_default_16` (ekspor 16 dari Badge).
+- **Temuan Figma**: Small + Left Icon tingginya 20 (padding Y 2), sedangkan Small lainnya 22.
+
+### Overlay
+- Default `overlay.default` (#0B1220 @40%); Modal `overlay.modal`. Menahan sentuhan; `onClick` opsional untuk menutup.
+- Spinner 56 di tengah (hanya State=Default).
+- ⚠ **Warna spinner**: instance di Figma meng-override warnanya pada layer tersembunyi, sehingga nilainya tidak terbaca. Master `Icon/Primary` (gelap). Sementara memakai `Icon/Inverse` sampai dikonfirmasi.
+
+### Catatan aset (berlaku umum)
+Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2, di Info Box 1,67, close 12 di Badge 1,5. Ikon `default` juga diekspor dengan potongan berbeda di 16/20/24. Karena itu aset diambil dari ekspor instance tiap komponen, bukan dari satu master yang diskalakan.
