@@ -5,9 +5,11 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 
 | Kelompok | Komponen Figma | Node | Varian | File Kotlin | Composable | Preview | Status |
 |---|---|---|---|---|---|---|---|
+| Feedback | Modal / Default | [1034:656](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1034-656) | 3 (Scroll State) | `components/feedback/AmarModal.kt` | `AmarModal` | Default + scroll | ✅ Terverifikasi visual (Default: ukuran & posisi tombol sama) |
+| Feedback | Element / Illustration Modal | [486:1867](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=486-1867) | 2 (Fullscreen) | `components/feedback/AmarModal.kt` | `AmarModalIllustration` | lewat Modal | ✅ dari spesifikasi Figma |
 | Feedback | Info Box | [676:2342](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=676-2342) | 20 (Type × Button × Show Label) | `components/feedback/AmarInfoBox.kt` | `AmarInfoBox` | 5 (per Type) × 4 | ✅ Terverifikasi visual (4 varian) |
 | Feedback | Badge | [981:4166](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=981-4166) | 96 (Type × Size × Supporting × Solid) | `components/feedback/AmarBadge.kt` | `AmarBadge` | 8 (Type × Solid) × 12 | ✅ Terverifikasi visual (7 varian) |
-| Feedback | Overlay | [163:334](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=163-334) | 2 (State) | `components/feedback/AmarOverlay.kt` | `AmarOverlay` | 3 | ✅ Warna token; ⚠ warna spinner menunggu konfirmasi |
+| Feedback | Overlay | [163:334](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=163-334) | 2 (State) | `components/feedback/AmarOverlay.kt` | `AmarOverlay` | 3 | ✅ Warna token; spinner `Icon/Inverse` (disetujui) |
 | Inputs | Input | [236:235](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=236-235) | 60 (Type × State × Error) | `components/inputs/AmarTextField.kt` | `AmarTextField` | 5 (per Type), masing-masing 8 state statis | ✅ Terverifikasi visual (8 varian) |
 | Inputs | Dropdown | [640:1400](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=640-1400) | 8 (State × Error) | `components/inputs/AmarDropdown.kt` | `AmarDropdown` | 8 varian | ✅ Terverifikasi visual (2 varian) |
 | Inputs | Area | [311:744](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=311-744) | 12 (State × Error) | `components/inputs/AmarTextArea.kt` | `AmarTextArea` | 8 state statis | ✅ Terverifikasi visual (2 varian) |
@@ -171,7 +173,19 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 ### Overlay
 - Default `overlay.default` (#0B1220 @40%); Modal `overlay.modal`. Menahan sentuhan; `onClick` opsional untuk menutup.
 - Spinner 56 di tengah (hanya State=Default).
-- ⚠ **Warna spinner**: instance di Figma meng-override warnanya pada layer tersembunyi, sehingga nilainya tidak terbaca. Master `Icon/Primary` (gelap). Sementara memakai `Icon/Inverse` sampai dikonfirmasi.
+- **Warna spinner**: `Icon/Inverse` (putih), disetujui 2026-10-06. Override di Figma tidak bisa dibaca karena layernya tersembunyi.
 
 ### Catatan aset (berlaku umum)
 Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2, di Info Box 1,67, close 12 di Badge 1,5. Ikon `default` juga diekspor dengan potongan berbeda di 16/20/24. Karena itu aset diambil dari ekspor instance tiap komponen, bukan dari satu master yang diskalakan.
+
+### Modal / Default dan Element / Illustration Modal
+- **Properti Figma → parameter**: `Show Title`/`TItle` → `title`; `Show Description`/`Description` → `description`; `Show Illustration` → `illustration`; `Show Slot`/`Slot` → `slot`; Button Group Side → `primaryLabel` + `secondLabel`. `Scroll State` diturunkan otomatis.
+- **Keputusan (disetujui 2026-10-06)**:
+  - Lebar 328, mengikuti komponen. Variabel `Modal/Default/Width` dan ilustrasi bernilai 342.
+  - Efek tepi atas Scroll - Bottom berupa gradasi `Background/Base` 90% → transparan setinggi 40. Background blur dari Figma **tidak bisa** dibuat di Compose di versi Android mana pun (Compose tidak bisa mem-blur isi di belakang layer), jadi gradasi dipakai di semua versi.
+- **Layout**:
+  - Default: padding 16, gap konten ↔ tombol 24, teks ↔ slot 16, judul ↔ deskripsi 8.
+  - Saat konten bisa di-scroll: konten dan footer masing-masing padding 16. Footer diberi `Shadow/Modal` selama masih ada konten di bawah.
+- **Token**: radius 16 (`Radius/Container`), latar `background.base`, `Shadow/Modal`. Judul `Heading/MD` + `content.primary`; deskripsi `Body/LG` + `content.secondary`, rata tengah.
+- **Ilustrasi**: Fullscreen = selebar modal tanpa padding. Selain itu gambar 80 di tengah dengan padding atas 24, bawah 8.
+- **Temuan Figma**: frame teks (310) lebih lebar dari area konten (296).

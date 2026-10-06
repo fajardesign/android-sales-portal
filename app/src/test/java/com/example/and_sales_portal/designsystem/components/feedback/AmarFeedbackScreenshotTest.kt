@@ -40,3 +40,17 @@ class AmarFeedbackScreenshotTest {
         shot("badge_warning_md_counter_solid") { AmarBadge("Label", type = AmarBadgeType.Warning, solid = true, count = 1) }
     }
 }
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], qualifiers = "w360dp-h640dp-mdpi")
+class AmarModalScreenshotTest {
+    @Test
+    fun modalDefault() {
+        captureRoboImage("build/outputs/roborazzi/fb_modal_default.png") {
+            AmarTheme {
+                AmarModal("Button", {}, title = "Modal Title", description = "Description text goes here.", secondLabel = "Button")
+            }
+        }
+    }
+}

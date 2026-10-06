@@ -183,3 +183,25 @@ object AmarBadgeTokens {
     val CounterSize = AmarSpace.S16
     val LeftIconSize = AmarSpace.S16
 }
+
+/** `Component/Modal/Default/...` and `Element / Illustration Modal` tokens. */
+object AmarModalTokens {
+    /** Width of the Modal / Default component (the `Modal/Default/Width` variable says 342; agreed: 328). */
+    val Width = 328.dp
+    /** `Modal/Default/Padding` → Space/16. */
+    val Padding = AmarSpace.S16
+    /** `Modal/Default/Gap/Action` → Space/24: content ↔ buttons. */
+    val GapAction = AmarSpace.S24
+    /** `Modal/Default/Gap/Section` → Space/16: text ↔ slot. */
+    val GapSection = AmarSpace.S16
+    /** Title ↔ description. */
+    val TextGap = AmarSpace.S8
+    /** Height of the top edge fade shown once the content is scrolled (raw value in Figma). */
+    val ScrollEdgeHeight = 40.dp
+    /** Opacity of the edge fade layer (`Blur` rectangle, raw value in Figma). */
+    const val ScrollEdgeOpacity = 0.9f
+    /** Illustration (not fullscreen): padding top Spacing/Padding/LG, bottom Spacing/Gap/SM, image 80. */
+    val IllustrationPaddingTop = AmarSpace.S24
+    val IllustrationPaddingBottom = AmarSpace.S8
+    val IllustrationSize = AmarSpace.S80
+}
