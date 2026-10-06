@@ -96,6 +96,18 @@ Design system Android dibangun di repo ini dari Figma **Internal Project DS Lib 
 
 **Catatan Kotlin**: jangan menulis `/*` di dalam KDoc/komentar (mis. `` `Radius/*` ``). Kotlin menganggapnya komentar bersarang dan file gagal dikompilasi. Tulis `Radius/…`.
 
+### Struktur & alur kerja
+- Kode: `designsystem/theme` (token), `designsystem/components/<kelompok>`, `designsystem/catalog` (katalog, launcher debug "DS Catalog").
+- Dokumen: `docs/design-system/inventory.md` (status semua komponen Figma), `components.md` (Figma node → Kotlin + keputusan), `assets.md` (ikon/ilustrasi + yang gagal).
+- Komponen baru: baca node Figma (read-only) → token ke `theme/ComponentTokens.kt` → composable + `@Preview` semua varian → screenshot test di `app/src/test/.../components/` → bandingkan dengan `get_screenshot` → baris di `components.md`.
+- Aset ikon/ilustrasi: ekspor SVG dari Figma, konversi dengan `Svg2Vector` (sdk-common). Ketebalan stroke dan potongan ikon bisa berbeda per instance di Figma; ambil dari ekspor instance komponennya.
+
+### Perintah
+```bash
+./gradlew testDebugUnitTest      # unit test + DesignSystemSourceRulesTest (aturan #4, KDoc, link Figma)
+./gradlew recordRoborazziDebug   # render screenshot komponen ke app/build/outputs/roborazzi/
+```
+
 ### Brand dari bundle Web (konteks saja)
 `okf_repository_design/.../design_system/` mendokumentasikan **Web** DS (React). Untuk Android, nilai token **selalu** diambil dari Figma DS Android di atas, bukan dari Web DS. Aturan copy Web tetap berlaku: sentence case untuk judul, kata kerja singkat untuk tombol, tanpa emoji, uang `Rp 24.000.000`.
 

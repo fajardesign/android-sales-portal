@@ -14,11 +14,11 @@ class DesignSystemSourceRulesTest {
 
     private fun sources(dir: String) = File(root, dir).walkTopDown().filter { it.extension == "kt" }.toList()
 
-    /** Rule 4: colours, dp and sp only from designsystem/theme. */
+    /** Rule 4: colours, dp and sp only from designsystem/theme (components and catalog). */
     @Test
     fun componentsUseThemeTokensOnly() {
         val literal = Regex("""Color\(0x|\b\d+(\.\d+)?\.(dp|sp)\b""")
-        val violations = sources("components").flatMap { file ->
+        val violations = (sources("components") + sources("catalog")).flatMap { file ->
             file.readLines().mapIndexedNotNull { i, line ->
                 "${file.name}:${i + 1}: ${line.trim()}".takeIf { literal.containsMatchIn(line) }
             }
