@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Photos taken with the system camera in REG-06 (Dokumen Upload). -->
+<paths>
+    <cache-path name="reg_captures" path="reg_captures/" />
+</paths>
