@@ -41,6 +41,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
+import com.example.and_sales_portal.designsystem.components.actions.AmarChip
+import com.example.and_sales_portal.designsystem.components.actions.AmarChipSupporting
 import com.example.and_sales_portal.designsystem.components.brand.AmarLogo
 import com.example.and_sales_portal.designsystem.components.brand.AmarLogoType
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonGroup
@@ -313,9 +315,33 @@ private fun ShadowSample(name: String, shadow: AmarShadow) {
 
 // region Actions
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ActionsSection() {
     val icon = painterResource(R.drawable.ds_ic_default_24)
+    Group("Chip (seperti Data Bisnis: ketuk untuk memilih)") {
+        var entity by remember { mutableStateOf("PT") }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarSpace.S8), verticalArrangement = Arrangement.spacedBy(AmarSpace.S8)) {
+            listOf("PT", "CV", "Individu").forEach { AmarChip(it, entity == it, { entity = it }) }
+        }
+        var channels by remember { mutableStateOf(setOf("Online")) }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarSpace.S8), verticalArrangement = Arrangement.spacedBy(AmarSpace.S8)) {
+            listOf("Store", "Non-store", "Online", "Offline").forEach { name ->
+                AmarChip(name, name in channels, { channels = if (name in channels) channels - name else channels + name })
+            }
+        }
+    }
+    Group("Chip · Supporting") {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarSpace.S8), verticalArrangement = Arrangement.spacedBy(AmarSpace.S8)) {
+            var removed by remember { mutableStateOf(false) }
+            if (!removed) AmarChip("Close", false, {}, supporting = AmarChipSupporting.Close, onTrailingClick = { removed = true })
+            AmarChip("Counter", false, {}, supporting = AmarChipSupporting.Counter, counterValue = "3")
+            AmarChip("Counter", true, {}, supporting = AmarChipSupporting.Counter, counterValue = "3")
+            AmarChip("Dropdown", false, {}, supporting = AmarChipSupporting.Dropdown)
+            AmarChip("Delete", false, {}, supporting = AmarChipSupporting.Delete)
+            AmarChip("Disabled", true, {}, enabled = false)
+        }
+    }
     AmarButtonType.entries.forEach { type ->
         listOf(false, true).forEach { inverse ->
             Group("Button · $type${if (inverse) " · Inverse" else ""}", padded = false) {

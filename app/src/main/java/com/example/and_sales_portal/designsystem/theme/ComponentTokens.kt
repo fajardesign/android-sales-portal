@@ -351,3 +351,23 @@ object AmarBottomSheetTokens {
     val SelectionHeadingGap = AmarSpace.S12
     val SelectionTextGap = AmarSpace.S4
 }
+
+/** `Component/Chip/...` tokens. Colours come from [AmarColors] (see `AmarChip`). */
+object AmarChipTokens {
+    /** `Component/Chip/Padding X` → Spacing/Padding/SM. */
+    val PaddingX = AmarSpace.S12
+    /** Vertical padding 6: bound in Figma to `Component/Selection/Radius Medium` (a radius variable; the value is used). */
+    val PaddingY = 6.dp
+    /** `Component/Chip/Gap` → Spacing/Gap/XS (Default, Close, Delete; also icon ↔ label inside Dropdown). */
+    val Gap = AmarSpace.S4
+    /** `Component/Chip/Dropdown Gap` (Counter and Dropdown). */
+    val DropdownGap = 6.dp
+    /** `Component/Chip/Min Width`. */
+    val MinWidth = AmarSpace.S80
+    /** Counter circle (raw). */
+    val CounterSize = AmarSpace.S20
+    /** `Component/Chip/Disabled Opacity` = 50 %. */
+    const val DisabledOpacity = 0.5f
+    /** Close icon opacity in `Supporting=Close, Selected=False` only (raw layer opacity in Figma). */
+    const val CloseOpacityUnselected = 0.65f
+}

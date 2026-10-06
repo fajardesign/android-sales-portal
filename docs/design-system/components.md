@@ -37,6 +37,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Inputs | Upload Files | [1060:11764](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1060-11764) | 4 (File Added × Multiple Files) | `components/inputs/AmarUpload.kt` | `AmarUploadFiles` | 4 varian | ✅ Terverifikasi visual (4 varian: ukuran sama, border Card selisih 0; isi = Element / Upload, 2026-10-06) |
 | Actions | Button | [60:337](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=60-337) | 180 (Type × Size × State × Icon Only × Inverse) | `components/actions/AmarButton.kt` | `AmarButton` | 10 (Type × Inverse), masing-masing 18 varian | ✅ Terverifikasi visual (8 varian representatif, 2026-10-06) |
 | Actions | Elements / Button Group | [455:432](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=455-432) | 2 (Stack, Side) | `components/actions/AmarButtonGroup.kt` | `AmarButtonGroup` | 5 kombinasi | ✅ Terverifikasi visual (geometri sama persis) |
+| Actions | Chip | [3241:2467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2467) | 11 (Supporting × Selected; Delete + Selected tidak ada) | `components/actions/AmarChip.kt` | `AmarChip` | 11 varian + Disabled | ✅ Terverifikasi visual (11 varian: tinggi 32, lebar +1 px karena teks; ujung pill dan elemen trailing selisih 1,8–6/255) + area sentuh dicek di emulator |
 | Feedback | Spinner (ikon) | [536:1213](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=536-1213) | 1 | `components/feedback/AmarSpinner.kt` | `AmarSpinner` | lewat Button | ✅ Geometri & opacity sama |
 | Feedback | Alert | [683:300](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=683-300) | 12 (Style × Type) | `components/feedback/AmarAlert.kt` | `AmarAlert` | 12 varian + opsi | ✅ Terverifikasi visual (Roborazzi vs Figma, 2026-10-06) |
 | Layout & Content | Divider | [1123:142](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1123-142) | 6 (Orientation × Weight) | `components/layout/AmarDivider.kt` | `AmarDivider` | 6 varian | ✅ Terverifikasi visual (warna & ukuran sama dengan Figma, 2026-10-06) |
@@ -95,6 +96,26 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
   - Warna kontainer, border Secondary, radius 16, tinggi 56, Icon Only 56×56, serta posisi ikon dan spinner sama dengan Figma.
   - Teks sekitar 1 px lebih tinggi dan 1 px lebih lebar (rasterizer).
 - **Catatan**: Small (40dp) di bawah area sentuh 48dp. Visual tetap mengikuti Figma.
+
+### Chip
+- **Properti Figma → parameter**:
+  - `Supporting` → `AmarChipSupporting` (Default, Close, Counter, Dropdown, Delete). `Supporting=Disabled` → `enabled = false`. Delete + Selected ditolak (`require`).
+  - `Selected` → `selected`; `Label` → `label`; `Show Icon` + `Icon Slot` → `icon` (20, tidak tampil di Counter karena variannya tidak punya slot).
+  - `Counter Value` → `counterValue`; `Trailing Icon` (close) → `onTrailingClick` (opsional; tanpa itu ikon ikut klik chip). `Dropdown Icon` → chevron tetap.
+- **Token** (`AmarChipTokens`, semua variabel sudah lokal per 2026-10-06):
+  - Padding X 12 (`Component/Chip/Padding X`), Y 6 (terikat ke `Component/Selection/Radius Medium`, sebuah variabel radius; nilainya dipakai), tinggi 32.
+  - Gap 4 (`Component/Chip/Gap`), 6 untuk Counter dan Dropdown (`Dropdown Gap`); min. lebar 80; radius penuh.
+  - Disabled opacity 0,5 (`Disabled Opacity`). Ikon close di Close/Selected=False opacity 0,65 (nilai mentah).
+- **Warna**:
+  - Tidak terpilih: latar `Background/Base`, border 1 `Action/Ghost/Hover` #E6E8EA (= `background.subtle`, primitive sama), label dan ikon `Content/Secondary`, teks `Label/MD Semibold`.
+  - Terpilih: latar `Content/Link` (Primary 700), label dan ikon `Content/Inverse`.
+  - Delete: border, label, dan ikon `Feedback/Error/Border`.
+  - Counter: lingkaran 20; tidak terpilih `Background/Subtle` dengan angka Primary 700, terpilih putih dengan angka "berlubang" (warna latar chip). Figma merender angka tidak terpilih dengan Primary 600, yang gagal kontras teks (aturan #6, keputusan C5).
+- **Nama variabel tertukar di Figma**: border memakai `Component/Chip/Selected Background`, latar terpilih memakai `Component/Chip/Selected Text`. Nilainya yang diikuti.
+- **Aset**: `ds_chip_close_16` dan `ds_chip_chevron_down_16` dari instance Chip (stroke 2 dengan ujung bulat; bukan master 24 yang diskalakan, yang akan menjadi 1,33).
+- **Area sentuh**: deskripsi Figma meminta area sentuh diperluas. Compose memperluas hit-test elemen yang bisa diklik ke ukuran sentuh minimum tanpa menambah ukuran layout, jadi jarak 8 antar chip tetap. Dicek di emulator API 34: ketukan 4dp di atas tepi visual chip "CV" memilih chip itu.
+- **Verifikasi** (`AmarChipScreenshotTest`, 1x): tinggi 32 sama; lebar +1 px karena teks "Chip Label" 1 px lebih lebar (rasterizer). Ujung pill selisih 0,94/255; close, chevron, dan counter 1,8–6/255. Ikon placeholder `default` di Chip dipotong lebih kecil daripada `ds_ic_default_20` (ekspor Alert), jadi area ikon berbeda; layar produk tidak memakai ikon (Show Icon=false), dan ikon selalu diberikan pemanggil.
+- **Pemakaian di layar produk**: Default tanpa ikon, 54× tidak terpilih dan 9× terpilih, dalam baris membungkus dengan jarak 8 (Data Bisnis, Informasi PIC).
 
 ### Button Group
 - **Properti Figma → parameter**: `State` → `AmarButtonGroupLayout`; `2nd Button` → `secondLabel`; `3rd Button` → `thirdLabel` (Stack saja).

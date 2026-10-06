@@ -56,7 +56,7 @@ Kolom **Rencana** (disetujui 2026-10-06, mengikuti rekomendasi): `✅ bangun` / 
 | Elements / Button Group | [455:432](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=455-432) | 2 | State=Stack/Side · 2nd/3rd Button | ✅ |
 | Elements / Button Native | [191:250](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=191-250) | 3 | Type=Primary/Secondary/Destructive | ❌ |
 | Elements / Button Group Native | [191:280](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=191-280) | 2 | State=Stack/Side · 2nd/3rd Button | ❌ |
-| Chip | [3241:2467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2467) | 11 ⚠ (dari 12) | Supporting=Default/Close/Disabled/Counter/Dropdown/Delete · Selected | ✅ **siap dibangun** (variabel sudah lokal per 2026-10-06; dipakai 63× di REG-03/REG-04) |
+| Chip | [3241:2467](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2467) | 11 ⚠ (dari 12) | Supporting=Default/Close/Disabled/Counter/Dropdown/Delete · Selected | ✅ **dibangun** 2026-10-06 (`AmarChip`, 11 varian; dipakai 63× di REG-03/REG-04) |
 | Filter (chip row) | [3241:2520](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3241-2520) | 4 | Active · Scroll · Option (slot) | ⏸ tidak dipakai di layar (variabel sudah lokal) |
 
 ## Inputs
