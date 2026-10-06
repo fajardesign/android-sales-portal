@@ -13,4 +13,10 @@
     <string name="ds_nav_partner_beranda">Beranda</string>
     <string name="ds_nav_partner_partner">Partner</string>
     <string name="ds_nav_partner_tim">Tim</string>
+    <string name="ds_upload_delete">Hapus</string>
+    <string name="ds_upload_cancel">Batalkan upload</string>
+    <string name="ds_upload_status_waiting">menunggu upload foto...</string>
+    <string name="ds_upload_status_loading">proses upload foto...</string>
+    <string name="ds_upload_failed">Gagal upload foto, coba lagi.</string>
+    <string name="ds_upload_retry">Ambil Foto Ulang</string>
 </resources>

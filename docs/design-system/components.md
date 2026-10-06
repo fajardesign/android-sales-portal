@@ -26,6 +26,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Inputs | Element / Toggle | [671:2227](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=671-2227) | 8 (State × Size × Active) | `components/inputs/AmarToggle.kt` | `AmarToggle` | 8 varian | ✅ Terverifikasi visual (frame 304×100) |
 | Inputs | Selection Control | [466:277](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=466-277) | 32 (Checked × Size × Type × Disabled × Icon Only) | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionControl` | 4 (Type × Size), masing-masing 8 | ✅ Terverifikasi visual (6 varian) |
 | Inputs | Element / Icon | [463:320](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=463-320) | 24 | `components/inputs/AmarSelectionControl.kt` | `AmarSelectionIcon` | 24 varian | ✅ lewat Selection Control |
+| Inputs | Element / Progress Photos | [1052:6555](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1052-6555) | 5 (Status) | `components/inputs/AmarUpload.kt` | `AmarProgressPhotos` | 5 varian | ✅ Terverifikasi visual (5 varian: ukuran sama; ikon, progress bar, aksi selisih ≤1,9/255, 2026-10-06) |
 | Actions | Button | [60:337](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=60-337) | 180 (Type × Size × State × Icon Only × Inverse) | `components/actions/AmarButton.kt` | `AmarButton` | 10 (Type × Inverse), masing-masing 18 varian | ✅ Terverifikasi visual (8 varian representatif, 2026-10-06) |
 | Actions | Elements / Button Group | [455:432](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=455-432) | 2 (Stack, Side) | `components/actions/AmarButtonGroup.kt` | `AmarButtonGroup` | 5 kombinasi | ✅ Terverifikasi visual (geometri sama persis) |
 | Feedback | Spinner (ikon) | [536:1213](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=536-1213) | 1 | `components/feedback/AmarSpinner.kt` | `AmarSpinner` | lewat Button | ✅ Geometri & opacity sama |
@@ -205,6 +206,32 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   3. Slot di `Type=Default` lebarnya tetap 326 (bukan Fill 296 seperti di Custom). Di kode slot mengisi lebar konten.
   4. Label heading tidak diekspos sebagai properti TEXT di Figma; di kode tetap menjadi parameter `label`.
 - **Pemakaian di layar produk**: Custom/Border (Document Upload, 45×), Custom/Shadow (TL Dashboard, 8×).
+
+### Element / Progress Photos
+- **Properti Figma → parameter**: `Status` → `AmarProgressPhotosStatus` (Uploaded, UploadedDefault, Waiting, Loading, Failed); `Edit Name` → `fileName`; `File Size` → `fileSize` (string yang sudah diformat).
+- **Parameter tambahan** (bukan properti Figma):
+  - `thumbnail` (Uploaded; `null` = kotak `Background/Subtle`).
+  - `progress` 0..1 (Loading).
+  - `statusText`, `errorText`, `retryLabel` (default = copy Figma di `strings.xml`).
+  - `onRetry` (tombol Naked Small di Failed).
+  - `onDelete` (Trash; di Loading ikon batal `delete, error, disabled`).
+  - `onFileClick` (nama file berwarna link di Uploaded).
+- **Layout per Status**:
+  - Uploaded: thumbnail 56 (radius 8), nama `Label/Button/SM` + `Content/Link`, Trash; padding vertikal 2.
+  - Uploaded Default: ikon `files` 20 `Icon/Primary` menggantikan thumbnail.
+  - Waiting / Loading: ikon `camera` 20 `Icon/Disabled`; nama `Label/SM` + `Content/Secondary`; progress bar 6 (track `Background/Subtle`, isi `Feedback/Success/Solid Background`, radius penuh); baris ukuran + spinner 14 `Icon/Tertiary` + status `Label/SM` `Content/Tertiary`. Tanpa padding vertikal. Waiting: bar kosong, aksi Trash.
+  - Failed: nama di warna error (`Text Field/Border/Error`), `AmarInputHint` error dengan ikon, tombol Naked Small; padding vertikal 2.
+  - Aksi (20) selalu di tengah vertikal baris; konten Waiting/Loading/Failed rata atas.
+- **Token** (`AmarUploadTokens`): `Upload/Padding/Vertical` 2, gap 8 (`Spacing/Gap/SM`), 4 (`Spacing/Gap/XS`), `Upload/Gap/Progress` 6. Nilai mentah: tinggi bar 6, thumbnail 56, radius thumbnail 8, spinner 14.
+- **Aset**: `ds_ic_{trash,files,camera}_24` dan `ds_ic_error_24_l0/_l1`, ditampilkan 20. Stroke di instance 20 adalah skala proporsional dari master 24 (2 → 1,67; 1,8 → 1,5), jadi tidak perlu ekspor baru.
+- **Verifikasi** (`AmarProgressPhotosScreenshotTest`, 1x, lebar 296): ukuran kelima varian sama (296×60/24/48/48/64). Ikon, progress bar, dan aksi selisih rata-rata 0,16–1,9/255 tanpa pergeseran. Selisih sisanya di glyph teks (rasterizer).
+- **Temuan Figma**:
+  1. Copy status menyebut "foto" ("proses upload foto...", "Gagal upload foto, coba lagi.", "Ambil Foto Ulang"), padahal layar Document Upload memakai komponen ini untuk PDF dengan teks yang sama. Karena itu copy dijadikan parameter.
+  2. "Ambil Foto Ulang" memakai Title Case; aturan copy bundle meminta sentence case. Kode mengikuti Figma; perlu konfirmasi.
+  3. Ukuran file di Figma memakai titik desimal ("3.2 MB"); format Indonesia memakai koma ("3,2 MB"). Format diserahkan ke pemanggil.
+  4. Status Waiting juga menampilkan spinner, sama seperti Loading.
+  5. Tidak ada state disabled/pressed untuk Trash dan tombol batal; area sentuhnya 20dp (pedoman Android 48dp).
+- **Pemakaian di layar produk**: Uploaded Default 15× dan Loading 1× (Document Upload).
 
 ### Modal / Default dan Element / Illustration Modal
 - **Properti Figma → parameter**: `Show Title`/`TItle` → `title`; `Show Description`/`Description` → `description`; `Show Illustration` → `illustration`; `Show Slot`/`Slot` → `slot`; Button Group Side → `primaryLabel` + `secondLabel`. `Scroll State` diturunkan otomatis.

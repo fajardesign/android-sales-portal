@@ -264,3 +264,22 @@ object AmarCardTokens {
     /** Label ↔ description (raw value in Figma). */
     val TextGap = AmarSpace.S4
 }
+
+/** `Component/Upload/...` tokens for `Element / Progress Photos` (and later `Element / Upload`). */
+object AmarUploadTokens {
+    /** `Component/Upload/Padding/Vertical` (Uploaded, Uploaded Default, Failed). */
+    val PaddingVertical = AmarSpace.S2
+    /** Spacing/Gap/SM: leading icon or thumbnail ↔ content ↔ action, size ↔ status, text ↔ retry button. */
+    val Gap = AmarSpace.S8
+    /** Spacing/Gap/XS: file name ↔ progress, file name ↔ hint, spinner ↔ status text. */
+    val ContentGap = AmarSpace.S4
+    /** `Component/Upload/Gap/Progress`: progress bar ↔ size and status row. */
+    val ProgressGap = 6.dp
+    /** Progress bar height (raw value in Figma). */
+    val ProgressHeight = 6.dp
+    /** Thumbnail of `Status=Uploaded` and its corner radius (raw values in Figma). */
+    val ThumbnailSize = AmarSpace.S56
+    val ThumbnailRadius = AmarRadius.R8
+    /** Spinner next to the status text (raw value in Figma). */
+    val SpinnerSize = AmarSpace.S14
+}

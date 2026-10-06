@@ -66,6 +66,8 @@ import com.example.and_sales_portal.designsystem.components.inputs.AmarDropdown
 import com.example.and_sales_portal.designsystem.components.inputs.AmarInputHint
 import com.example.and_sales_portal.designsystem.components.inputs.AmarInputLabel
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionControl
+import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressPhotos
+import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressPhotosStatus
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionIcon
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionSize
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionType
@@ -408,6 +410,19 @@ private fun InputsSection() {
                     AmarSelectionIcon(true, type = type, size = size, enabled = false)
                 }
             }
+        }
+    }
+    Group("Element / Progress Photos") {
+        AmarProgressPhotosStatus.entries.forEach { status ->
+            AmarProgressPhotos(
+                fileName = if (status == AmarProgressPhotosStatus.UploadedDefault) "Anggaran_Dasar_PT_Nusantara.pdf" else "foto_toko.jpg",
+                status = status,
+                thumbnail = painterResource(R.drawable.ds_ill_medium_in_process),
+                fileSize = "2,4 MB",
+                progress = 0.4f,
+                onRetry = {},
+                onDelete = {},
+            )
         }
     }
 }
