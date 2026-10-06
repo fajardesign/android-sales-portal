@@ -240,3 +240,15 @@ object AmarAppBarTokens {
     /** `Icon/Close Sheet/Padding` → 2: circular icon button (28 = 2 + 24 + 2). */
     val RoundButtonPadding = AmarSpace.S2
 }
+
+/** `Navigation Bar - Partner Dashboard` tokens (`Component/Navigation Bar/...`). */
+object AmarNavigationBarTokens {
+    /** Height of the component in Figma (the `Navigation Bar/Height` = 117 and `Navigation/Bottom/Height` = 64 variables are not used). */
+    val Height = AmarSpace.S56
+    /** `Navigation Bar/Item Padding Top`, item bottom padding (raw 4) and `Item Gap`. */
+    val ItemPaddingTop = AmarSpace.S8
+    val ItemPaddingBottom = AmarSpace.S4
+    val ItemGap = AmarSpace.S4
+    /** Top indicator of the active item (raw stroke weight in Figma). */
+    val IndicatorHeight = AmarSpace.S4
+}

@@ -10,4 +10,7 @@
     <string name="ds_input_password_show">Tampilkan kata sandi</string>
     <string name="ds_input_password_hide">Sembunyikan kata sandi</string>
     <string name="ds_input_required">*</string>
+    <string name="ds_nav_partner_beranda">Beranda</string>
+    <string name="ds_nav_partner_partner">Partner</string>
+    <string name="ds_nav_partner_tim">Tim</string>
 </resources>

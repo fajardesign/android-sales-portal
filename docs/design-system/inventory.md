@@ -111,10 +111,10 @@ Kolom **Rencana** (disetujui 2026-10-06, mengikuti rekomendasi): `✅ bangun` / 
 | Komponen | Node | Varian | Properti | Rencana |
 |---|---|---|---|---|
 | App Bar | [133:32](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=133-32) | 8 ⚠ (dari 12) | Type=Primary/Secondary · State=Default/Transparent/Transparent Inverse · Stepper · Title · Navigation · Right Icon · Slot | ✅ |
-| Element / Stepper / Step | [908:1825](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=908-1825) | 4 | State=Default/Active/Success/**State4** · Number · Name | ✅ |
-| Element / Stepper | [939:653](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=939-653) | lepas | — | ✅ |
+| Element / Stepper / Step | [908:1825](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=908-1825) | 4 | State=Default/Active/Success/**State4** · Number · Name | ❓ ditunda (latar gelap vs terang, `State4`; tidak dipakai di layar produk) |
+| Element / Stepper | [939:653](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=939-653) | lepas | — | ❓ ditunda (lihat Stepper / Step) |
 | Elemet / User ID | [994:1638](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=994-1638) | lepas | (typo "Elemet") | ✅ |
-| Navigation Bar | [844:2796](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=844-2796) | 3 | Active=Visit/Workplan/Profile | ✅ |
+| Navigation Bar | [844:2796](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=844-2796) | 3 | Active=Visit/Workplan/Profile | ❓ tidak dibangun (tidak dipakai di layar produk; ikon memakai variabel library lain) |
 | Navigation Bar - Partner Dashboard | [3306:2306](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3306-2306) | 3 | Active=Beranda/Partner/Tim | ✅ |
 | Tab | [1833:13848](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1833-13848) | 2 | Scrim · Slot | ✅ |
 | Element / Tab Item | [1825:10926](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1825-10926) | 4 | Active · Scrim · Icon · Label | ✅ |

@@ -5,6 +5,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 
 | Kelompok | Komponen Figma | Node | Varian | File Kotlin | Composable | Preview | Status |
 |---|---|---|---|---|---|---|---|
+| Navigation | Navigation Bar - Partner Dashboard | [3306:2306](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3306-2306) | 3 (Active) | `components/navigation/AmarPartnerNavigationBar.kt` | `AmarPartnerNavigationBar` | 3 | ✅ Terverifikasi visual (ikon rata-rata ≤1,1/255) |
 | Navigation | App Bar | [133:32](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=133-32) | 8 (Type × State × Stepper) | `components/navigation/AmarAppBar.kt` | `AmarAppBar` | 6 (Type × State) | ✅ Terverifikasi visual (4 varian, posisi ikon sama persis) |
 | Navigation | Tab | [1833:13848](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1833-13848) | 2 (Scrim) | `components/navigation/AmarTab.kt` | `AmarTab` | 2 | ✅ Terverifikasi visual |
 | Navigation | Element / Tab Item | [1825:10926](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1825-10926) | 4 (Active × Scrim) | `components/navigation/AmarTab.kt` | `AmarTabItem` | lewat Tab | ✅ Terverifikasi visual (indikator, scrim) |
@@ -221,3 +222,22 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   - Ikon 20: aktif Primary 600 (`icon.brand`), nonaktif `Icon/Tertiary`.
   - Indikator 2 Primary 600, digambar di atas divider. Gap ikon ↔ label 6 (nilai mentah; token `Tab/Gap` = 4 tidak dipakai).
 - **Scrim** (`Scrim=True`): placeholder loading 109×20, radius 16, gradasi abu dengan nilai mentah di `AmarTabTokens.ScrimColors`.
+
+### Navigation Bar - Partner Dashboard
+- **Properti Figma → parameter**: `Active` → `AmarPartnerDestination` (Beranda, Partner, Tim); label dari `strings.xml`.
+- **Keputusan (disetujui 2026-10-06)**:
+  - Tinggi 56 sesuai komponen. Variabel `Navigation Bar/Height` = 117 dan `Navigation/Bottom/Height` = 64 tidak dipakai.
+  - Warna ikon di Figma memakai variabel dari library lain (`icon/strong-950`, `Icon/Inverse`, `Icon/Disabled`). Dipetakan ke token lokal bernama sama: aktif `Action/Focus` + `Icon/Inverse`, nonaktif `Icon/Disabled`.
+  - Label aktif Primary 700 (`Navigation/Bottom/Title`), bukan Primary 600 seperti di Figma (aturan kontras teks #6).
+  - Hanya versi Partner Dashboard yang dibangun, karena itu yang dipakai di layar produk.
+- **Token**:
+  - Latar `surface.base`, `Shadow/Overlay`.
+  - Item: padding atas 8, bawah 4, gap 4, ikon 24.
+  - Indikator atas 4 `Action/Focus`.
+  - Label aktif `Label/Button/SM`, nonaktif `Caption/SM` Neutral 400.
+  - Bar digambar di belakang navigation bar sistem lewat `windowInsets`.
+- **Aset**: `ds_ic_menu_{home,store,profile}_24` (outline) dan versi `_filled_24`.
+  - Ikon aktif dua warna dipecah menjadi layer berurutan (`_l0…_l5`) yang di-tint `Action/Focus` / `Icon/Inverse`, agar urutan tumpukan sama dengan Figma.
+  - Mask `user-fill` (stroke di sisi dalam bentuk) dikonversi menjadi `clip-path`.
+  - Master `menu / store` tingginya 24,5; drawable-nya diskalakan 24/24,5 secara vertikal seperti render Figma.
+- **Temuan Figma**: di varian Partner dan Tim, label "Beranda" nonaktif memakai `Label/Button/SM` (semibold), sedangkan label nonaktif lain `Caption/SM`. Kode memakai `Caption/SM` untuk semua label nonaktif.
