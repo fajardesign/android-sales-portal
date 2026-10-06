@@ -294,3 +294,57 @@ object AmarUploadTokens {
     val DropzoneDash = 6.dp
     val DropzoneDashGap = 6.dp
 }
+
+/** `Component/Bottom Sheet/...` tokens and the `Element / Sheet / …` sub-elements. Colours come from [AmarColors]. */
+object AmarBottomSheetTokens {
+    /** `Bottom Sheet/Height/Max`. */
+    val MaxHeight = 600.dp
+    /** `Bottom Sheet/Radius` → Radius/Container (top corners only). */
+    val Radius = AmarRadius.R16
+    /** `Padding/Horizontal`, `Padding/Top Handle` (top without illustration, and bottom), `Padding/Top` (below an illustration). */
+    val PaddingHorizontal = AmarSpace.S16
+    val PaddingTopHandle = AmarSpace.S24
+    val PaddingTop = AmarSpace.S16
+    val PaddingBottom = AmarSpace.S24
+    /** `Gap/Content To Action`, `Gap/Heading` (title ↔ description), `Modal/Default/Gap/Section` (heading ↔ slot), Spacing/Gap/MD (inside the slot). */
+    val GapContentToAction = AmarSpace.S24
+    val GapHeading = AmarSpace.S8
+    val GapSection = AmarSpace.S16
+    val SlotGap = AmarSpace.S12
+    /** Handle bar: 34 × 5 at 5 from the top (raw), `Handle Radius` → Radius/2. */
+    val HandleWidth = 34.dp
+    val HandleHeight = 5.dp
+    val HandleTop = 5.dp
+    val HandleRadius = AmarRadius.R2
+    /** `close sheet` 28, 16 from the top and right edge in Type=Default (raw position). */
+    val CloseSize = 28.dp
+    val CloseInset = AmarSpace.S16
+    /** Spacer above the title in Type=Default without illustration, keeping the title clear of the close button (raw). */
+    val DefaultTitleSpacer = AmarSpace.S20
+    /** Spacing/Gap/LG: title ↔ close in Type=Compact. */
+    val TitleCloseGap = AmarSpace.S16
+    /** Scroll=True: heading bottom padding, slot bottom padding and action top padding (raw). */
+    val ScrollHeadingPaddingBottom = AmarSpace.S8
+    val ScrollSlotPaddingBottom = AmarSpace.S8
+    val ScrollActionPaddingTop = AmarSpace.S16
+
+    /** `Element / Sheet / Illustration` (Fullscreen=False): padding top Spacing/Padding/LG, bottom Spacing/Gap/SM, sides `Modal/Default/Padding`. */
+    val IllustrationPaddingTop = AmarSpace.S24
+    val IllustrationPaddingBottom = AmarSpace.S8
+    val IllustrationPaddingHorizontal = AmarSpace.S16
+
+    /**
+     * `Element / Sheet / Option`: fixed height 52, gap 16 (raw); the Medium radio is scaled ×1.2 to 28.8 in Figma.
+     * Figma also sets padding 14 top/bottom, but with the fixed height the 28.8 radio overflows it, so the row is 52.
+     */
+    val OptionHeight = 52.dp
+    val OptionGap = AmarSpace.S16
+    const val OptionRadioScale = 1.2f
+    val OptionRadioSize = 28.8.dp
+
+    /** `Element / Sheet / Selection`: padding Spacing/Padding/SM vertical, gap Spacing/Gap/LG; icon ↔ text 12, title ↔ description 4 (raw). */
+    val SelectionPaddingVertical = AmarSpace.S12
+    val SelectionGap = AmarSpace.S16
+    val SelectionHeadingGap = AmarSpace.S12
+    val SelectionTextGap = AmarSpace.S4
+}

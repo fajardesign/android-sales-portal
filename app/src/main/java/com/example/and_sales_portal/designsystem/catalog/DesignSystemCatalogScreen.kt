@@ -49,6 +49,11 @@ import com.example.and_sales_portal.designsystem.components.feedback.AmarAlert
 import com.example.and_sales_portal.designsystem.components.feedback.AmarAlertStyle
 import com.example.and_sales_portal.designsystem.components.feedback.AmarAlertType
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadge
+import com.example.and_sales_portal.designsystem.components.feedback.AmarBottomSheet
+import com.example.and_sales_portal.designsystem.components.feedback.AmarBottomSheetContent
+import com.example.and_sales_portal.designsystem.components.feedback.AmarBottomSheetType
+import com.example.and_sales_portal.designsystem.components.feedback.AmarSheetOption
+import com.example.and_sales_portal.designsystem.components.feedback.AmarSheetSelection
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeSize
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeType
 import com.example.and_sales_portal.designsystem.components.feedback.AmarInfoBox
@@ -537,6 +542,59 @@ private fun FeedbackSection() {
             "Simpan", {}, Modifier.height(AmarSpace.S128 + AmarSpace.S128 + AmarSpace.S32),
             title = "Modal yang di-scroll", description = "Konten panjang. ".repeat(30), secondLabel = "Batal",
         )
+    }
+    Group("Bottom Sheet (statis)", padded = false) {
+        AmarBottomSheetContent(
+            title = "Terjadi Gangguan",
+            description = "Server sedang tidak tersedia untuk sementara. Coba lagi beberapa saat lagi.",
+            illustration = { Image(painterResource(R.drawable.ds_ill_medium_system_problem), null) },
+            showHandle = false,
+            onClose = {},
+            primaryLabel = "Coba Lagi",
+            windowInsets = WindowInsets(0),
+        )
+        AmarBottomSheetContent(
+            type = AmarBottomSheetType.Compact,
+            title = "Metode Upload Dokumen",
+            showHandle = false,
+            onClose = {},
+            windowInsets = WindowInsets(0),
+        ) {
+            AmarSheetSelection("Ambil foto", onClick = {}, icon = painterResource(R.drawable.ds_ic_camera_24))
+            AmarSheetSelection("Pilih dari galeri", onClick = {}, icon = painterResource(R.drawable.ds_ic_photo_24))
+        }
+    }
+    Group("Bottom Sheet (ketuk untuk membuka)") {
+        var open by remember { mutableStateOf<String?>(null) }
+        var province by remember { mutableStateOf("DKI Jakarta") }
+        AmarButton("Pilih provinsi: $province", { open = "province" }, type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
+        AmarButton("Sheet error (Default)", { open = "error" }, type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
+        when (open) {
+            "province" -> AmarBottomSheet(
+                onDismissRequest = { open = null },
+                type = AmarBottomSheetType.Compact,
+                scroll = true,
+                title = "Pilih Provinsi",
+                showClose = false,
+            ) {
+                listOf(
+                    "Aceh", "Bali", "Banten", "Bengkulu", "DI Yogyakarta", "DKI Jakarta", "Gorontalo", "Jambi",
+                    "Jawa Barat", "Jawa Tengah", "Jawa Timur", "Kalimantan Barat", "Kalimantan Selatan",
+                ).forEach { name ->
+                    AmarSheetOption(name, selected = name == province, onClick = { province = name; open = null })
+                }
+            }
+            "error" -> AmarBottomSheet(
+                onDismissRequest = { open = null },
+                scrim = AmarOverlayState.Default,
+                title = "Tidak Ada Koneksi Internet",
+                description = "Periksa koneksi internet Anda, lalu coba lagi.",
+                illustration = { Image(painterResource(R.drawable.ds_ill_medium_wifi_problem), null) },
+                showHandle = false,
+                primaryLabel = "Coba Lagi",
+                onPrimaryClick = { open = null },
+            )
+        }
     }
 }
 

@@ -16,6 +16,11 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Feedback | Info Box | [676:2342](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=676-2342) | 20 (Type × Button × Show Label) | `components/feedback/AmarInfoBox.kt` | `AmarInfoBox` | 5 (per Type) × 4 | ✅ Terverifikasi visual (4 varian) |
 | Feedback | Badge | [981:4166](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=981-4166) | 96 (Type × Size × Supporting × Solid) | `components/feedback/AmarBadge.kt` | `AmarBadge` | 8 (Type × Solid) × 12 | ✅ Terverifikasi visual (7 varian) |
 | Feedback | Overlay | [163:334](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=163-334) | 2 (State) | `components/feedback/AmarOverlay.kt` | `AmarOverlay` | 3 | ✅ Warna token; spinner `Icon/Inverse` (disetujui) |
+| Feedback | Bottom Sheet | [792:1025](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=792-1025) | 4 (Inverse=False saja) | `components/feedback/AmarBottomSheet.kt` | `AmarBottomSheetContent` (permukaan) + `AmarBottomSheet` (modal) | 4 varian | ✅ Terverifikasi visual (ukuran 4 varian sama; tombol, close, handle, teks ±1 px) + dicoba di emulator API 34 |
+| Feedback | Element / Sheet / Illustration | [804:1339](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=804-1339) | 2 (Fullscreen) | `components/feedback/AmarBottomSheet.kt` | `AmarSheetIllustration` | 2 | ✅ lewat Bottom Sheet |
+| Feedback | Element / Sheet / Option | [1043:1524](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1043-1524) | 2 (Selected) | `components/feedback/AmarBottomSheet.kt` | `AmarSheetOption` | 2 | ✅ Terverifikasi visual (328×52, radio ±1 px) |
+| Feedback | Element / Sheet / Text | [895:735](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=895-735) | 1 | `components/feedback/AmarBottomSheet.kt` | `AmarSheetText` | ya | ✅ dari spesifikasi Figma |
+| Feedback | Element / Sheet / Selection | [1284:2123](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1284-2123) | 1 | `components/feedback/AmarBottomSheet.kt` | `AmarSheetSelection` | ya | ✅ Terverifikasi visual (selisih rata-rata 2,67/255) |
 | Inputs | Input | [236:235](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=236-235) | 60 (Type × State × Error) | `components/inputs/AmarTextField.kt` | `AmarTextField` | 5 (per Type), masing-masing 8 state statis | ✅ Terverifikasi visual (8 varian) |
 | Inputs | Dropdown | [640:1400](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=640-1400) | 8 (State × Error) | `components/inputs/AmarDropdown.kt` | `AmarDropdown` | 8 varian | ✅ Terverifikasi visual (2 varian) |
 | Inputs | Area | [311:744](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=311-744) | 12 (State × Error) | `components/inputs/AmarTextArea.kt` | `AmarTextArea` | 8 state statis | ✅ Terverifikasi visual (2 varian) |
@@ -184,6 +189,44 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 - Default `overlay.default` (#0B1220 @40%); Modal `overlay.modal`. Menahan sentuhan; `onClick` opsional untuk menutup.
 - Spinner 56 di tengah (hanya State=Default).
 - **Warna spinner**: `Icon/Inverse` (putih), disetujui 2026-10-06. Override di Figma tidak bisa dibaca karena layernya tersembunyi.
+
+### Bottom Sheet dan Element / Sheet / …
+- **Dua composable**:
+  - `AmarBottomSheetContent`: permukaan sheet sesuai komponen Figma, untuk preview, screenshot test, atau sheet yang selalu tampil.
+  - `AmarBottomSheet`: menampilkannya secara modal lewat Material3 `ModalBottomSheet`. Handle, shape, warna, dan elevasi bawaan Material dimatikan. State sheet internal, sehingga pemanggil tidak perlu opt-in API eksperimental.
+- **Properti Figma → parameter**:
+  - `Type` → `AmarBottomSheetType` (Default, Compact).
+  - `Show Title`/`Title` → `title`; `Show Description`/`Description` → `description`.
+  - `Show Illustration` → `illustration` (hanya Default); `Fullscreen` → `illustrationFullscreen`.
+  - `Show Handle` → `showHandle`; `Show Close` → `onClose` (permukaan) / `showClose` (modal).
+  - `Scroll` → `scroll` (hanya Compact); `Show Slot`/`Slot` → `slot` (gap 12).
+  - `Show Button` → `primaryLabel` (+ `secondLabel`, `thirdLabel`), `Elements / Button Group` Stack.
+  - Kombinasi yang tidak ada di Figma (ilustrasi di Compact, Scroll di Default) ditolak dengan `require`.
+  - `Inverse=True` tidak dibuat (tidak ada di Figma, lihat Temuan).
+- **Parameter tambahan**: `scrim` (modal) = warna `Overlay`. Layar form memakai `Modal`, layar Login memakai `Default` (dari pindaian layar produk). `windowInsets` (permukaan) = inset bawah, default navigation bar.
+- **Layout**:
+  - Default: judul dan deskripsi rata tengah; spacer 20 di atas judul bila tanpa ilustrasi; close melayang 16 dari atas/kanan.
+  - Compact: rata kiri, close di samping judul (gap 16).
+  - Compact + Scroll: baris judul dan tombol tetap; deskripsi + slot di-scroll.
+  - Padding: horizontal 16; atas 24 (`Padding/Top Handle`) atau 16 di bawah ilustrasi; bawah 24. Konten ↔ tombol 24, judul ↔ deskripsi 8, heading ↔ slot 16.
+  - Tinggi maksimum 600 (`Bottom Sheet/Height/Max`) ditambah inset navigation bar. Lebar mengikuti layar (Material membatasi 640).
+- **Token** (`AmarBottomSheetTokens`): nilai `Component/Bottom Sheet/…` di atas, radius atas 16 (`Radius/Container`). Nilai mentah: handle 34×5 di y=5 (radius 2, `Border/Color/Default`), close 28, spacer judul 20, padding mode Scroll (8/8/16). Latar `Surface/Base`, shadow `Shadow/Modal`, judul `Heading/MD` `Content/Primary`, deskripsi `Body/LG` `Content/Tertiary`.
+- **Sub-elemen**:
+  - `AmarSheetIllustration`: non-fullscreen padding 24/16/8, gambar di tengah; fullscreen tanpa padding.
+  - `AmarSheetOption`: tinggi 52, label `Body/MD` `Content/Secondary`, radio Medium diskalakan ×1,2 (28,8) seperti di Figma. Seluruh baris adalah area sentuh, tanpa ripple.
+  - `AmarSheetText`: `Body/LG` `Content/Tertiary`, rata tengah.
+  - `AmarSheetSelection`: padding vertikal 12, gap 16; ikon 24 + judul `Heading/SM` + deskripsi `Label/MD` `Content/Tertiary`; chevron.
+- **Aset**: `ds_ic_close_sheet_28_l0/_l1` (lingkaran `Background/Subtle`, silang `Icon/Secondary`), `ds_ic_chevron_right_24`, `ds_ic_default_24`.
+- **Verifikasi**:
+  - Screenshot (`AmarBottomSheetScreenshotTest`, 1x, lebar 360): ukuran keempat varian sama (360×264/340/236/228). Posisi tombol, close, handle, dan teks sama atau bergeser 1 px. Option 328×52 dengan radio ±1 px; Selection selisih rata-rata 2,67/255.
+  - Emulator Pixel 6 API 34 (katalog DS): sheet Compact + Scroll (Pilih Provinsi) membuka penuh dengan scrim, judul tetap saat daftar di-scroll, latar memanjang ke belakang navigation bar. Sheet Default + ilustrasi tertutup lewat tombol close; back juga menutup sheet.
+- **Temuan Figma**:
+  1. `Inverse` hanya punya opsi `False`, padahal deskripsi komponen (dan aturan CLAUDE.md #7) mewajibkan `True` untuk ilustrasi gelap. Layar produk saat ini tidak memakai Inverse.
+  2. Handle di varian Default tanpa ilustrasi ada di y=6; tiga varian lain y=5. Kode memakai 5.
+  3. Sheet / Option: tinggi tetap 52 dengan padding 14, tetapi radio 28,8 melebihi padding itu. Kode mengikuti tinggi 52.
+  4. Radio di Option adalah instance Selection Control yang diskalakan ×1,2 (bukan ukuran di DS). Kode menskalakan `AmarSelectionIcon` Medium dengan faktor yang sama.
+  5. Sheet tanpa handle tetap bisa diseret turun untuk ditutup; Material3 1.3.2 belum punya opsi mematikan gestur sheet.
+- **Pemakaian di layar produk**: Compact + Scroll (pilihan provinsi, kota, kecamatan, bank) 6×, Compact tanpa scroll (kelurahan, metode upload) 2×, Default + ilustrasi (error Login) 7×. Option 115×, Selection 2×.
 
 ### Catatan aset (berlaku umum)
 Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2, di Info Box 1,67, close 12 di Badge 1,5. Ikon `default` juga diekspor dengan potongan berbeda di 16/20/24. Karena itu aset diambil dari ekspor instance tiap komponen, bukan dari satu master yang diskalakan.
