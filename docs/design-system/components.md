@@ -40,6 +40,7 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
 | Feedback | Spinner (ikon) | [536:1213](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=536-1213) | 1 | `components/feedback/AmarSpinner.kt` | `AmarSpinner` | lewat Button | ✅ Geometri & opacity sama |
 | Feedback | Alert | [683:300](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=683-300) | 12 (Style × Type) | `components/feedback/AmarAlert.kt` | `AmarAlert` | 12 varian + opsi | ✅ Terverifikasi visual (Roborazzi vs Figma, 2026-10-06) |
 | Layout & Content | Divider | [1123:142](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1123-142) | 6 (Orientation × Weight) | `components/layout/AmarDivider.kt` | `AmarDivider` | 6 varian | ✅ Terverifikasi visual (warna & ukuran sama dengan Figma, 2026-10-06) |
+| Brand | Logo / Amar Bank (+ Lettermark, Name) | [33:177](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-177) | 6 (Color × Type) | `components/brand/AmarLogo.kt` | `AmarLogo` | 6 varian | ✅ Terverifikasi visual (5 varian vs screenshot Figma: ukuran sama, selisih rata-rata 0,9–3,9/255) |
 | Layout & Content | Card | [954:2473](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=954-2473) | 7 (Type × Style; Default + Selected tidak ada) | `components/layout/AmarCard.kt` | `AmarCard` (2 overload: Type=Default, Type=Custom) | 4 (per Style) = 7 varian | ✅ Terverifikasi visual (Default/Default & Custom/Selected: ukuran sama, selisih di luar teks rata-rata 0,17/255, 2026-10-06) |
 
 ## Catatan per komponen
@@ -228,6 +229,15 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
   4. Radio di Option adalah instance Selection Control yang diskalakan ×1,2 (bukan ukuran di DS). Kode menskalakan `AmarSelectionIcon` Medium dengan faktor yang sama.
   5. Sheet tanpa handle tetap bisa diseret turun untuk ditutup; Material3 1.3.2 belum punya opsi mematikan gestur sheet.
 - **Pemakaian di layar produk**: Compact + Scroll (pilihan provinsi, kota, kecamatan, bank) 6×, Compact tanpa scroll (kelurahan, metode upload) 2×, Default + ilustrasi (error Login) 7×. Option 115×, Selection 2×.
+
+### Logo / Amar Bank
+- **Properti Figma → parameter**: `Type` → `AmarLogoType` (Horizontal, Vertical, Logo); `Color` → `color`. `contentDescription` default "Amar Bank" (`strings.xml`), `null` bila dekoratif.
+- **Aset**: `ds_logo_amarbank_{color,white}_{horizontal,vertical,logo}.xml`, gradien linear dan #1253A5 tertanam di drawable. Ini artwork merek, bukan token UI, dan tidak di-tint (pengecualian aturan #4, sama seperti ilustrasi). `Logo / Lettermark` dan `Logo / Name` hanya dipakai sebagai bagian dari logo ini, jadi tidak dibuat terpisah.
+- **Ukuran**: alami sesuai Figma (Horizontal 165×30, Vertical 64×32, Logo 32×24); tinggi lain lewat `modifier`, rasio tetap (`ContentScale.Fit`).
+- **Color=False**: nama berwarna putih untuk latar gelap. Horizontal/Vertical tetap memakai lettermark berwarna; Type=Logo seluruhnya putih dengan `Background/Subtle` di titik pertemuan.
+- **Verifikasi** (`AmarLogoScreenshotTest`, 1x di atas `Surface/Base`): ukuran sama; selisih rata-rata 0,9–3,9/255, selisih maksimum hanya di tepi bentuk kecil (anti-aliasing 1x). Color=False Type=Logo tidak dibandingkan (screenshot Figma tidak terkirim); render diperiksa: putih + `Background/Subtle`, sesuai SVG.
+- **Catatan ekspor**: ekspor SVG `download_assets` menyertakan latar kanvas Figma (`<rect fill="#F5F5F5">`) dan garis component set (`stroke="#8A38F5"`). Keduanya dibuang sebelum konversi; versi pertama sempat berlatar abu-abu.
+- **Pemakaian di layar produk**: Color=True Horizontal, 24× di Login. Layar Login juga memakai logo `lg-tunaiku` yang tidak ada di DS Lib Android (lihat inventory, Temuan 9).
 
 ### Catatan aset (berlaku umum)
 Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2, di Info Box 1,67, close 12 di Badge 1,5. Ikon `default` juga diekspor dengan potongan berbeda di 16/20/24. Karena itu aset diambil dari ekspor instance tiap komponen, bukan dari satu master yang diskalakan.

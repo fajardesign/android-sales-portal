@@ -19,4 +19,5 @@
     <string name="ds_upload_status_loading">proses upload foto...</string>
     <string name="ds_upload_failed">Gagal upload foto, coba lagi.</string>
     <string name="ds_upload_retry">Ambil Foto Ulang</string>
+    <string name="ds_logo_amarbank">Amar Bank</string>
 </resources>

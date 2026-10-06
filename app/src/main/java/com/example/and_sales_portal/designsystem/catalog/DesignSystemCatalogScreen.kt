@@ -41,6 +41,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
+import com.example.and_sales_portal.designsystem.components.brand.AmarLogo
+import com.example.and_sales_portal.designsystem.components.brand.AmarLogoType
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonGroup
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonGroupLayout
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
@@ -717,6 +719,20 @@ private fun LayoutSection() {
 @Composable
 private fun AssetsSection() {
     val c = AmarTheme.colors
+    Group("Logo / Amar Bank (Color=True, lalu Color=False di latar gelap)") {
+        Row(horizontalArrangement = Arrangement.spacedBy(AmarSpace.S24), verticalAlignment = Alignment.CenterVertically) {
+            AmarLogoType.entries.forEach { AmarLogo(type = it) }
+        }
+        Row(
+            Modifier
+                .background(c.background.inverse, AmarTheme.shapes.card)
+                .padding(AmarSpace.S12),
+            horizontalArrangement = Arrangement.spacedBy(AmarSpace.S24),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AmarLogoType.entries.forEach { AmarLogo(type = it, color = false) }
+        }
+    }
     Group("Ikon (tint Icon/Primary)") {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarSpace.S8), verticalArrangement = Arrangement.spacedBy(AmarSpace.S8)) {
             CatalogAssets.icons.forEach { icon ->

@@ -75,6 +75,19 @@ Ikon yang sudah ada sebelumnya (dibuat bersama komponen): `ds_ic_default_16/20/2
 
 Catatan: `star_filled` (1655:7501) = geometri `star` dengan warna #F2CF53 → pakai `ds_ic_star_24` dengan tint. `whatsapp_fill` dan `plus` berwarna putih di Figma (untuk latar berwarna).
 
+## Logo (6 file)
+
+| Logo | Node | Ukuran | File | Catatan |
+|---|---|---|---|---|
+| Amar Bank Color=True, Horizontal | [33:176](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-176) | 165×30 | `ds_logo_amarbank_color_horizontal` | dipakai di Login |
+| Amar Bank Color=True, Vertical | [33:277](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-277) | 64×32 | `ds_logo_amarbank_color_vertical` | - |
+| Amar Bank Color=True, Logo | [33:378](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-378) | 32×24 | `ds_logo_amarbank_color_logo` | - |
+| Amar Bank Color=False, Horizontal | [33:178](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-178) | 165×30 | `ds_logo_amarbank_white_horizontal` | nama putih |
+| Amar Bank Color=False, Vertical | [33:311](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-311) | 64×32 | `ds_logo_amarbank_white_vertical` | nama putih |
+| Amar Bank Color=False, Logo | [33:421](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-421) | 32×24 | `ds_logo_amarbank_white_logo` | putih + `Background/Subtle` |
+
+Diekspor lewat `download_assets` (SVG), latar kanvas `#F5F5F5` dan garis component set `#8A38F5` dibuang, lalu dikonversi dengan `Svg2Vector` (classpath: sdk-common, common 31.9.1, guava, kotlin-stdlib). Berwarna penuh, jangan di-tint; pakai lewat `AmarLogo`.
+
 ## Ilustrasi (16) — semua terverifikasi visual (rata-rata Δ ≤ 1,12/255 vs screenshot Figma)
 
 | Ilustrasi | Node | Ukuran | File | Ukuran file | Catatan |

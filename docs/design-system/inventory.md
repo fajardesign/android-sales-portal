@@ -137,9 +137,9 @@ Tidak masuk 4 kelompok di atas, tetapi kemungkinan dibutuhkan.
 ### Logo
 | Komponen | Node | Varian | Properti | Rencana |
 |---|---|---|---|---|
-| Logo / Amar Bank | [33:177](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-177) | 6 | Color · Type=Horizontal/Vertical/Logo | ✅ prioritas 5 (Color=True, Horizontal dipakai 24× di Login) |
-| Logo / Lettermark | [33:62](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-62) | 2 | Color | ✅ lewat Logo / Amar Bank |
-| Logo / Name | [33:74](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-74) | 2 | Color | ✅ lewat Logo / Amar Bank |
+| Logo / Amar Bank | [33:177](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-177) | 6 | Color · Type=Horizontal/Vertical/Logo | ✅ **dibangun** 2026-10-06 (`AmarLogo`, 6 varian; dipakai 24×) |
+| Logo / Lettermark | [33:62](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-62) | 2 | Color | ✅ lewat `AmarLogo` |
+| Logo / Name | [33:74](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=33-74) | 2 | Color | ✅ lewat `AmarLogo` |
 
 ### Ikon — set berpasangan (halaman Icon, 2 varian per set)
 | Komponen | Node | Properti | Rencana |
