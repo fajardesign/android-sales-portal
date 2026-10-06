@@ -1,5 +1,6 @@
 package com.example.and_sales_portal.designsystem.theme
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -20,4 +21,32 @@ object AmarAlertTokens {
     val PaddingVertical = AmarSpace.S14
     val Gap = AmarSpace.S12
     val Radius = AmarRadius.R12
+}
+
+/** `Component/Button/Size/...` tokens for one Figma `Size`. */
+class AmarButtonSizeTokens internal constructor(
+    /** `Height` (also `Width Icon` for Icon Only). */
+    val height: Dp,
+    val paddingX: Dp,
+    val paddingY: Dp,
+    val gap: Dp,
+)
+
+/** `Component/Button/...` layout tokens. Colours come from [AmarColors.action]. */
+object AmarButtonTokens {
+    val Large = AmarButtonSizeTokens(height = AmarSpace.S56, paddingX = AmarSpace.S24, paddingY = AmarSpace.S12, gap = AmarSpace.S8)
+    val Medium = AmarButtonSizeTokens(height = AmarSpace.S48, paddingX = AmarSpace.S16, paddingY = AmarSpace.S12, gap = AmarSpace.S8)
+    val Small = AmarButtonSizeTokens(height = AmarSpace.S40, paddingX = AmarSpace.S12, paddingY = AmarSpace.S12, gap = AmarSpace.S4)
+
+    /** Max width set on every Button variant in Figma. */
+    val MaxWidth = 640.dp
+
+    /** Spinner step animation (not specified in Figma; agreed default: 8 steps of 45°, 800 ms per turn). */
+    const val SpinnerTurnMillis = 800
+}
+
+/** `Elements / Button Group` tokens. */
+object AmarButtonGroupTokens {
+    /** Gap between buttons: `Component/Modal/Default/Gap/Button` → Space/12. */
+    val Gap = AmarSpace.S12
 }
