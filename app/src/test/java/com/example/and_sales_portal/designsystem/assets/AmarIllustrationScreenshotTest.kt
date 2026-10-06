@@ -32,6 +32,10 @@ class AmarIllustrationScreenshotTest {
         "large_success" to R.drawable.ds_ill_large_success,
         "file_document" to R.drawable.ds_ill_file_document,
         "decorative_check" to R.drawable.ds_ill_decorative_check,
+        "tunaiku_connection_error" to R.drawable.ds_ill_tunaiku_connection_error,
+        "tunaiku_internal_system_error" to R.drawable.ds_ill_tunaiku_internal_system_error,
+        "tunaiku_lock" to R.drawable.ds_ill_tunaiku_lock,
+        "tunaiku_task_stop" to R.drawable.ds_ill_tunaiku_task_stop,
     )
 
     @Test

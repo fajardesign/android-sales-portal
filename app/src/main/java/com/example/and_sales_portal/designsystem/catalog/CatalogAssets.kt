@@ -102,5 +102,9 @@ internal object CatalogAssets {
         "medium_permission_camera" to R.drawable.ds_ill_medium_permission_camera,
         "medium_permission_device_data" to R.drawable.ds_ill_medium_permission_device_data,
         "medium_empty_search" to R.drawable.ds_ill_medium_empty_search,
+        "tunaiku_connection_error" to R.drawable.ds_ill_tunaiku_connection_error,
+        "tunaiku_internal_system_error" to R.drawable.ds_ill_tunaiku_internal_system_error,
+        "tunaiku_lock" to R.drawable.ds_ill_tunaiku_lock,
+        "tunaiku_task_stop" to R.drawable.ds_ill_tunaiku_task_stop,
     )
 }

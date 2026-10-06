@@ -109,6 +109,19 @@ Diekspor lewat `download_assets` (SVG), latar kanvas `#F5F5F5` dan garis compone
 | medium_permission_device_data | [896:535](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=896-535) | 138×100 | `ds_ill_medium_permission_device_data` | 15 KB | 9 layer Figma disusun ulang; mask alpha buram → clip-path; lencana gradien CSS → circle SVG |
 | medium_empty_search | [1841:14168](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1841-14168) | 138×100 | `ds_ill_medium_empty_search` | 13 KB | 7 layer Figma disusun ulang; mask alpha buram → clip-path; lencana gradien CSS → circle SVG |
 
+## Ilustrasi Tunaiku (4), terverifikasi visual (rata-rata Δ ≤ 0,66/255 vs screenshot Figma)
+
+Dipakai di bottom sheet error Login (dikonfirmasi 2026-10-06: produk ini sales Tunaiku, bagian Amar Bank). Hanya 4 dari 37 varian set Tunaiku [3174:8853](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3174-8853) yang dipakai layar, jadi hanya itu yang dibuat.
+
+| Ilustrasi | Node | Ukuran | File | Catatan |
+|---|---|---|---|---|
+| Connection Error | [3174:8843](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3174-8843) | 240×160 | `ds_ill_tunaiku_connection_error` | mask buram → clip-path |
+| Internal System Error | [3174:8824](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3174-8824) | 240×160 | `ds_ill_tunaiku_internal_system_error` | mask buram → clip-path; 2 mask stroke *outside* → path stroke digambar di bawah fill buramnya |
+| Lock | [3387:981](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3387-981) | 240×160 | `ds_ill_tunaiku_lock` | - |
+| Task Stop | [3174:8839](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3174-8839) | 240×160 | `ds_ill_tunaiku_task_stop` | mask buram → clip-path |
+
+**Mask stroke outside**: Figma mengekspor stroke *outside* sebagai path stroke yang di-mask dengan "kotak putih minus bentuk". VectorDrawable tidak mendukung mask. Karena fill bentuk itu buram dan memakai path yang identik dengan mask, path stroke cukup digambar **sebelum** fill: bagian dalam stroke tertutup fill, hasilnya setara (juga di lubang evenodd).
+
 ## Gagal / tidak dikonversi (tidak dibuang diam-diam)
 
 | Aset | Node | Alasan | Alternatif |
@@ -120,7 +133,7 @@ Diekspor lewat `download_assets` (SVG), latar kanvas `#F5F5F5` dan garis compone
 
 | Aset | Alasan |
 |---|---|
-| Ilustrasi Tunaiku (37), ikon banking 32×32 (Action, Biller, Account), Account / ISP, Amar Bank Bisnis | Dicoret di inventaris (produk lain / banking). |
+| Ilustrasi Tunaiku (33 varian lain), ikon banking 32×32 (Action, Biller, Account), Account / ISP, Amar Bank Bisnis | Tunaiku: hanya 4 varian yang dipakai layar (lihat di atas). Sisanya dicoret di inventaris (banking). |
 | Medium / Add Account, Add Favorites, Add PLN; Decorative / Money, Bank; Touch ID | Bukan prioritas aplikasi sales (banking / iOS). |
 | menu / Visit, Workplan (filled & outline) | Navigation Bar versi Visit/Workplan tidak dibangun. |
 | Spinner | Diimplementasikan sebagai `AmarSpinner` (Canvas, beranimasi). |
