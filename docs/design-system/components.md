@@ -63,10 +63,10 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
   - Posisi ikon (x 28–47, y 22–41) dan close (x 308–319) sama persis.
   - Radius sudut dan padding cocok. Shadow berbeda paling banyak 3/255 per kanal.
   - Teks: posisi awal sama; lebar dan tepi glyph berbeda ≤1 px karena rasterizer Figma dan Skia berbeda. Tidak bisa disamakan lewat token.
-- **Pertanyaan ke desainer**:
-  1. Close di Solid Warning putih di atas `#F2CF53` (kontras ±1,5:1), sedangkan ikon dan teks `#854D0E`.
-  2. Label bawaan action di Style Inverse "Button", di Style lain "Action".
-  3. Area sentuh action dan close 20dp (pedoman Android 48dp).
+- **Jawaban desainer (2026-10-06)**:
+  1. Close di Solid Warning putih di atas `#F2CF53` (kontras ±1,5:1): tetap sesuai Figma (C7).
+  2. Label bawaan action: Style Inverse tidak dipakai, jadi label "Action" (C9).
+  3. Area sentuh action dan close 20dp: tetap sesuai Figma (C8).
 
 ### Divider
 - **Properti Figma → parameter**: `Orientation` → `AmarDividerOrientation`; `Weight` → `AmarDividerWeight`. `Weight` menentukan warna (`Border/Color/Subtle|Default|Strong`), bukan ketebalan.
@@ -212,10 +212,10 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
   - Compact + Scroll: baris judul dan tombol tetap; deskripsi + slot di-scroll.
   - Padding: horizontal 16; atas 24 (`Padding/Top Handle`) atau 16 di bawah ilustrasi; bawah 24. Konten ↔ tombol 24, judul ↔ deskripsi 8, heading ↔ slot 16.
   - Tinggi maksimum 600 (`Bottom Sheet/Height/Max`) ditambah inset navigation bar. Lebar mengikuti layar (Material membatasi 640).
-- **Token** (`AmarBottomSheetTokens`): nilai `Component/Bottom Sheet/…` di atas, radius atas 16 (`Radius/Container`). Nilai mentah: handle 34×5 di y=5 (radius 2, `Border/Color/Default`), close 28, spacer judul 20, padding mode Scroll (8/8/16). Latar `Surface/Base`, shadow `Shadow/Modal`, judul `Heading/MD` `Content/Primary`, deskripsi `Body/LG` `Content/Tertiary`.
+- **Token** (`AmarBottomSheetTokens`): nilai `Component/Bottom Sheet/…` di atas, radius atas 16 (`Radius/Container`). Nilai mentah: handle 34×5 di y=6 (radius 2, `Border/Color/Default`; keputusan K6), close 28, spacer judul 20, padding mode Scroll (8/8/16). Latar `Surface/Base`, shadow `Shadow/Modal`, judul `Heading/MD` `Content/Primary`, deskripsi `Body/LG` `Content/Tertiary`.
 - **Sub-elemen**:
   - `AmarSheetIllustration`: non-fullscreen padding 24/16/8, gambar di tengah; fullscreen tanpa padding.
-  - `AmarSheetOption`: tinggi 52, label `Body/MD` `Content/Secondary`, radio Medium diskalakan ×1,2 (28,8) seperti di Figma. Seluruh baris adalah area sentuh, tanpa ripple.
+  - `AmarSheetOption`: tinggi 52, label `Body/MD` `Content/Secondary`, radio Medium diskalakan ke 28 (keputusan K7; Figma masih 28,8). Seluruh baris adalah area sentuh, tanpa ripple.
   - `AmarSheetText`: `Body/LG` `Content/Tertiary`, rata tengah.
   - `AmarSheetSelection`: padding vertikal 12, gap 16; ikon 24 + judul `Heading/SM` + deskripsi `Label/MD` `Content/Tertiary`; chevron.
 - **Aset**: `ds_ic_close_sheet_28_l0/_l1` (lingkaran `Background/Subtle`, silang `Icon/Secondary`), `ds_ic_chevron_right_24`, `ds_ic_default_24`.
@@ -223,10 +223,10 @@ Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif 
   - Screenshot (`AmarBottomSheetScreenshotTest`, 1x, lebar 360): ukuran keempat varian sama (360×264/340/236/228). Posisi tombol, close, handle, dan teks sama atau bergeser 1 px. Option 328×52 dengan radio ±1 px; Selection selisih rata-rata 2,67/255.
   - Emulator Pixel 6 API 34 (katalog DS): sheet Compact + Scroll (Pilih Provinsi) membuka penuh dengan scrim, judul tetap saat daftar di-scroll, latar memanjang ke belakang navigation bar. Sheet Default + ilustrasi tertutup lewat tombol close; back juga menutup sheet.
 - **Temuan Figma**:
-  1. `Inverse` hanya punya opsi `False`, padahal deskripsi komponen (dan aturan CLAUDE.md #7) mewajibkan `True` untuk ilustrasi gelap. Layar produk saat ini tidak memakai Inverse.
-  2. Handle di varian Default tanpa ilustrasi ada di y=6; tiga varian lain y=5. Kode memakai 5.
-  3. Sheet / Option: tinggi tetap 52 dengan padding 14, tetapi radio 28,8 melebihi padding itu. Kode mengikuti tinggi 52.
-  4. Radio di Option adalah instance Selection Control yang diskalakan ×1,2 (bukan ukuran di DS). Kode menskalakan `AmarSelectionIcon` Medium dengan faktor yang sama.
+  1. `Inverse` hanya punya opsi `False`. **Diputuskan 2026-10-06 (K1)**: Inverse tidak dipakai, varian True tidak dibuat.
+  2. Handle di varian Default tanpa ilustrasi ada di y=6; tiga varian lain y=5. **Diputuskan (K6)**: y=6 di semua varian; kode y=6, Figma belum diseragamkan.
+  3. Sheet / Option: tinggi tetap 52 dengan padding 14, tetapi radio melebihi padding itu. Kode mengikuti tinggi 52.
+  4. Radio di Option adalah instance Selection Control yang diskalakan (28,8 di Figma). **Diputuskan (K7)**: radio 28; kode menskalakan `AmarSelectionIcon` Medium ke 28, Figma belum diperbarui.
   5. Sheet tanpa handle tetap bisa diseret turun untuk ditutup; Material3 1.3.2 belum punya opsi mematikan gestur sheet.
 - **Pemakaian di layar produk**: Compact + Scroll (pilihan provinsi, kota, kecamatan, bank) 6×, Compact tanpa scroll (kelurahan, metode upload) 2×, Default + ilustrasi (error Login) 7×. Option 115×, Selection 2×.
 
@@ -257,7 +257,7 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
 - **Lebar**: komponen tidak mengunci lebar (328 di Figma).
 - **Verifikasi** (`AmarCardScreenshotTest`, 1x, margin 16): ukuran 328×144 dan 328×66 sama; selisih di luar teks rata-rata 0,17/255; selisih hanya di glyph teks (rasterizer) dan anti-aliasing sudut.
 - **Temuan Figma**:
-  1. `Type=Default, Style=Shadow` **tidak punya efek shadow** (tampil sama dengan Style=Default); hanya `Type=Custom, Style=Shadow` yang memakai `Shadow/Floating`. Kode memberi `Shadow/Floating` ke kedua Type agar Style konsisten. Perlu konfirmasi desainer.
+  1. `Type=Default, Style=Shadow` **tidak punya efek shadow** (tampil sama dengan Style=Default); hanya `Type=Custom, Style=Shadow` yang memakai `Shadow/Floating`. Kode memberi `Shadow/Floating` ke kedua Type agar Style konsisten. **Sudah diperbaiki di Figma (K2)**: Default kini juga memakai `Shadow/Floating`.
   2. `Show Icon` default `True` dengan slot 32 kosong, sehingga label di master bergeser 44. Di kode `icon = null` menyembunyikan slot.
   3. Slot di `Type=Default` lebarnya tetap 326 (bukan Fill 296 seperti di Custom). Di kode slot mengisi lebar konten.
   4. Label heading tidak diekspos sebagai properti TEXT di Figma; di kode tetap menjadi parameter `label`.
@@ -283,7 +283,7 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   - `AmarDropdownPickerTest`: aturan Scroll terhadap tiga layar produk dan batas 8/9 opsi; filter pencarian.
   - Emulator Pixel 6 API 34 (katalog DS): Provinsi → sheet Scroll terbuka, memilih "Sumatera Utara" mengisi field, menutup sheet, dan mengaktifkan Kabupaten/Kota. Bank → pencarian "mandiri" menyisakan "Bank Mandiri", sheet naik di atas keyboard; memilihnya mengisi field dan menutup sheet serta keyboard.
 - **Belum ditentukan desain**:
-  1. Tampilan bila pencarian tidak menemukan hasil. Saat ini daftar kosong. DS punya ilustrasi `Medium / Empty Search`, tetapi tidak ada spesifikasi untuk sheet.
+  1. Tampilan bila pencarian tidak menemukan hasil. **Diputuskan (C4)**: perlu state kosong dengan ilustrasi; menunggu desain dan copy. Saat ini daftar kosong.
   2. Daftar opsi memakai `Column` yang di-scroll, cukup untuk daftar per wilayah (puluhan opsi). Untuk ratusan opsi perlu `LazyColumn`.
 
 ### Element / Upload
@@ -334,11 +334,11 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
 - **Aset**: `ds_ic_{trash,files,camera}_24` dan `ds_ic_error_24_l0/_l1`, ditampilkan 20. Stroke di instance 20 adalah skala proporsional dari master 24 (2 → 1,67; 1,8 → 1,5), jadi tidak perlu ekspor baru.
 - **Verifikasi** (`AmarProgressPhotosScreenshotTest`, 1x, lebar 296): ukuran kelima varian sama (296×60/24/48/48/64). Ikon, progress bar, dan aksi selisih rata-rata 0,16–1,9/255 tanpa pergeseran. Selisih sisanya di glyph teks (rasterizer).
 - **Temuan Figma**:
-  1. Copy status menyebut "foto" ("proses upload foto...", "Gagal upload foto, coba lagi.", "Ambil Foto Ulang"), padahal layar Document Upload memakai komponen ini untuk PDF dengan teks yang sama. Karena itu copy dijadikan parameter.
-  2. "Ambil Foto Ulang" memakai Title Case; aturan copy bundle meminta sentence case. Kode mengikuti Figma; perlu konfirmasi.
-  3. Ukuran file di Figma memakai titik desimal ("3.2 MB"); format Indonesia memakai koma ("3,2 MB"). Format diserahkan ke pemanggil.
+  1. Copy status menyebut "foto" ("proses upload foto...", "Gagal upload foto, coba lagi.", "Ambil Foto Ulang"), padahal layar Document Upload memakai komponen ini untuk PDF dengan teks yang sama. Karena itu copy dijadikan parameter. **Diputuskan (C1)**: perlu versi "dokumen"; copy final menunggu desainer.
+  2. "Ambil Foto Ulang" memakai Title Case. **Dikonfirmasi (C2)**: tetap sesuai Figma.
+  3. Ukuran file di Figma memakai titik desimal ("3.2 MB"). **Diputuskan (C3)**: format Indonesia di semua layar; pakai `formatFileSize(bytes)` (koma desimal, satuan biner, maks. 1 desimal, diuji `FormatFileSizeTest`). Preview dan screenshot test tetap memakai teks contoh Figma.
   4. Status Waiting juga menampilkan spinner, sama seperti Loading.
-  5. Tidak ada state disabled/pressed untuk Trash dan tombol batal; area sentuhnya 20dp (pedoman Android 48dp).
+  5. Tidak ada state disabled/pressed untuk Trash dan tombol batal; area sentuhnya 20dp. **Dikonfirmasi (C8)**: mengikuti ukuran Figma.
 - **Pemakaian di layar produk**: Uploaded Default 15× dan Loading 1× (Document Upload).
 
 ### Modal / Default dan Element / Illustration Modal
@@ -393,10 +393,10 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   - Latar `surface.base`, `Shadow/Overlay`.
   - Item: padding atas 8, bawah 4, gap 4, ikon 24.
   - Indikator atas 4 `Action/Focus`.
-  - Label aktif `Label/Button/SM`, nonaktif `Caption/SM` Neutral 400.
+  - Label `Label/Button/SM` (aktif dan nonaktif, keputusan K10); nonaktif Neutral 400.
   - Bar digambar di belakang navigation bar sistem lewat `windowInsets`.
 - **Aset**: `ds_ic_menu_{home,store,profile}_24` (outline) dan versi `_filled_24`.
   - Ikon aktif dua warna dipecah menjadi layer berurutan (`_l0…_l5`) yang di-tint `Action/Focus` / `Icon/Inverse`, agar urutan tumpukan sama dengan Figma.
   - Mask `user-fill` (stroke di sisi dalam bentuk) dikonversi menjadi `clip-path`.
   - Master `menu / store` tingginya 24,5; drawable-nya diskalakan 24/24,5 secara vertikal seperti render Figma.
-- **Temuan Figma**: di varian Partner dan Tim, label "Beranda" nonaktif memakai `Label/Button/SM` (semibold), sedangkan label nonaktif lain `Caption/SM`. Kode memakai `Caption/SM` untuk semua label nonaktif.
+- **Temuan Figma**: di varian Partner dan Tim, label "Beranda" nonaktif memakai `Label/Button/SM` (semibold), sedangkan label nonaktif lain `Caption/SM`. **Diputuskan 2026-10-06 (K10)**: semua label (aktif dan nonaktif) `Label/Button/SM`; kode sudah disesuaikan, Figma belum.

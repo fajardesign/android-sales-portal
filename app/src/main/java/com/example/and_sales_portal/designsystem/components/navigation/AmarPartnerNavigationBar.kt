@@ -118,7 +118,8 @@ fun AmarPartnerNavigationBar(
                     }
                     Text(
                         stringResource(destination.label),
-                        style = if (active) AmarTheme.typography.labelButtonSm else AmarTheme.typography.captionSm,
+                        // Active and inactive both `Label/Button/SM` (design decision 2026-10-06, K10).
+                        style = AmarTheme.typography.labelButtonSm,
                         color = if (active) c.content.link else c.content.disabled, // Primary 700 / Navigation Bar/Label/Inactive
                         textAlign = TextAlign.Center,
                         maxLines = 1,

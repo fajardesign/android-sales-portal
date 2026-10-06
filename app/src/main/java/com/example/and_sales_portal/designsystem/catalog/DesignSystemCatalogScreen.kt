@@ -78,6 +78,7 @@ import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressP
 import com.example.and_sales_portal.designsystem.components.inputs.AmarProgressPhotosStatus
 import com.example.and_sales_portal.designsystem.components.inputs.AmarUpload
 import com.example.and_sales_portal.designsystem.components.inputs.AmarUploadFiles
+import com.example.and_sales_portal.designsystem.components.inputs.formatFileSize
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionIcon
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionSize
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionType
@@ -508,7 +509,7 @@ private fun InputsSection() {
                 fileName = if (status == AmarProgressPhotosStatus.UploadedDefault) "Anggaran_Dasar_PT_Nusantara.pdf" else "foto_toko.jpg",
                 status = status,
                 thumbnail = painterResource(R.drawable.ds_ill_medium_in_process),
-                fileSize = "2,4 MB",
+                fileSize = formatFileSize(2_516_582),
                 progress = 0.4f,
                 onRetry = {},
                 onDelete = {},

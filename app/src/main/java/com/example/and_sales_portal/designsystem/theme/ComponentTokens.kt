@@ -311,10 +311,13 @@ object AmarBottomSheetTokens {
     val GapHeading = AmarSpace.S8
     val GapSection = AmarSpace.S16
     val SlotGap = AmarSpace.S12
-    /** Handle bar: 34 × 5 at 5 from the top (raw), `Handle Radius` → Radius/2. */
+    /**
+     * Handle bar: 34 × 5, `Handle Radius` → Radius/2. 6 from the top in every variant (design decision 2026-10-06, K6;
+     * Figma still has 5 in three variants).
+     */
     val HandleWidth = 34.dp
     val HandleHeight = 5.dp
-    val HandleTop = 5.dp
+    val HandleTop = 6.dp
     val HandleRadius = AmarRadius.R2
     /** `close sheet` 28, 16 from the top and right edge in Type=Default (raw position). */
     val CloseSize = 28.dp
@@ -334,13 +337,13 @@ object AmarBottomSheetTokens {
     val IllustrationPaddingHorizontal = AmarSpace.S16
 
     /**
-     * `Element / Sheet / Option`: fixed height 52, gap 16 (raw); the Medium radio is scaled ×1.2 to 28.8 in Figma.
-     * Figma also sets padding 14 top/bottom, but with the fixed height the 28.8 radio overflows it, so the row is 52.
+     * `Element / Sheet / Option`: fixed height 52, gap 16 (raw). The radio is the Medium Selection Control scaled to 28
+     * (design decision 2026-10-06, K7; Figma still shows 28.8). Figma also sets padding 14 top/bottom, which the fixed
+     * height overrides.
      */
     val OptionHeight = 52.dp
     val OptionGap = AmarSpace.S16
-    const val OptionRadioScale = 1.2f
-    val OptionRadioSize = 28.8.dp
+    val OptionRadioSize = 28.dp
 
     /** `Element / Sheet / Selection`: padding Spacing/Padding/SM vertical, gap Spacing/Gap/LG; icon ↔ text 12, title ↔ description 4 (raw). */
     val SelectionPaddingVertical = AmarSpace.S12

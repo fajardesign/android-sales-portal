@@ -51,6 +51,7 @@ import com.example.and_sales_portal.designsystem.components.inputs.AmarSelection
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionSize
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionType
 import com.example.and_sales_portal.designsystem.theme.AmarBottomSheetTokens
+import com.example.and_sales_portal.designsystem.theme.AmarSelectionTokens
 import com.example.and_sales_portal.designsystem.theme.AmarSpace
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.designsystem.theme.amarShadow
@@ -428,7 +429,7 @@ fun AmarSheetIllustration(
  * Element / Sheet / Option: one row of a selection list in a sheet (label + radio).
  *
  * Figma: [Element / Sheet / Option 1043:1524](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=1043-1524)
- * (Selected = 2 variants). The radio is the Medium Selection Control scaled ×1.2 (28.8), as in Figma.
+ * (Selected = 2 variants). The radio is the Medium Selection Control scaled to 28 (design decision K7).
  * The whole row is the touch target (no ripple, as for Button).
  *
  * @param label Figma `Edit Label` (`Body/MD`, `Content/Secondary`).
@@ -454,14 +455,15 @@ fun AmarSheetOption(
     ) {
         Text(label, Modifier.weight(1f), AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodyMd)
         if (showIndicator) {
+            val radioScale = t.OptionRadioSize / AmarSelectionTokens.Medium.box
             Box(Modifier.size(t.OptionRadioSize), contentAlignment = Alignment.Center) {
                 AmarSelectionIcon(
                     checked = selected,
                     type = AmarSelectionType.Radio,
                     size = AmarSelectionSize.Medium,
                     modifier = Modifier.graphicsLayer {
-                        scaleX = t.OptionRadioScale
-                        scaleY = t.OptionRadioScale
+                        scaleX = radioScale
+                        scaleY = radioScale
                     },
                 )
             }

@@ -47,6 +47,27 @@ import com.example.and_sales_portal.designsystem.theme.AmarButtonTokens
 import com.example.and_sales_portal.designsystem.theme.AmarSpace
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.designsystem.theme.AmarUploadTokens
+import java.text.NumberFormat
+import java.util.Locale
+
+/**
+ * File size for [AmarProgressPhotos] `fileSize` in the Indonesian format, e.g. "3,2 MB" (design decision 2026-10-06, C3).
+ * Binary units (1 KB = 1024 B) with at most one decimal; whole numbers drop the decimal ("2 MB").
+ */
+fun formatFileSize(bytes: Long): String {
+    val units = listOf("B", "KB", "MB", "GB")
+    var value = bytes.coerceAtLeast(0L).toDouble()
+    var unit = 0
+    while (value >= 1024 && unit < units.lastIndex) {
+        value /= 1024
+        unit++
+    }
+    val format = NumberFormat.getNumberInstance(Locale("id", "ID")).apply {
+        maximumFractionDigits = if (unit == 0) 0 else 1
+        minimumFractionDigits = 0
+    }
+    return "${format.format(value)} ${units[unit]}"
+}
 
 /** Figma variant property `Status` of `Element / Progress Photos`. */
 enum class AmarProgressPhotosStatus { Uploaded, UploadedDefault, Waiting, Loading, Failed }
