@@ -73,7 +73,7 @@ Saran default untuk tipe komponen yang dipakai di UX Flow. **Bila komponen setar
 
 - Gradle 8.11.1, AGP 8.9.1, Kotlin 2.1.21 (+ plugin `org.jetbrains.kotlin.plugin.compose`), Gradle Kotlin DSL; `compileSdk` 36, `targetSdk` 34, `minSdk` 24, Java/JVM target 1.8. Compose BOM 2025.06.01 (UI 1.8.3, Material3 1.3.2).
 - UI: template awal memakai **View system + ViewBinding**, AndroidX Navigation (`res/navigation/`), LiveData + ViewModel. **Jetpack Compose** dipakai untuk design system (§4) dan menjadi arah UI baru.
-- Package: `com.example.and_sales_portal`. `MainActivity` adalah shell aplikasi Sales (login Supabase, bottom navigation per role, `nav_main`). Data prototype: `data/` (Supabase untuk akun, `DemoStore`/`PartnerRepository`/`ActivityRepository` di perangkat sampai API mobile tersedia). Partner Registration adalah nav graph `nav_partner_registration` yang di-include di `nav_main`.
+- Package: `com.example.and_sales_portal`. `MainActivity` adalah shell aplikasi Sales (login Supabase, bottom navigation per role, `nav_main`). Data prototype: `data/` (Supabase untuk akun, `DemoStore`/`PartnerRepository`/`ActivityRepository` di perangkat sampai API mobile tersedia). Partner Registration adalah nav graph `nav_partner_registration` yang di-include di `nav_main`. Panduan prototype (cara menjalankan, akun demo, peta Flow ID → kode, simulasi, batasan): `docs/sales-app/README.md`.
 - Susun fitur per modul flow di `ui/<flow>/` (contoh `ui/partnerregistration/`), sejalan dengan file di `flows_android/`.
 
 ### Perintah
