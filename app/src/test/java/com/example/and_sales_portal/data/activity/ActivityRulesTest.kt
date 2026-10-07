@@ -1,6 +1,7 @@
 package com.example.and_sales_portal.data.activity
 
 import com.example.and_sales_portal.data.auth.SalesRole
+import com.example.and_sales_portal.data.partner.PartnerSeed
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -37,7 +38,7 @@ class ActivityRulesTest {
 
     @Test
     fun storesPerRoleMatchThePortalSample() {
-        val partners = DemoSeed.partners()
+        val partners = PartnerSeed.partners()
         assertEquals(listOf("REG2026-0139-1"), DemoSeed.storesOf(partners, 15, SalesRole.SA).map { it.id })
         assertEquals(listOf("REG2026-0139-2", "REG2026-0139-3", "REG2026-0132-2"), DemoSeed.storesOf(partners, 11, SalesRole.SR).map { it.id })
         assertEquals(5, DemoSeed.storesOf(partners, 6, SalesRole.TL).size)
@@ -45,7 +46,7 @@ class ActivityRulesTest {
 
     @Test
     fun dailyPlan() {
-        val partners = DemoSeed.partners()
+        val partners = PartnerSeed.partners()
         val sa = DemoSeed.plan(15, SalesRole.SA, DemoSeed.storesOf(partners, 15, SalesRole.SA), today)
         assertEquals(listOf("10:00"), sa.map { it.plannedTime })
         assertEquals(6L, sa.single().createdBy)

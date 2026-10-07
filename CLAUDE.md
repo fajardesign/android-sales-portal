@@ -23,7 +23,7 @@ Path relatif terhadap `okf_repository_design/products/sales_dashboard/`.
 | File | Isi | Relevansi untuk Android |
 |---|---|---|
 | `flows_android/index.md` | Daftar flow mobile + rentang Flow ID | **Utama**: titik masuk setiap fitur |
-| `flows_android/partner_registration.md` | Pendaftaran Partner TL Assisted (`REG-02` s/d `REG-07`), disamakan dengan Figma per 2026-10-06 | **Utama**: form schema per step |
+| `flows_android/partner_registration.md` | Tab Partner, pendaftaran TL/SR, Pengajuan, Partner saya, Tambah Toko (`REG-01` s/d `REG-11`, `PRT-01`/`PRT-02`), sesuai PRD v3 per 2026-10-08 | **Utama**: form schema per step |
 | `flows_android/tl_dashboard.md` | TL Dashboard (entry point REG) | **Masih kosong** |
 | `roles_matrix.md` | Hierarki APL → TL → SR/SA → Store → Partner, permission | Menentukan fitur per role |
 | `flows_web/*.md` | Login Admin (`LGN`), Manajemen Akun TL (`ACC`), Aktivasi Akun (`ACT`) | Konteks: akun TL dibuat Admin di web, aktivasi lewat Keycloak, lalu TL login di app ini |
@@ -33,8 +33,8 @@ Path relatif terhadap `okf_repository_design/products/sales_dashboard/`.
 
 ### Status bundle (per 2026-10-06), perlu diperhatikan
 - `flows_android/index.md` mencantumkan file yang **belum ada**: `attendance_location.md` (ATT), `sa_sr_features.md` (SLS), `team_leader.md` (TL), `partner_dashboard.md` (PDB). Jangan mengarang spesifikasi fitur tersebut. Tanyakan ke user, atau buat placeholder `TODO` di kode.
-- `tl_dashboard.md` kosong dan `REG-01` tidak didefinisikan. Entry point REG sementara berupa tombol "Daftarkan Partner" di Home (TODO).
-- `partner_registration.md` disamakan dengan Figma dan implementasi per 2026-10-06: 5 langkah (`REG-02` s/d `REG-06`, Step 1–5) plus `REG-07` Pengajuan Terkirim, pilihan memakai Chip, dokumen REG-06 per badan usaha. Pertanyaan yang belum diputuskan ada di bagian *Pertanyaan Terbuka* file itu. Tetap pegang **Flow ID** sebagai kunci.
+- `tl_dashboard.md` kosong. Entry point REG: tab Partner › "Daftarkan Partner" (`REG-01`).
+- `partner_registration.md` mengikuti PRD v3 §C2–C4 per 2026-10-08 (PRD di atas Figma): 5 langkah form (`REG-02` s/d `REG-06`), Ringkasan, Lokasi, Terkirim, Pengajuan + revisi, Partner saya, Tambah Toko. Pertanyaan yang belum diputuskan ada di bagian *Pertanyaan Terbuka* file itu. Tetap pegang **Flow ID** sebagai kunci.
 - Layar Figma *Sales - Partner Dashboard - Android* bisa lebih baru dari bundle. Untuk REG, keputusan 2026-10-06: **ikuti Figma**. Untuk flow lain, bila bundle dan Figma berbeda, tanyakan dulu.
 - Belum ada spesifikasi API untuk mobile. Pakai repository/mock dengan interface yang jelas sampai kontraknya tersedia.
 
@@ -61,13 +61,13 @@ Saran default untuk tipe komponen yang dipakai di UX Flow. **Bila komponen setar
 | `[Document Upload]` / `[Image Upload / Document]` | `ActivityResultContracts.OpenDocument` |
 | Stepper multi-step + app bar title | Satu nav graph per flow, satu Fragment per Flow ID (isi Compose lewat `ComposeView`), ViewModel di-scope ke nav graph agar data antar step bertahan. Contoh: `ui/partnerregistration/` (REG memakai penanda "LANGKAH n DARI 5" dari Figma, bukan komponen Stepper) |
 | `*Side by Side Input Text` | Dua field dalam satu baris horizontal (contoh RT & RW) |
-| `*Hide` / `*Show (disabled)` | Visibility `GONE` → `VISIBLE` + `isEnabled = false` setelah kondisi terpenuhi (contoh inquiry rekening `REG-05`) |
+| `*Hide` / `*Show (disabled)` | Visibility `GONE` → `VISIBLE` + `isEnabled = false` setelah kondisi terpenuhi (contoh Channel Offline `REG-03`) |
 
 ## 3. Proyek Android
 
 - Gradle 8.11.1, AGP 8.9.1, Kotlin 2.1.21 (+ plugin `org.jetbrains.kotlin.plugin.compose`), Gradle Kotlin DSL; `compileSdk` 36, `targetSdk` 34, `minSdk` 24, Java/JVM target 1.8. Compose BOM 2025.06.01 (UI 1.8.3, Material3 1.3.2).
 - UI: template awal memakai **View system + ViewBinding**, AndroidX Navigation (`res/navigation/`), LiveData + ViewModel. **Jetpack Compose** dipakai untuk design system (§4) dan menjadi arah UI baru.
-- Package: `com.example.and_sales_portal`. `MainActivity` masih template awal Android Studio (Bottom Navigation: Home/Dashboard/Notifications). Flow produk pertama: Partner Registration di `ui/partnerregistration/` (`PartnerRegistrationActivity`, data dari `FakePartnerRegistrationRepository` sampai API mobile tersedia).
+- Package: `com.example.and_sales_portal`. `MainActivity` adalah shell aplikasi Sales (login Supabase, bottom navigation per role, `nav_main`). Data prototype: `data/` (Supabase untuk akun, `DemoStore`/`PartnerRepository`/`ActivityRepository` di perangkat sampai API mobile tersedia). Partner Registration adalah nav graph `nav_partner_registration` yang di-include di `nav_main`.
 - Susun fitur per modul flow di `ui/<flow>/` (contoh `ui/partnerregistration/`), sejalan dengan file di `flows_android/`.
 
 ### Perintah

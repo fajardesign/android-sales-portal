@@ -182,7 +182,7 @@ private fun SelfieStep(state: CaptureUiState, actions: CaptureActions) {
 }
 
 @Composable
-private fun CaptureSheetFor(sheet: CaptureSheet, actions: CaptureActions) {
+internal fun CaptureSheetFor(sheet: CaptureSheet, actions: CaptureActions) {
     data class Spec(val illustration: Int, val title: Int, val message: Int, val primary: Int, val second: Int?)
     val s = when (sheet) {
         CaptureSheet.Permission -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_permission_title, R.string.cap_err_permission, R.string.cap_err_permission_allow, null)
@@ -205,7 +205,7 @@ private fun CaptureSheetFor(sheet: CaptureSheet, actions: CaptureActions) {
 
 /** PRD D2/D3: mock location blocked with a non-dismissable dialog; the only way out closes the flow. */
 @Composable
-private fun MockLocationDialog(onClose: () -> Unit) {
+internal fun MockLocationDialog(onClose: () -> Unit) {
     Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
         AmarModal(
             primaryLabel = stringResource(R.string.common_back),
@@ -218,7 +218,7 @@ private fun MockLocationDialog(onClose: () -> Unit) {
 }
 
 @Composable
-private fun distanceLabel(meters: Int): String =
+internal fun distanceLabel(meters: Int): String =
     if (meters < METERS_PER_KM) stringResource(R.string.cap_distance_value, meters)
     else stringResource(R.string.cap_distance_km, NumberFormat.getNumberInstance(Locale("id", "ID")).apply { maximumFractionDigits = 1 }.format(meters / METERS_PER_KM.toDouble()))
 

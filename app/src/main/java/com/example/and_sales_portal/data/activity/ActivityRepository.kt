@@ -2,6 +2,9 @@ package com.example.and_sales_portal.data.activity
 
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoStore
+import com.example.and_sales_portal.data.partner.Partner
+import com.example.and_sales_portal.data.partner.PartnerRepository
+import com.example.and_sales_portal.data.partner.Store
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,13 +18,14 @@ import java.time.LocalDate
  */
 class ActivityRepository(
     private val store: DemoStore,
+    private val partners: PartnerRepository,
     val userId: Long,
     private val role: SalesRole,
     private val areaId: Int?,
     private val clock: () -> Instant = Instant::now,
 ) {
     private val saved = store.load(userId)
-    private val _data = MutableStateFlow(saved ?: DemoSeed.initial(userId, role, areaId, today()))
+    private val _data = MutableStateFlow(saved ?: DemoSeed.initial(userId, role, areaId, today(), partners.partners.value))
     val data: StateFlow<DemoData> = _data.asStateFlow()
 
     init {
@@ -32,9 +36,9 @@ class ActivityRepository(
     fun now(): Instant = clock()
     fun today(): LocalDate = clock().atZone(ActivityRules.ZONE).toLocalDate()
 
-    fun stores(): List<Store> = DemoSeed.storesOf(_data.value.partners, userId, role)
-    fun store(id: String): Store? = _data.value.partners.flatMap { it.stores }.firstOrNull { it.id == id }
-    fun partnerOf(storeId: String): DemoPartner? = _data.value.partners.firstOrNull { p -> p.stores.any { it.id == storeId } }
+    fun stores(): List<Store> = DemoSeed.storesOf(partners.partners.value, userId, role)
+    fun store(id: String): Store? = partners.partners.value.flatMap { it.stores }.firstOrNull { it.id == id }
+    fun partnerOf(storeId: String): Partner? = partners.partners.value.firstOrNull { p -> p.stores.any { it.id == storeId } }
 
     fun attendanceOf(date: LocalDate): Attendance? = _data.value.attendance.firstOrNull { it.date == date.toString() }
     fun visit(id: String): Visit? = _data.value.visits.firstOrNull { it.id == id }
@@ -83,7 +87,7 @@ class ActivityRepository(
     /** "Reset data demo": back to the initial sample data. */
     fun reset() {
         store.reset(userId)
-        _data.value = DemoSeed.initial(userId, role, areaId, today())
+        _data.value = DemoSeed.initial(userId, role, areaId, today(), partners.partners.value)
         store.save(userId, _data.value)
     }
 

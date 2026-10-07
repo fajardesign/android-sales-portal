@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
@@ -41,6 +42,14 @@ import com.example.and_sales_portal.designsystem.theme.amarShadow
  *
  * @param cta Bottom button label; `null` hides the bar (REG-05 before the account is verified).
  */
+/**
+ * How a step screen is framed. In "Perbaiki Pengajuan" (REG-11) the same forms are shown without the step marker,
+ * with the revision title and "Simpan Perubahan".
+ */
+data class RegFrame(val appBarTitle: String? = null, val showStep: Boolean = true, val cta: String? = null)
+
+val LocalRegFrame = staticCompositionLocalOf { RegFrame() }
+
 @Composable
 fun RegStepScaffold(
     step: RegStep,
@@ -57,9 +66,10 @@ fun RegStepScaffold(
 ) {
     val c = AmarTheme.colors
     val t = AmarFormTokens
+    val frame = LocalRegFrame.current
     Column(modifier.fillMaxSize().background(c.background.base)) {
         AmarAppBar(
-            title = stringResource(R.string.reg_app_bar_title),
+            title = frame.appBarTitle ?: stringResource(R.string.reg_app_bar_title),
             type = AmarAppBarType.Secondary,
             onNavigationClick = onBack,
         )
@@ -71,13 +81,13 @@ fun RegStepScaffold(
             verticalArrangement = Arrangement.spacedBy(t.FieldGap),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(t.IntroGap)) {
-                Text(stringResource(R.string.reg_step, step.number, RegStep.count), color = c.content.link, style = AmarTheme.typography.labelSm)
+                if (frame.showStep) Text(stringResource(R.string.reg_step, step.number, RegStep.count), color = c.content.link, style = AmarTheme.typography.labelSm)
                 Text(title, color = c.content.primary, style = AmarTheme.typography.headingSm)
                 Text(description, color = c.content.secondary, style = AmarTheme.typography.bodySm)
             }
             content()
         }
-        if (cta != null) RegPersistentAction(cta, onCta, ctaEnabled, ctaLoading, windowInsets)
+        if (cta != null) RegPersistentAction(frame.cta ?: cta, onCta, ctaEnabled, ctaLoading, windowInsets)
     }
 }
 
@@ -121,3 +131,11 @@ fun RegChoiceField(group: RegChoice, selected: String?, onSelect: (String) -> Un
 /** Hint for a required field: "Informasi wajib diisi" when [error], otherwise none. */
 @Composable
 fun requiredHint(error: Boolean): String? = if (error) stringResource(R.string.reg_required) else null
+
+/** Message of a field error ("Minimal 3 karakter"), or [fallback] when there is none. */
+@Composable
+fun errorHint(error: FieldError?, fallback: String? = null): String? = when {
+    error == null -> fallback
+    error.arg != null -> stringResource(error.message, error.arg)
+    else -> stringResource(error.message)
+}

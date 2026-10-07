@@ -1,48 +1,107 @@
 package com.example.and_sales_portal.ui.partnerregistration
 
+import com.example.and_sales_portal.R
+import com.example.and_sales_portal.data.partner.DocType
+
 /**
- * Required-field rules of the flow: every field is `*Mandatory` in the spec and Figma, and the only error is
- * "Informasi wajib diisi". No other rules (format, length) are specified, so none are added (CLAUDE.md §1).
+ * Field rules of PRD v3 C2: Nama Partner 3–100, Alamat 5–255, RT/RW 3 digits, valid emails, Omzet > 0, Jumlah Tempat
+ * Usaha ≥ 1, every other field required except Privy ID. The empty-field message stays "Informasi wajib diisi" (Figma).
  */
 object PartnerRegistrationValidator {
 
-    /** REG-02 fields that are still empty. */
-    fun missingPartnerInfo(form: PartnerInfoForm): Set<RegField> = buildSet {
-        if (form.name.isBlank()) add(RegField.PartnerName)
-        if (form.address.isBlank()) add(RegField.Address)
-        if (form.province == null) add(RegField.Province)
-        if (form.regency == null) add(RegField.Regency)
-        if (form.district == null) add(RegField.District)
-        if (form.village == null) add(RegField.Village)
-        if (form.rt.isBlank()) add(RegField.Rt)
-        if (form.rw.isBlank()) add(RegField.Rw)
+    private val EMAIL = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+    private val THREE_DIGITS = Regex("^\\d{3}$")
+
+    private val required = FieldError(R.string.reg_required)
+
+    fun length(value: String, min: Int, max: Int): FieldError? = when {
+        value.isBlank() -> required
+        value.trim().length < min -> FieldError(R.string.reg_err_min, min)
+        value.trim().length > max -> FieldError(R.string.reg_err_max, max)
+        else -> null
     }
 
-    /** REG-03 text fields that are still empty. */
-    fun missingBusiness(form: BusinessForm): Set<RegField> = buildSet {
-        if (form.email.isBlank()) add(RegField.Email)
-        if (form.revenue.isBlank()) add(RegField.Revenue)
-        if (form.outletCount.isBlank()) add(RegField.OutletCount)
+    fun email(value: String): FieldError? = when {
+        value.isBlank() -> required
+        !EMAIL.matches(value.trim()) -> FieldError(R.string.reg_err_email)
+        else -> null
     }
+
+    fun threeDigits(value: String): FieldError? = when {
+        value.isBlank() -> required
+        !THREE_DIGITS.matches(value) -> FieldError(R.string.reg_err_digits3)
+        else -> null
+    }
+
+    fun revenue(value: String): FieldError? = when {
+        value.isBlank() -> required
+        (value.toLongOrNull() ?: 0L) <= 0L -> FieldError(R.string.reg_err_revenue)
+        else -> null
+    }
+
+    private fun filled(value: String) = if (value.isBlank()) required else null
+    private fun chosen(value: Any?) = if (value == null) required else null
+
+    /** REG-02 (also the address part of Tambah Toko). */
+    fun partnerInfo(form: PartnerInfoForm): Map<RegField, FieldError> = errors(
+        RegField.PartnerName to length(form.name, 3, 100),
+        RegField.Address to length(form.address, 5, 255),
+        RegField.Province to chosen(form.province),
+        RegField.Regency to chosen(form.regency),
+        RegField.District to chosen(form.district),
+        RegField.Village to chosen(form.village),
+        RegField.Rt to threeDigits(form.rt),
+        RegField.Rw to threeDigits(form.rw),
+    )
+
+    /** REG-03 text fields. */
+    fun business(form: BusinessForm): Map<RegField, FieldError> = errors(
+        RegField.Email to email(form.email),
+        RegField.Revenue to revenue(form.revenue),
+        RegField.OutletCount to when {
+            form.outletCount.isBlank() -> required
+            (form.outletCount.toIntOrNull() ?: 0) < 1 -> FieldError(R.string.reg_err_outlet)
+            else -> null
+        },
+    )
 
     /** Chip groups of [groups] without a chosen option. */
     fun missingChoices(choices: Map<RegChoice, String>, groups: List<RegChoice>): Set<RegChoice> =
         groups.filterTo(mutableSetOf()) { choices[it] == null }
 
-    /** REG-04 text fields that are still empty (Status PIC is a Chip group, see [missingChoices]). */
-    fun missingPic(form: PicForm): Set<RegField> = buildSet {
-        if (form.name.isBlank()) add(RegField.PicName)
-        if (form.email.isBlank()) add(RegField.PicEmail)
-        if (form.phone.isBlank()) add(RegField.PicPhone)
+    /** REG-04 text fields (Status PIC is a Chip group, Privy ID is optional). */
+    fun pic(form: PicForm): Map<RegField, FieldError> = errors(
+        RegField.PicName to filled(form.name),
+        RegField.PicEmail to email(form.email),
+        RegField.PicPhone to filled(form.phone),
+        RegField.PksEmail to email(form.pksEmail),
+    )
+
+    /** REG-05: no bank inquiry in phase 1 (PRD C2). */
+    fun bank(form: BankForm): Map<RegField, FieldError> = errors(
+        RegField.Bank to chosen(form.bank),
+        RegField.Branch to filled(form.branch),
+        RegField.AccountNumber to filled(form.accountNumber),
+        RegField.AccountName to filled(form.accountName),
+    )
+
+    /** REG-06: every mandatory document is uploaded and nothing is still uploading ("Lanjut Ringkasan" enabled). */
+    fun documentsComplete(list: List<Pair<DocType, Boolean>>, documents: Map<DocType, DocumentUpload>): Boolean =
+        list.isNotEmpty() &&
+            list.all { (d, mandatory) -> !mandatory || documents[d]?.status == UploadStatus.Uploaded } &&
+            documents.values.none { it.status == UploadStatus.Uploading }
+
+    /** PRD C2: legal documents JPG/PNG/PDF up to 5 MB, store photos JPG/PNG up to 2 MB. */
+    fun file(doc: DocType, fileName: String, sizeBytes: Long): FileError? {
+        val ext = fileName.substringAfterLast('.', "").lowercase()
+        val allowed = if (doc.store) setOf("jpg", "jpeg", "png") else setOf("jpg", "jpeg", "png", "pdf")
+        return when {
+            ext !in allowed -> FileError.WrongType
+            sizeBytes > doc.maxBytes -> FileError.TooLarge
+            else -> null
+        }
     }
 
-    /** REG-05 fields needed before "Periksa" can run. */
-    fun missingBankAccount(form: BankAccountForm): Set<RegField> = buildSet {
-        if (form.bank == null) add(RegField.Bank)
-        if (form.accountNumber.isBlank()) add(RegField.AccountNumber)
-    }
-
-    /** REG-06: every document required for the entity type is uploaded ("Kirim Dokumen" is enabled). */
-    fun documentsComplete(required: List<RegDocument>, documents: Map<RegDocument, DocumentUpload>): Boolean =
-        required.isNotEmpty() && required.all { documents[it]?.status == UploadStatus.Uploaded }
+    private fun errors(vararg pairs: Pair<RegField, FieldError?>): Map<RegField, FieldError> =
+        pairs.mapNotNull { (f, e) -> e?.let { f to it } }.toMap()
 }

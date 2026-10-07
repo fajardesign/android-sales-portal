@@ -1,13 +1,15 @@
 package com.example.and_sales_portal.ui.partnerregistration
 
-import android.net.Uri
 import androidx.annotation.StringRes
 import com.example.and_sales_portal.R
+import com.example.and_sales_portal.data.device.LocationResult
+import com.example.and_sales_portal.data.partner.DocType
+import com.example.and_sales_portal.data.partner.Keys
 import com.example.and_sales_portal.ui.partnerregistration.data.Bank
 import com.example.and_sales_portal.ui.partnerregistration.data.Region
-import com.example.and_sales_portal.ui.partnerregistration.data.SubmissionResult
+import kotlinx.serialization.Serializable
 
-/** Steps of the flow as numbered in Figma ("LANGKAH n DARI 5"), with their Flow IDs. */
+/** Steps of the form ("LANGKAH n DARI 5"), with their Flow IDs (PRD v3 C2 steps 1–5). */
 enum class RegStep(val number: Int, val flowId: String) {
     PartnerInfo(1, "REG-02"),
     Business(2, "REG-03"),
@@ -21,88 +23,60 @@ enum class RegStep(val number: Int, val flowId: String) {
     }
 }
 
-/** One Chip option; [key] is what is submitted. */
+/** One Chip option; [key] is what is submitted (web portal keys). */
 data class ChoiceOption(val key: String, @StringRes val label: Int)
 
 /** Single-choice Chip groups of REG-03 and REG-04 (Figma `Choice field`), in screen order. */
 enum class RegChoice(@StringRes val label: Int, val options: List<ChoiceOption>) {
     EntityType(
         R.string.reg_entity_type,
-        listOf(
-            ChoiceOption(ENTITY_PT, R.string.reg_entity_pt),
-            ChoiceOption(ENTITY_CV, R.string.reg_entity_cv),
-            ChoiceOption(ENTITY_INDIVIDUAL, R.string.reg_entity_individual),
-        ),
+        listOf(ChoiceOption(Keys.ENTITY_PT, R.string.reg_entity_pt), ChoiceOption(Keys.ENTITY_CV, R.string.reg_entity_cv), ChoiceOption(Keys.ENTITY_INDIVIDU, R.string.reg_entity_individual)),
     ),
-    Channel(R.string.reg_channel, listOf(ChoiceOption("store", R.string.reg_channel_store), ChoiceOption("non_store", R.string.reg_channel_non_store))),
-    StoreType(R.string.reg_store_type, listOf(ChoiceOption("online", R.string.reg_store_type_online), ChoiceOption("offline", R.string.reg_store_type_offline))),
-    StoreScale(R.string.reg_store_scale, listOf(ChoiceOption("modern", R.string.reg_store_scale_modern), ChoiceOption("traditional", R.string.reg_store_scale_traditional))),
+    Channel(R.string.reg_channel, listOf(ChoiceOption("STORE", R.string.reg_channel_store), ChoiceOption("NON_STORE", R.string.reg_channel_non_store))),
+    StoreType(R.string.reg_store_type, listOf(ChoiceOption(Keys.STORE_ONLINE, R.string.reg_store_type_online), ChoiceOption(Keys.STORE_OFFLINE, R.string.reg_store_type_offline))),
+    StoreScale(R.string.reg_store_scale, listOf(ChoiceOption("MODERN", R.string.reg_store_scale_modern), ChoiceOption("TRADITIONAL", R.string.reg_store_scale_traditional))),
     ProductSold(
         R.string.reg_product_sold,
-        listOf(
-            ChoiceOption("brand_new", R.string.reg_product_sold_new),
-            ChoiceOption("used", R.string.reg_product_sold_used),
-            ChoiceOption("blended", R.string.reg_product_sold_blended),
-        ),
+        listOf(ChoiceOption("BRAND_NEW", R.string.reg_product_sold_new), ChoiceOption("USED", R.string.reg_product_sold_used), ChoiceOption("BLENDED", R.string.reg_product_sold_blended)),
     ),
     StoreLocation(
         R.string.reg_store_location,
-        listOf(
-            ChoiceOption("separate", R.string.reg_store_location_separate),
-            ChoiceOption("street", R.string.reg_store_location_street),
-            ChoiceOption("mall", R.string.reg_store_location_mall),
-        ),
+        listOf(ChoiceOption("SEPARATE", R.string.reg_store_location_separate), ChoiceOption("PINGGIR_JALAN", R.string.reg_store_location_street), ChoiceOption("MALL", R.string.reg_store_location_mall)),
     ),
-    ProductType(R.string.reg_product_type, listOf(ChoiceOption("gadget", R.string.reg_product_type_gadget), ChoiceOption("non_gadget", R.string.reg_product_type_non_gadget))),
-    OfflineChannel(R.string.reg_offline_channel, listOf(ChoiceOption("agency", R.string.reg_offline_channel_agency), ChoiceOption("non_agency", R.string.reg_offline_channel_non_agency))),
-    PicStatus(R.string.reg_pic_status, listOf(ChoiceOption("owner", R.string.reg_pic_status_owner), ChoiceOption("employee", R.string.reg_pic_status_employee))),
+    ProductType(R.string.reg_product_type, listOf(ChoiceOption("GADGET", R.string.reg_product_type_gadget), ChoiceOption("NON_GADGET", R.string.reg_product_type_non_gadget))),
+    OfflineChannel(R.string.reg_offline_channel, listOf(ChoiceOption("AGENCY", R.string.reg_offline_channel_agency), ChoiceOption("NON_AGENCY", R.string.reg_offline_channel_non_agency))),
+    PicStatus(R.string.reg_pic_status, listOf(ChoiceOption(Keys.PIC_OWNER, R.string.reg_pic_status_owner), ChoiceOption(Keys.PIC_KARYAWAN, R.string.reg_pic_status_employee))),
     ;
 
+    fun labelOf(key: String?): Int? = options.firstOrNull { it.key == key }?.label
+
     companion object {
-        /** Chip groups shown in REG-03, in Figma order. */
-        val business = listOf(EntityType, Channel, StoreType, StoreScale, ProductSold, StoreLocation, ProductType, OfflineChannel)
+        /** Partner-level groups of REG-03. */
+        val partnerLevel = listOf(EntityType, Channel)
+
+        /** Toko-level groups (REG-03 and Tambah Toko). PRD C2: Channel Offline only when Tipe Toko = OFFLINE. */
+        fun storeLevel(choices: Map<RegChoice, String>): List<RegChoice> =
+            listOf(StoreType, StoreScale, ProductSold, StoreLocation, ProductType) +
+                if (choices[StoreType] == Keys.STORE_OFFLINE) listOf(OfflineChannel) else emptyList()
+
+        /** Groups shown in REG-03, in Figma order. */
+        fun business(choices: Map<RegChoice, String>): List<RegChoice> = partnerLevel + storeLevel(choices)
     }
 }
 
-const val ENTITY_PT = "pt"
-const val ENTITY_CV = "cv"
-const val ENTITY_INDIVIDUAL = "individual"
-
-/** Documents of REG-06. PT and CV upload company documents; Individu uploads photos (Figma frames "PT CV" and "Individual"). */
-enum class RegDocument(@StringRes val label: Int) {
-    Articles(R.string.reg_doc_articles),
-    Deed(R.string.reg_doc_deed),
-    SkKemenkumham(R.string.reg_doc_sk_kemenkumham),
-    Domicile(R.string.reg_doc_domicile),
-    NpwpCompany(R.string.reg_doc_npwp_company),
-    Nib(R.string.reg_doc_nib),
-    LocationPermit(R.string.reg_doc_location_permit),
-    Ktp(R.string.reg_doc_ktp),
-    Npwp(R.string.reg_doc_npwp),
-    Passbook(R.string.reg_doc_passbook),
-    ;
-
-    companion object {
-        private val company = listOf(Articles, Deed, SkKemenkumham, Domicile, NpwpCompany, Nib, LocationPermit)
-        private val individual = listOf(Ktp, Npwp, Passbook)
-
-        /** Documents required for the chosen `Jenis Badan Usaha`; empty while none is chosen. */
-        fun requiredFor(entityType: String?): List<RegDocument> = when (entityType) {
-            ENTITY_PT, ENTITY_CV -> company
-            ENTITY_INDIVIDUAL -> individual
-            else -> emptyList()
-        }
-    }
-}
-
-/** Fields of REG-02 … REG-05 that can show "Informasi wajib diisi". */
+/** Fields that can show an error under them. */
 enum class RegField {
     PartnerName, Address, Province, Regency, District, Village, Rt, Rw,
     Email, Revenue, OutletCount,
-    PicName, PicEmail, PicPhone,
-    Bank, AccountNumber,
+    PicName, PicEmail, PicPhone, PksEmail,
+    Bank, Branch, AccountNumber, AccountName,
+    StoreName,
 }
 
+/** Error under a field: a message, with an optional number in it ("Minimal 3 karakter"). */
+data class FieldError(@StringRes val message: Int, val arg: Int? = null)
+
+@Serializable
 data class PartnerInfoForm(
     val name: String = "",
     val address: String = "",
@@ -114,6 +88,7 @@ data class PartnerInfoForm(
     val rw: String = "",
 )
 
+@Serializable
 data class BusinessForm(
     val email: String = "",
     /** Digits only; shown as "Rp 100.000.000" by the Currency field. */
@@ -121,36 +96,41 @@ data class BusinessForm(
     val outletCount: String = "",
 )
 
+@Serializable
 data class PicForm(
     val name: String = "",
     val email: String = "",
     /** Digits after the fixed "+62" prefix. */
     val phone: String = "",
+    val privyId: String = "",
+    /** PRD C2: defaults to Email PIC until the user edits it. */
+    val pksEmail: String = "",
+    val pksEmailEdited: Boolean = false,
 )
 
-sealed interface AccountInquiry {
-    data object Idle : AccountInquiry
-    data object Loading : AccountInquiry
-    data class Found(val accountName: String) : AccountInquiry
-    data object NotFound : AccountInquiry
-}
-
-data class BankAccountForm(
+@Serializable
+data class BankForm(
     val bank: Bank? = null,
+    val branch: String = "",
     val accountNumber: String = "",
-    val inquiry: AccountInquiry = AccountInquiry.Idle,
+    val accountName: String = "",
 )
 
+@Serializable
 enum class UploadStatus { Uploading, Uploaded, Failed }
 
+/** A document picked for upload: a local copy of the file (kept with the draft). */
+@Serializable
 data class DocumentUpload(
-    val uri: Uri,
+    val path: String,
     val fileName: String,
     val sizeBytes: Long,
     val status: UploadStatus,
     val progress: Float = 0f,
-    val documentId: String? = null,
 )
+
+/** Why a picked file was refused. */
+enum class FileError { TooLarge, WrongType }
 
 /** Region lists loaded for the cascading Dropdowns of REG-02. */
 data class RegionLists(
@@ -160,6 +140,20 @@ data class RegionLists(
     val villages: List<Region> = emptyList(),
 )
 
+/** Saved between steps (PRD C2 "draft is saved locally between steps"). */
+@Serializable
+data class RegDraft(
+    val partner: PartnerInfoForm,
+    val business: BusinessForm,
+    val pic: PicForm,
+    val bank: BankForm,
+    val choices: Map<String, String>,
+    val documents: Map<String, DocumentUpload>,
+)
+
+/** Result of "Kirim Pengajuan". */
+data class Submitted(val registrationNumber: String, val partnerName: String, val atMillis: Long)
+
 data class PartnerRegistrationState(
     val partner: PartnerInfoForm = PartnerInfoForm(),
     val regions: RegionLists = RegionLists(),
@@ -167,14 +161,21 @@ data class PartnerRegistrationState(
     val pic: PicForm = PicForm(),
     /** Chosen option key per Chip group (REG-03 and Status PIC). */
     val choices: Map<RegChoice, String> = emptyMap(),
-    val bankAccount: BankAccountForm = BankAccountForm(),
+    val bank: BankForm = BankForm(),
     val banks: List<Bank> = emptyList(),
-    val documents: Map<RegDocument, DocumentUpload> = emptyMap(),
-    /** Steps whose CTA was pressed with missing fields: their empty fields show "Informasi wajib diisi". */
+    val documents: Map<DocType, DocumentUpload> = emptyMap(),
+    val fileErrors: Map<DocType, FileError> = emptyMap(),
+    /** Steps whose CTA was pressed with errors: their fields show the error. */
     val showErrors: Set<RegStep> = emptySet(),
+    /** REG-08 location (PRD C2 step 6). */
+    val location: LocationResult.Found? = null,
+    /** Name of a saved draft offered when the flow opens; `null` when there is none or it was answered. */
+    val draftOffer: String? = null,
     val submitting: Boolean = false,
-    val submission: SubmissionResult? = null,
+    val submitted: Submitted? = null,
 ) {
     val entityType: String? get() = choices[RegChoice.EntityType]
-    val requiredDocuments: List<RegDocument> get() = RegDocument.requiredFor(entityType)
+
+    /** Documents for the entity type and Status PIC, with whether each is mandatory. */
+    val documentList: List<Pair<DocType, Boolean>> get() = DocType.forEntity(entityType, choices[RegChoice.PicStatus])
 }

@@ -73,6 +73,7 @@ class AccountFragment : ComposeFragment() {
                 confirmLabel = stringResource(R.string.account_reset_demo),
                 onConfirm = {
                     confirmReset = false
+                    container.partners.reset()
                     activityRepo.reset()
                     toast = resetDone
                 },
@@ -179,7 +180,6 @@ abstract class PendingTabFragment(private val title: Int) : ComposeFragment() {
     }
 }
 
-class PartnerTabFragment : PendingTabFragment(R.string.nav_partner)
 class TeamTabFragment : PendingTabFragment(R.string.nav_tim)
 class PerformanceTabFragment : PendingTabFragment(R.string.nav_kinerja)
 

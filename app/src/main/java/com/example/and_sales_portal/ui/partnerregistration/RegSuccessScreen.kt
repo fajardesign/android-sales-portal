@@ -23,9 +23,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.example.and_sales_portal.R
-import com.example.and_sales_portal.designsystem.components.feedback.AmarBadge
-import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeSize
-import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeType
+import com.example.and_sales_portal.data.partner.PartnerStatus
+import com.example.and_sales_portal.designsystem.components.actions.AmarButton
+import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
+import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
+import com.example.and_sales_portal.ui.partner.PartnerStatusBadge
 import com.example.and_sales_portal.designsystem.theme.AmarSuccessTokens
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.designsystem.theme.amarShadow
@@ -34,10 +36,12 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Submission sent (Figma "06 | Partner Registration | Success | Submission Sent"; not in the spec, follows Figma).
- * Shows the Large / Success illustration, the status badge and a summary card, with "Kembali ke Partner".
+ * Spec: REG-09 Pengajuan Terkirim (Figma "06 | Partner Registration | Success | Submission Sent"). Shows the Large /
+ * Success illustration, the status Under Review (PRD C2) and the registration number, with "Kembali ke Partner" and
+ * "Lihat Pengajuan".
  *
  * @param partnerName Nama Partner from REG-02 (Figma shows a store name; the flow has no separate store name).
+ * @param submissionId Registration number `REGYYYY-NNNN`.
  */
 @Composable
 fun RegSuccessScreen(
@@ -45,6 +49,7 @@ fun RegSuccessScreen(
     submissionId: String,
     submittedAtMillis: Long,
     onDone: () -> Unit,
+    onSeeSubmission: () -> Unit = {},
     windowInsets: WindowInsets = WindowInsets.statusBars,
 ) {
     val c = AmarTheme.colors
@@ -62,7 +67,7 @@ fun RegSuccessScreen(
                 Image(painterResource(R.drawable.ds_ill_large_success), contentDescription = null)
                 Text(stringResource(R.string.reg_success_title), color = c.content.primary, style = AmarTheme.typography.headingLg, textAlign = TextAlign.Center)
                 Text(stringResource(R.string.reg_success_description, partnerName), color = c.content.secondary, style = AmarTheme.typography.bodyMd, textAlign = TextAlign.Center)
-                AmarBadge(stringResource(R.string.reg_success_status), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
+                PartnerStatusBadge(PartnerStatus.UNDER_REVIEW)
             }
             val shape = AmarTheme.shapes.card
             Column(
@@ -74,10 +79,11 @@ fun RegSuccessScreen(
                     .padding(t.SummaryPadding),
                 verticalArrangement = Arrangement.spacedBy(t.SummaryGap),
             ) {
-                SummaryRow(stringResource(R.string.reg_success_id), submissionId)
+                SummaryRow(stringResource(R.string.reg_success_number), submissionId)
                 SummaryRow(stringResource(R.string.reg_success_partner), partnerName)
                 SummaryRow(stringResource(R.string.reg_success_sent), formatSubmittedAt(submittedAtMillis))
             }
+            AmarButton(stringResource(R.string.reg_success_see), onSeeSubmission, Modifier.fillMaxWidth(), type = AmarButtonType.Naked, size = AmarButtonSize.Large)
         }
         RegPersistentAction(stringResource(R.string.reg_success_cta), onDone, windowInsets = WindowInsets.navigationBars)
     }

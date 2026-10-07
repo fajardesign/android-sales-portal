@@ -9,47 +9,21 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 /**
- * Operational data of one user in the prototype (PRD v3 data model: `store`, `merchant_assignment`, `attendance`,
- * `visit_plan`), stored on the device per account by [ActivityRepository].
+ * Operational data of one user in the prototype (PRD v3 data model: `attendance`, `visit_plan`), stored on the device
+ * per account by [ActivityRepository]. Partners and toko are shared ([com.example.and_sales_portal.data.partner.PartnerRepository]).
  */
 @Serializable
 data class DemoData(
     val version: Int = VERSION,
-    val partners: List<DemoPartner>,
     val attendance: List<Attendance> = emptyList(),
     val visits: List<Visit> = emptyList(),
     /** Days (ISO) whose visit plan has been generated, so a day is planned once. */
     val plannedDays: Set<String> = emptySet(),
 ) {
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
     }
 }
-
-/** Active partner (`merchant`) with its toko (`store`). */
-@Serializable
-data class DemoPartner(
-    val id: String,
-    val name: String,
-    val areaId: Int,
-    /** TL that owns the partner (submitted it, or leads the SR who did). */
-    val ownerTlId: Long,
-    val picName: String,
-    val picPhone: String,
-    val stores: List<Store>,
-)
-
-@Serializable
-data class Store(
-    val id: String,
-    val code: String,
-    val name: String,
-    val address: String,
-    val lat: Double,
-    val lng: Double,
-    /** `merchant_assignment`: SA/SR assigned to this toko. */
-    val assigned: List<Long> = emptyList(),
-)
 
 /** One clock in, clock out, check-in or check-out: time, location and selfie (`attendance`, `visit_plan`). */
 @Serializable

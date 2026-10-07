@@ -3,6 +3,7 @@ package com.example.and_sales_portal.data.activity
 import androidx.test.core.app.ApplicationProvider
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoStore
+import com.example.and_sales_portal.data.partner.PartnerRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -24,7 +25,7 @@ class ActivityRepositoryTest {
     private var now: Instant = at(LocalDate.of(2026, 10, 7), "09:00")
 
     private fun at(date: LocalDate, time: String) = date.atTime(LocalTime.parse(time)).atZone(ActivityRules.ZONE).toInstant()
-    private fun repo() = ActivityRepository(store, 11, SalesRole.SR, 1) { now }
+    private fun repo() = ActivityRepository(store, PartnerRepository(store) { now }, 11, SalesRole.SR, 1) { now }
 
     @Before
     fun clean() = store.reset(11)

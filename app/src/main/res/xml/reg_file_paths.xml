@@ -3,4 +3,5 @@
 <paths>
     <cache-path name="reg_captures" path="reg_captures/" />
     <files-path name="selfies" path="demo/selfies/" />
+    <files-path name="documents" path="demo/documents/" />
 </paths>

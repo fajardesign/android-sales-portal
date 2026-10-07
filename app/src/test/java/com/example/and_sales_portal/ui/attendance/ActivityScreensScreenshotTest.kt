@@ -5,6 +5,7 @@ import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.Attendance
 import com.example.and_sales_portal.data.activity.AttendanceStatus
 import com.example.and_sales_portal.data.activity.DemoSeed
+import com.example.and_sales_portal.data.partner.PartnerSeed
 import com.example.and_sales_portal.data.activity.Punch
 import com.example.and_sales_portal.data.activity.Visit
 import com.example.and_sales_portal.data.activity.VisitState
@@ -55,7 +56,7 @@ class ActivityScreensScreenshotTest {
 
     @Test
     fun capture() {
-        val store = DemoSeed.partners().first().stores.first()
+        val store = PartnerSeed.partners().first { it.id == "REG2026-0139" }.stores.first()
         val place = Place(store.lat, store.lng, store.address)
         val found = LocationResult.Found(store.lat + 0.00007, store.lng - 0.00007, store.address, mock = false)
         val base = CaptureUiState(CaptureMode.CHECK_IN, place, store.name, verified = true)
@@ -72,7 +73,7 @@ class ActivityScreensScreenshotTest {
 
     @Test
     fun visits() {
-        val partners = DemoSeed.partners()
+        val partners = PartnerSeed.partners()
         val stores = DemoSeed.storesOf(partners, 11, com.example.and_sales_portal.data.auth.SalesRole.SR)
         val plan = DemoSeed.plan(11, com.example.and_sales_portal.data.auth.SalesRole.SR, stores, today)
         fun item(v: Visit) = requireNotNull(visitItem(v, stores.first { it.id == v.storeId }, partners.first { p -> p.stores.any { it.id == v.storeId } }, today))

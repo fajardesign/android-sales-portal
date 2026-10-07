@@ -10,7 +10,7 @@
 
     <fragment android:id="@+id/tl_home" android:name="com.example.and_sales_portal.ui.shell.TlHomeFragment" />
     <fragment android:id="@+id/sales_home" android:name="com.example.and_sales_portal.ui.shell.SalesHomeFragment" />
-    <fragment android:id="@+id/partner_tab" android:name="com.example.and_sales_portal.ui.shell.PartnerTabFragment" />
+    <fragment android:id="@+id/partner_tab" android:name="com.example.and_sales_portal.ui.partner.PartnerTabFragment" />
     <fragment android:id="@+id/team_tab" android:name="com.example.and_sales_portal.ui.shell.TeamTabFragment" />
     <fragment android:id="@+id/activity_tab" android:name="com.example.and_sales_portal.ui.shell.ActivityTabFragment" />
     <fragment android:id="@+id/visits_tab" android:name="com.example.and_sales_portal.ui.visits.VisitsTabFragment" />
@@ -23,6 +23,13 @@
     <fragment android:id="@+id/my_visits" android:name="com.example.and_sales_portal.ui.visits.MyVisitsFragment" />
     <fragment android:id="@+id/visit_detail" android:name="com.example.and_sales_portal.ui.visits.VisitDetailFragment" />
     <fragment android:id="@+id/visit_checkout" android:name="com.example.and_sales_portal.ui.visits.VisitCheckOutFragment" />
+
+    <!-- Partner (REG-01, REG-10, REG-11, PRT-01, PRT-02; PRD v3 C2-C4, D4) and the registration flow. -->
+    <include app:graph="@navigation/nav_partner_registration" />
+    <fragment android:id="@+id/submission_detail" android:name="com.example.and_sales_portal.ui.partner.SubmissionDetailFragment" />
+    <fragment android:id="@+id/revision" android:name="com.example.and_sales_portal.ui.partner.RevisionFragment" />
+    <fragment android:id="@+id/partner_detail" android:name="com.example.and_sales_portal.ui.partner.PartnerDetailFragment" />
+    <fragment android:id="@+id/add_store" android:name="com.example.and_sales_portal.ui.partner.AddStoreFragment" />
 
     <!-- Placeholder for screens of later parts, and the debug simulation panel. -->
     <fragment android:id="@+id/wip" android:name="com.example.and_sales_portal.ui.shell.WipFragment" />

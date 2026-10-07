@@ -96,12 +96,12 @@ fun PersistentAction(
     }
 }
 
-/** `Form introduction` of REG: "LANGKAH n DARI m", title and description. */
+/** `Form introduction` of REG: "LANGKAH n DARI m" (when [step] is set), title and description. */
 @Composable
-fun StepIntro(step: Int, total: Int, title: String, description: String) {
+fun StepIntro(step: Int?, total: Int, title: String, description: String) {
     val c = AmarTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(AmarFormTokens.IntroGap)) {
-        Text(stringResource(R.string.cap_step, step, total), color = c.content.link, style = AmarTheme.typography.labelSm)
+        if (step != null) Text(stringResource(R.string.cap_step, step, total), color = c.content.link, style = AmarTheme.typography.labelSm)
         Text(title, color = c.content.primary, style = AmarTheme.typography.headingSm)
         Text(description, color = c.content.secondary, style = AmarTheme.typography.bodySm)
     }

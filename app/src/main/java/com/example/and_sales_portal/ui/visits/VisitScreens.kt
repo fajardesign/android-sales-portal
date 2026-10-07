@@ -19,11 +19,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.activity.ActivityRules
-import com.example.and_sales_portal.data.activity.DemoPartner
-import com.example.and_sales_portal.data.activity.Store
 import com.example.and_sales_portal.data.activity.Visit
 import com.example.and_sales_portal.data.activity.VisitOutcome
 import com.example.and_sales_portal.data.activity.VisitStatus
+import com.example.and_sales_portal.data.partner.Partner
+import com.example.and_sales_portal.data.partner.Store
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadge
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeSize
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeType
@@ -43,7 +43,7 @@ import com.example.and_sales_portal.ui.common.SectionTitle
 import kotlinx.coroutines.delay
 
 /** A visit with its toko and partner, as shown on ATT-03 … ATT-05. */
-data class VisitItem(val visit: Visit, val store: Store, val partner: DemoPartner, val status: VisitStatus, val outcome: VisitOutcome?) {
+data class VisitItem(val visit: Visit, val store: Store, val partner: Partner, val status: VisitStatus, val outcome: VisitOutcome?) {
     val pendingSync: Boolean get() = visit.checkOut?.synced == false
 }
 
@@ -156,7 +156,7 @@ fun VisitDetailScreen(item: VisitItem, online: Boolean, now: () -> Long, onBack:
             Text(item.store.name, color = c.content.primary, style = AmarTheme.typography.headingSm)
             Badges(item)
             InfoRow(stringResource(R.string.vis_partner), item.partner.name)
-            InfoRow(stringResource(R.string.vis_store_code), item.store.code)
+            InfoRow(stringResource(R.string.vis_store_code), item.store.code ?: "-")
             InfoRow(stringResource(R.string.vis_planned_time), stringResource(R.string.vis_planned, v.plannedTime))
             InfoRow(stringResource(R.string.vis_pic), "${item.partner.picName} · +62 ${item.partner.picPhone}")
             Text(item.store.address, color = c.content.secondary, style = AmarTheme.typography.bodySm)
@@ -196,7 +196,7 @@ fun duration(millis: Long): String {
 }
 
 /** Visit with its toko, partner, status and outcome; `null` when the toko is no longer in the data. */
-fun visitItem(v: Visit, store: Store?, partner: DemoPartner?, today: java.time.LocalDate): VisitItem? {
+fun visitItem(v: Visit, store: Store?, partner: Partner?, today: java.time.LocalDate): VisitItem? {
     if (store == null || partner == null) return null
     return VisitItem(v, store, partner, ActivityRules.visitStatus(v, today), ActivityRules.visitOutcome(v))
 }

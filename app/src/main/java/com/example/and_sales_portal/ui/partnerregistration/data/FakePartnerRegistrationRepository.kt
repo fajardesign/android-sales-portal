@@ -1,15 +1,14 @@
 package com.example.and_sales_portal.ui.partnerregistration.data
 
-import android.net.Uri
+import com.example.and_sales_portal.data.partner.Banks
 import kotlinx.coroutines.delay
-import kotlin.random.Random
 
 /**
  * Stand-in for the missing mobile API (CLAUDE.md §1). Sample data follows the Figma screens
- * (Sumatera Utara → Kabupaten Deli Serdang → Deli Tua → Mekar Sari, bank list, "BUDI SANTOSO").
+ * (Sumatera Utara → Kabupaten Deli Serdang → Deli Tua → Mekar Sari) and the demo area Makassar; banks of the web portal.
  *
- * - Regions: real names for Sumatera Utara (Deli Serdang) and DKI Jakarta; other provinces return clearly marked samples.
- * - Account inquiry: an account number ending in `0` is not found; any other number belongs to "BUDI SANTOSO".
+ * - Regions: real names for Sulawesi Selatan (Makassar), Sumatera Utara (Deli Serdang) and DKI Jakarta; other provinces
+ *   return clearly marked samples.
  * - Upload: progress in 10 steps over about one second.
  */
 class FakePartnerRegistrationRepository(private val latencyMillis: Long = 400) : PartnerRegistrationRepository {
@@ -31,24 +30,14 @@ class FakePartnerRegistrationRepository(private val latencyMillis: Long = 400) :
             ?: sample(districtId, "Kelurahan contoh"),
     )
 
-    override suspend fun banks(): List<Bank> = respond(BANKS.map { (code, name) -> Bank(code, name) })
+    override suspend fun banks(): List<Bank> = respond(Banks.all.map { (code, name) -> Bank(code, name) })
 
-    override suspend fun inquireAccount(bankCode: String, accountNumber: String): AccountInquiryResult {
-        delay(latencyMillis)
-        return if (accountNumber.endsWith("0")) AccountInquiryResult.NotFound else AccountInquiryResult.Found("BUDI SANTOSO")
-    }
-
-    override suspend fun uploadDocument(uri: Uri, onEvent: (UploadEvent) -> Unit) {
+    override suspend fun uploadDocument(path: String, onEvent: (UploadEvent) -> Unit) {
         for (step in 1..10) {
             delay(latencyMillis / 4)
             onEvent(UploadEvent.Progress(step / 10f))
         }
-        onEvent(UploadEvent.Done("doc-${Random.nextInt(100_000, 999_999)}"))
-    }
-
-    override suspend fun submit(registration: PartnerRegistrationSubmission): SubmissionResult {
-        delay(latencyMillis * 3)
-        return SubmissionResult("REG-2026-${Random.nextInt(1000, 9999)}", System.currentTimeMillis())
+        onEvent(UploadEvent.Done)
     }
 
     private suspend fun <T> respond(value: T): T {
@@ -86,21 +75,20 @@ class FakePartnerRegistrationRepository(private val latencyMillis: Long = 400) :
             "Maluku Utara", "Papua", "Papua Barat", "Papua Selatan", "Papua Tengah", "Papua Pegunungan", "Papua Barat Daya",
         )
         val REGENCIES = mapOf(
+            "Sulawesi Selatan" to listOf("Kota Makassar", "Kabupaten Gowa", "Kabupaten Maros"),
             "Sumatera Utara" to listOf("Kabupaten Deli Serdang", "Kota Medan", "Kota Binjai"),
             "DKI Jakarta" to listOf("Kota Jakarta Pusat", "Kota Jakarta Selatan", "Kota Jakarta Barat"),
         )
         val DISTRICTS = mapOf(
+            "Kota Makassar" to listOf("Panakkukang", "Tamalanrea", "Biringkanaya", "Rappocini"),
             "Kabupaten Deli Serdang" to listOf("Deli Tua", "Lubuk Pakam", "Tanjung Morawa"),
             "Kota Jakarta Selatan" to listOf("Kebayoran Baru", "Setiabudi", "Tebet"),
         )
         val VILLAGES = mapOf(
+            "Panakkukang" to listOf("Pandang", "Masale", "Karuwisi", "Tamamaung"),
+            "Tamalanrea" to listOf("Tamalanrea", "Kapasa", "Bira"),
             "Deli Tua" to listOf("Deli Tua", "Deli Tua Barat", "Deli Tua Timur", "Kedai Durian", "Mekar Sari", "Suka Makmur"),
             "Setiabudi" to listOf("Karet", "Kuningan Timur", "Setiabudi"),
-        )
-        val BANKS = listOf(
-            "014" to "Bank Central Asia (BCA)", "002" to "Bank Rakyat Indonesia (BRI)", "008" to "Bank Mandiri",
-            "009" to "Bank Negara Indonesia (BNI)", "200" to "Bank Tabungan Negara (BTN)", "022" to "Bank CIMB Niaga",
-            "011" to "Bank Danamon", "013" to "Bank Permata", "427" to "Bank Syariah Indonesia (BSI)",
         )
     }
 }
