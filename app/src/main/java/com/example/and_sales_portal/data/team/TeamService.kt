@@ -58,11 +58,15 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
     }
 
     /** From the 1st of this month to today (Monday–Saturday). */
-    fun productivity(employeeId: Long): Productivity {
+    fun productivity(employeeId: Long): Productivity = productivity(employeeId, ops.today().withDayOfMonth(1)..ops.today())
+
+    /** Attendance and visit results in [range] (up to today; PRD C9 daily, weekly, monthly). */
+    fun productivity(employeeId: Long, range: ClosedRange<LocalDate>): Productivity {
         val today = ops.today()
-        val days = generateSequence(today.withDayOfMonth(1)) { it.plusDays(1) }.takeWhile { !it.isAfter(today) }.filter(ActivityRules::isWorkday).toList()
+        val end = minOf(range.endInclusive, today)
+        val days = generateSequence(range.start) { it.plusDays(1) }.takeWhile { !it.isAfter(end) }.filter(ActivityRules::isWorkday).toList()
         val statuses = days.map { ops.attendanceStatus(employeeId, it) }
-        val visits = ops.visitsBetween(employeeId, today.withDayOfMonth(1), today)
+        val visits = ops.visitsBetween(employeeId, range.start, end)
         val vs = visits.map { ActivityRules.visitStatus(it, today) to ActivityRules.visitOutcome(it) }
         return Productivity(
             workdays = days.count { !ops.isDayOff(employeeId, it) },

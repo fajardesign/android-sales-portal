@@ -429,9 +429,16 @@ Komponen di `designsystem/components/extended/` dibuat untuk aplikasi Sales (PRD
 | Kelompok | Komponen | Dasar | File Kotlin | Composable | Status |
 |---|---|---|---|---|---|
 | Navigation | Bottom navigation 5 tab per role | Navigation Bar - Partner Dashboard [3306:2306](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3306-2306) | `components/extended/AmarBottomNavigation.kt` | `AmarBottomNavigation` | ⚠️ Tidak ada di Figma DS |
+| Feedback | Progress bar (Estimasi Insentif, Kontribusi tim) | Layar TL Dashboard › Incentive hero › Progress track [161:16014](https://www.figma.com/design/6ezrFIAonEuXZAgMhAbBlY/Sales---Partner-Dashboard---Android?node-id=161-16014) | `components/extended/AmarProgressBar.kt` | `AmarProgressBar` | ⚠️ Tidak ada di Figma DS; warna mentah Figma dipetakan ke token |
 
 ### Bottom navigation (extended)
 - **Alasan**: Navigation Bar di Figma DS hanya punya 3 item tetap (Beranda, Partner, Akun) untuk Partner Dashboard. PRD v3 butuh 5 tab yang berbeda per role (TL: Beranda, Partner, Tim, Aktivitas, Akun; SA/SR: Beranda, Kunjungan, Partner, Kinerja, Akun).
 - **Implementasi**: tampilan dan token sama dengan `AmarPartnerNavigationBar` (`AmarNavigationBarTokens`), item berupa daftar `AmarNavItem` dengan ikon aktif berlapis (`AmarNavIconLayer`).
 - **Ikon yang tidak ada di DS**: Tim memakai `contact` (tanpa versi filled, aktif hanya berubah warna); Kunjungan memakai `location` (ikon `menu / Visit` belum dikonversi); Kinerja memakai `target`.
 - **Perlu dari desainer**: varian 5 item di Figma DS dan ikon menu Tim/Kunjungan/Kinerja (outline + filled).
+
+### Progress bar (extended)
+- **Alasan**: kartu Estimasi Insentif dan Kontribusi Tim di layar TL Dashboard memakai progress bar, tetapi DS Android belum punya komponennya.
+- **Nilai**: tinggi 8 (`AmarProgressBarTokens.Height` = Space 8), radius penuh. Figma layar memakai warna mentah (#E6E8EA, #168B5B); dipetakan ke `Background/Subtle` (Secondary 100, sama dengan #E6E8EA) dan `Feedback/Success/Icon`.
+- **Kartu insentif**: tile "Earned/Pending" di Figma memakai warna mentah (#ECF8F2/#168B5B, #FFF7E6/#B54708); aplikasi memakai `Feedback/Success` dan `Feedback/Warning` (surface + text).
+- **Perlu dari desainer**: komponen Progress Bar di Figma DS dan token warna untuk tile insentif.

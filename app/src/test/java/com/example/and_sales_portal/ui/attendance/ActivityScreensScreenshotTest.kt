@@ -1,6 +1,8 @@
 package com.example.and_sales_portal.ui.attendance
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalInspectionMode
 import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.Attendance
 import com.example.and_sales_portal.data.activity.AttendanceStatus
@@ -36,7 +38,7 @@ class ActivityScreensScreenshotTest {
     private val today = LocalDate.of(2026, 10, 7)
     private fun at(time: String, date: LocalDate = today) = date.atTime(LocalTime.parse(time)).atZone(ActivityRules.ZONE).toInstant().toEpochMilli()
     private fun capture(name: String, content: @Composable () -> Unit) =
-        captureRoboImage("build/outputs/roborazzi/att_$name.png") { AmarTheme { content() } }
+        captureRoboImage("build/outputs/roborazzi/att_$name.png") { CompositionLocalProvider(LocalInspectionMode provides true) { AmarTheme { content() } } }
 
     private fun day(a: Attendance?, date: LocalDate = today) = AttendanceDay(date, a, ActivityRules.attendanceStatus(a, date, today))
 

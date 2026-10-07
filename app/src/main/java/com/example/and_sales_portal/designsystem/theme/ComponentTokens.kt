@@ -371,3 +371,11 @@ object AmarChipTokens {
     /** Close icon opacity in `Supporting=Close, Selected=False` only (raw layer opacity in Figma). */
     const val CloseOpacityUnselected = 0.65f
 }
+
+/**
+ * Progress bar of the TL Dashboard (Figma "Sales - Partner Dashboard - Android" › Incentive hero › `Progress track`,
+ * node 161:16014): height 8, fully rounded. Not in the DS library (extended component).
+ */
+object AmarProgressBarTokens {
+    val Height = AmarSpace.S8
+}

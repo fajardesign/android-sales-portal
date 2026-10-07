@@ -84,43 +84,12 @@ class AccountFragment : ComposeFragment() {
     }
 }
 
-/**
- * Beranda (PRD v3 C1, D1). This stage only has the Absensi card (Figma "01 | Team Leader Dashboard"); the rest of
- * Beranda comes in part 5. TODO: summaries, Pengajuan Partner, this month, shortcuts.
- */
-abstract class HomeFragment : ComposeFragment() {
-    @Composable
-    override fun ScreenContent() {
-        val repo = activityRepo
-        val data by repo.data.collectAsState()
-        val online by container.connectivity.online.collectAsState()
-        val (toast, clearToast) = incomingToast()
-        val today = remember(data, online) { AttendanceFragment.attendanceState(repo, online).today }
-        WithToast(toast, clearToast) {
-            ScreenScaffold(stringResource(R.string.nav_beranda), onBack = null) {
-                AttendanceCard(
-                    today,
-                    online,
-                    onClockIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CLOCK_IN)) },
-                    onClockOut = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CLOCK_OUT)) },
-                    onHistory = { navigate(R.id.attendance) },
-                )
-                WipText()
-            }
-        }
-    }
-}
-
-class TlHomeFragment : HomeFragment()
-class SalesHomeFragment : HomeFragment()
-
 /** TL tab Aktivitas (decision 2026-10-07): own attendance and visits, team planning, reports. */
 class ActivityTabFragment : ComposeFragment() {
     private class Entry(val title: Int, val description: Int, val open: () -> Unit)
 
     @Composable
     override fun ScreenContent() {
-        val wip = { title: Int -> { navigate(R.id.wip, WipFragment.args(title)) } }
         val sections = listOf(
             R.string.act_mine to listOf(
                 Entry(R.string.att_title, R.string.act_attendance_desc) { navigate(R.id.attendance) },
@@ -131,10 +100,10 @@ class ActivityTabFragment : ComposeFragment() {
                 Entry(R.string.act_assign, R.string.act_assign_desc) { navigate(R.id.assign) },
             ),
             R.string.act_reports to listOf(
-                Entry(R.string.act_productivity, R.string.act_productivity_desc, wip(R.string.act_productivity)),
-                Entry(R.string.act_sales, R.string.act_sales_desc, wip(R.string.act_sales)),
-                Entry(R.string.act_loans, R.string.act_loans_desc, wip(R.string.act_loans)),
-                Entry(R.string.act_incentive, R.string.act_incentive_desc, wip(R.string.act_incentive)),
+                Entry(R.string.act_productivity, R.string.act_productivity_desc) { navigate(R.id.team_productivity) },
+                Entry(R.string.act_sales, R.string.act_sales_desc) { navigate(R.id.team_sales) },
+                Entry(R.string.act_loans, R.string.act_loans_desc) { navigate(R.id.team_loans) },
+                Entry(R.string.act_incentive, R.string.act_incentive_desc) { navigate(R.id.team_incentive) },
             ),
         )
         ScreenScaffold(stringResource(R.string.nav_aktivitas), onBack = null) {
@@ -155,41 +124,4 @@ class ActivityTabFragment : ComposeFragment() {
             }
         }
     }
-}
-
-/**
- * Screen not built yet in this stage of the prototype (build order: part 3 Partner, part 4 Tim & Jadwal, part 5
- * Beranda & Kinerja). Every entry leads somewhere with a way back (no dead ends). TODO: replace with the real screens.
- */
-class WipFragment : ComposeFragment() {
-    @Composable
-    override fun ScreenContent() {
-        ScreenScaffold(stringResource(requireArguments().getInt(ARG_TITLE)), ::back) { WipText() }
-    }
-
-    companion object {
-        private const val ARG_TITLE = "title"
-        fun args(title: Int) = bundleOf(ARG_TITLE to title)
-    }
-}
-
-/** Tab not built yet (same as [WipFragment], without back). */
-abstract class PendingTabFragment(private val title: Int) : ComposeFragment() {
-    @Composable
-    override fun ScreenContent() {
-        ScreenScaffold(stringResource(title), onBack = null) { WipText() }
-    }
-}
-
-class PerformanceTabFragment : PendingTabFragment(R.string.nav_kinerja)
-
-@Composable
-private fun WipText() {
-    Text(
-        stringResource(R.string.wip_screen),
-        Modifier.fillMaxWidth(),
-        AmarTheme.colors.content.secondary,
-        style = AmarTheme.typography.bodyMd,
-        textAlign = TextAlign.Center,
-    )
 }

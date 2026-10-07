@@ -24,26 +24,32 @@ Path relatif terhadap `okf_repository_design/products/sales_dashboard/`.
 |---|---|---|
 | `flows_android/index.md` | Daftar flow mobile + rentang Flow ID | **Utama**: titik masuk setiap fitur |
 | `flows_android/partner_registration.md` | Tab Partner, pendaftaran TL/SR, Pengajuan, Partner saya, Tambah Toko (`REG-01` s/d `REG-11`, `PRT-01`/`PRT-02`), sesuai PRD v3 per 2026-10-08 | **Utama**: form schema per step |
-| `flows_android/tl_dashboard.md` | TL Dashboard (entry point REG) | **Masih kosong** |
+| `flows_android/attendance_location.md` | Absensi & Kunjungan (`ATT-01` s/d `ATT-05`) | **Utama** |
+| `flows_android/team_leader.md` | Fitur TL: Tim, Assign, Jadwal, Beranda, laporan (`TL-01` s/d `TL-10`) | **Utama** |
+| `flows_android/sa_sr_features.md` | Fitur SA/SR: Beranda, Kinerja, Pinjaman, Insentif (`SLS`) | **Utama** |
+| `flows_android/mobile_login.md` | Login Supabase (`MLG-01`, `MLG-02`) | **Utama** |
 | `roles_matrix.md` | Hierarki APL → TL → SR/SA → Store → Partner, permission | Menentukan fitur per role |
 | `flows_web/*.md` | Login Admin (`LGN`), Manajemen Akun TL (`ACC`), Aktivasi Akun (`ACT`) | Konteks: akun TL dibuat Admin di web, aktivasi lewat Keycloak, lalu TL login di app ini |
 | `flows_web/index.md` § Autentikasi | Keycloak realm `sales-portal`, login email/no. telepon + password | Dasar implementasi login mobile |
 | `design_system/*.md` | Amar Bank Internal **Web** DS (token, komponen React, layout) | Acuan brand saja; **bukan** DS Android (lihat §4) |
 | `log.md` | Change log produk | Cek apa yang baru berubah |
 
-### Status bundle (per 2026-10-06), perlu diperhatikan
-- `flows_android/index.md` mencantumkan file yang **belum ada**: `attendance_location.md` (ATT), `sa_sr_features.md` (SLS), `team_leader.md` (TL), `partner_dashboard.md` (PDB). Jangan mengarang spesifikasi fitur tersebut. Tanyakan ke user, atau buat placeholder `TODO` di kode.
-- `tl_dashboard.md` kosong. Entry point REG: tab Partner › "Daftarkan Partner" (`REG-01`).
-- `partner_registration.md` mengikuti PRD v3 §C2–C4 per 2026-10-08 (PRD di atas Figma): 5 langkah form (`REG-02` s/d `REG-06`), Ringkasan, Lokasi, Terkirim, Pengajuan + revisi, Partner saya, Tambah Toko. Pertanyaan yang belum diputuskan ada di bagian *Pertanyaan Terbuka* file itu. Tetap pegang **Flow ID** sebagai kunci.
-- Layar Figma *Sales - Partner Dashboard - Android* bisa lebih baru dari bundle. Untuk REG, keputusan 2026-10-06: **ikuti Figma**. Untuk flow lain, bila bundle dan Figma berbeda, tanyakan dulu.
-- Belum ada spesifikasi API untuk mobile. Pakai repository/mock dengan interface yang jelas sampai kontraknya tersedia.
+### Status bundle (per 2026-10-08), perlu diperhatikan
+- Sumber requirement aplikasi Sales: PRD v3 *Final Prompt – Sales and Partner Dashboard (v3, full journeys)* (prioritas tertinggi), lalu bundle, lalu Figma *Sales - Partner Dashboard - Android*. Bila PRD dan Figma berbeda, PRD yang diikuti (keputusan 2026-10-07); untuk hal yang tidak diatur PRD, tanyakan.
+- File flow Android: `mobile_login.md` (MLG), `partner_registration.md` (REG, PRT), `attendance_location.md` (ATT), `team_leader.md` (TL), `sa_sr_features.md` (SLS). `partner_dashboard.md` (PDB) tidak dipakai: Partner memakai Partner Dashboard web.
+- Belum ada spesifikasi API untuk mobile. Pakai repository/mock dengan interface yang jelas sampai kontraknya tersedia (prototype: Supabase untuk akun, data operasional di perangkat).
 
 ### Aturan memakai bundle
 - **Flow ID** (contoh `REG-03`) adalah kunci penghubung spesifikasi dan kode. Cantumkan di KDoc kelas Fragment/ViewModel dan di nama destinasi navigation bila memungkinkan, contoh `// Spec: REG-03 Data Bisnis`.
 - Ikuti spesifikasi field apa adanya: label, urutan, tipe komponen, opsi, `*Mandatory`/`Optional`, label CTA, dan pesan error (contoh `Informasi wajib diisi`).
 - Copy UI dalam **Bahasa Indonesia** sesuai bundle. Simpan di `res/values/strings.xml`, jangan hardcode di layout atau Kotlin.
 - Bila implementasi butuh keputusan yang tidak ada di bundle, tanyakan. Jangan menambah field atau aturan validasi sendiri.
-- **Jangan mengedit bundle dari repo ini kecuali diminta.** Pengecualian: `flows_android/partner_registration.md` (awalnya draf percobaan user) boleh langsung diperbarui setiap kali requirement REG berubah.
+- **Rawat bundle selalu (keputusan user 2026-10-08).** Setiap pekerjaan yang menambah atau mengubah layar, alur, copy, aturan validasi, atau keputusan produk di aplikasi ini **wajib** memperbarui `flows_android/` di bundle pada pekerjaan yang sama, tanpa perlu diminta:
+    - File flow terkait (buat file baru bila epic belum punya file) dengan Flow ID yang sama dengan kode, format UX Flow, dan bagian *Pertanyaan Terbuka* untuk keputusan yang belum final.
+    - `flows_android/index.md` (daftar file dan rentang Flow ID) dan, bila perlu, `roles_matrix.md`.
+    - Entri di `products/sales_dashboard/log.md` (di dalam tabel, entri terbaru di bawah).
+    - Laporkan perubahan bundle di ringkasan akhir pekerjaan.
+  File di luar `flows_android/` (mis. `flows_web/`, `design_system/`) tetap hanya diubah bila diminta.
 - Setiap edit bundle mengikuti `okf_repository_design/CLAUDE.md` (frontmatter, format UX Flow, dan entri wajib di `products/sales_dashboard/log.md`). Referensi ke kode repo ini ditulis dengan prefix `android_sales_portal/…`. Jangan commit di repo bundle; repo itu punya perubahan lain yang belum di-commit.
 
 ## 2. Pemetaan Tipe Komponen Bundle → Android

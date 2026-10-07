@@ -3,6 +3,8 @@ package com.example.and_sales_portal.ui.auth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import com.example.and_sales_portal.data.auth.AccessInfo
 import com.example.and_sales_portal.data.auth.AppUser
@@ -27,7 +29,7 @@ import org.robolectric.annotation.GraphicsMode
 class AuthScreensScreenshotTest {
 
     private fun capture(name: String, content: @Composable () -> Unit) =
-        captureRoboImage("build/outputs/roborazzi/app_$name.png") { AmarTheme { content() } }
+        captureRoboImage("build/outputs/roborazzi/app_$name.png") { CompositionLocalProvider(LocalInspectionMode provides true) { AmarTheme { content() } } }
 
     private fun login(state: LoginFormState) = @Composable { LoginScreen(state, "1.0", {}, {}, {}, {}) }
 

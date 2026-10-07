@@ -1,6 +1,8 @@
 package com.example.and_sales_portal.ui.team
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalInspectionMode
 import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.AttendanceStatus
 import com.example.and_sales_portal.data.activity.DemoSeed
@@ -28,7 +30,7 @@ import java.time.LocalTime
 class TeamScreensScreenshotTest {
 
     private fun capture(name: String, content: @Composable () -> Unit) =
-        captureRoboImage("build/outputs/roborazzi/tl_$name.png") { AmarTheme { content() } }
+        captureRoboImage("build/outputs/roborazzi/tl_$name.png") { CompositionLocalProvider(LocalInspectionMode provides true) { AmarTheme { content() } } }
 
     private val partners = PartnerSeed.partners()
     private val today = LocalDate.of(2026, 10, 7)

@@ -1,6 +1,8 @@
 package com.example.and_sales_portal.ui.partnerregistration
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalInspectionMode
 import com.example.and_sales_portal.data.device.LocationResult
 import com.example.and_sales_portal.data.partner.DocType
 import com.example.and_sales_portal.data.partner.Keys
@@ -30,7 +32,7 @@ import org.robolectric.annotation.GraphicsMode
 class RegScreensScreenshotTest {
 
     private fun capture(name: String, content: @Composable () -> Unit) =
-        captureRoboImage("build/outputs/roborazzi/reg_$name.png") { AmarTheme { content() } }
+        captureRoboImage("build/outputs/roborazzi/reg_$name.png") { CompositionLocalProvider(LocalInspectionMode provides true) { AmarTheme { content() } } }
 
     private val errors = PartnerRegistrationState(showErrors = RegStep.entries.toSet())
     private val partners = PartnerSeed.partners()

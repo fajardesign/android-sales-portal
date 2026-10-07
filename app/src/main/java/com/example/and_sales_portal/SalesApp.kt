@@ -9,6 +9,7 @@ import com.example.and_sales_portal.data.device.Connectivity
 import com.example.and_sales_portal.data.device.LocationService
 import com.example.and_sales_portal.data.device.SimulationSettings
 import com.example.and_sales_portal.data.partner.PartnerRepository
+import com.example.and_sales_portal.data.sales.SalesRepository
 import com.example.and_sales_portal.data.team.TeamService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,7 @@ class AppContainer(app: Application) {
     val partners = PartnerRepository(demo)
     val operations = OperationsRepository(demo, partners)
     val team = TeamService(partners, operations)
+    val sales = SalesRepository(partners, operations)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val simulation = SimulationSettings(app)

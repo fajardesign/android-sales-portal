@@ -2,12 +2,12 @@ package com.example.and_sales_portal.data.activity
 
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoDirectory
+import com.example.and_sales_portal.data.demo.seededRandom
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.PartnerStatus
 import com.example.and_sales_portal.data.partner.Store
 import java.time.LocalDate
 import java.time.LocalTime
-import java.util.Random
 
 /**
  * Initial sample data, mirroring the web portal sample (`admin-sales-portal/src/api/db.js`): attendance (Monday–Saturday, clock in 07:25–07:59 on time, 08:01–08:59 late) and the
@@ -49,7 +49,7 @@ object DemoSeed {
         val visits = mutableListOf<Visit>()
         val days = (HISTORY_DAYS downTo 0).map { today.minusDays(it) }.filter(ActivityRules::isWorkday)
         days.forEach { d ->
-            val rnd = Random(userId * 1_000_003 + d.toEpochDay())
+            val rnd = seededRandom(userId * 1_000_003 + d.toEpochDay())
             val dayVisits = plan(userId, role, stores, d)
             if (d == today) {
                 visits += dayVisits

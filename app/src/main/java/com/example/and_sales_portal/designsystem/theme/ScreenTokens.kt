@@ -73,4 +73,9 @@ object AmarActivityTokens {
     val PreviewHeight = AmarSpace.S128 + AmarSpace.S32
     /** Not in Figma: gap between cards in lists (Spacing/Gap/MD). */
     val ListGap = AmarSpace.S12
+    /** `Daily activity metrics` tile: padding Spacing/Gap/XS (sides) and Spacing/Gap/SM (top, bottom). */
+    val MetricPaddingX = AmarSpace.S4
+    val MetricPaddingY = AmarSpace.S8
+    /** `Incentive hero content` gap Spacing/Gap/MD. */
+    val HeroGap = AmarSpace.S12
 }
