@@ -421,3 +421,17 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   - Mask `user-fill` (stroke di sisi dalam bentuk) dikonversi menjadi `clip-path`.
   - Master `menu / store` tingginya 24,5; drawable-nya diskalakan 24/24,5 secara vertikal seperti render Figma.
 - **Temuan Figma**: di varian Partner dan Tim, label "Beranda" nonaktif memakai `Label/Button/SM` (semibold), sedangkan label nonaktif lain `Caption/SM`. **Diputuskan 2026-10-06 (K10)**: semua label (aktif dan nonaktif) `Label/Button/SM`; kode sudah disesuaikan, Figma belum.
+
+## Komponen extended (tidak ada di Figma DS)
+
+Komponen di `designsystem/components/extended/` dibuat untuk aplikasi Sales (PRD v3) karena padanannya tidak ada di Figma DS Android. Semua nilainya dari token yang sudah ada; tidak ada nilai baru.
+
+| Kelompok | Komponen | Dasar | File Kotlin | Composable | Status |
+|---|---|---|---|---|---|
+| Navigation | Bottom navigation 5 tab per role | Navigation Bar - Partner Dashboard [3306:2306](https://www.figma.com/design/NCtvxBNe1WdwkKeCpSeT0C/Internal-Project-DS-Lib---Android?node-id=3306-2306) | `components/extended/AmarBottomNavigation.kt` | `AmarBottomNavigation` | ⚠️ Tidak ada di Figma DS |
+
+### Bottom navigation (extended)
+- **Alasan**: Navigation Bar di Figma DS hanya punya 3 item tetap (Beranda, Partner, Akun) untuk Partner Dashboard. PRD v3 butuh 5 tab yang berbeda per role (TL: Beranda, Partner, Tim, Aktivitas, Akun; SA/SR: Beranda, Kunjungan, Partner, Kinerja, Akun).
+- **Implementasi**: tampilan dan token sama dengan `AmarPartnerNavigationBar` (`AmarNavigationBarTokens`), item berupa daftar `AmarNavItem` dengan ikon aktif berlapis (`AmarNavIconLayer`).
+- **Ikon yang tidak ada di DS**: Tim memakai `contact` (tanpa versi filled, aktif hanya berubah warna); Kunjungan memakai `location` (ikon `menu / Visit` belum dikonversi); Kinerja memakai `target`.
+- **Perlu dari desainer**: varian 5 item di Figma DS dan ikon menu Tim/Kunjungan/Kinerja (outline + filled).

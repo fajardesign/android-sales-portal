@@ -1,8 +1,5 @@
 <resources>
-    <string name="app_name">and_sales_portal</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="app_name">Tunaiku Sales Portal</string>
     <!-- Design system -->
     <string name="ds_alert_dismiss">Tutup</string>
     <string name="ds_input_prefix_currency">Rp</string>
@@ -21,7 +18,6 @@
     <string name="ds_upload_retry">Ambil Foto Ulang</string>
     <string name="ds_logo_amarbank">Amar Bank</string>
     <!-- Partner Registration (REG-02 … REG-06), copy from Figma "Sales - Partner Dashboard - Android". -->
-    <string name="reg_entry_temporary">Daftarkan Partner</string>
     <string name="reg_app_bar_title">Pendaftaran Partner</string>
     <string name="reg_step">LANGKAH %1$d DARI %2$d</string>
     <string name="reg_required">Informasi wajib diisi</string>
@@ -139,4 +135,67 @@
     <string name="reg_success_partner">Partner</string>
     <string name="reg_success_sent">Dikirim</string>
     <string name="reg_success_cta">Kembali ke Partner</string>
+    <!-- Login & session (MLG-00 … MLG-02). Field copy: PRD v3 "Login on mobile"; sheets: Figma "Login" section;
+         messages: PRD login checks table (priority over Figma descriptions). -->
+    <string name="auth_product_title">Tunaiku Sales Portal</string>
+    <string name="auth_login_subtitle">Silakan login untuk masuk ke aplikasi</string>
+    <string name="auth_identifier">Email atau Username</string>
+    <string name="auth_identifier_placeholder">Masukkan email atau username</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_password_placeholder">Masukkan password</string>
+    <string name="auth_login">Masuk</string>
+    <string name="auth_forgot_password">Lupa password?</string>
+    <string name="auth_forgot_password_message">Hubungi Admin untuk mengatur ulang password Anda.</string>
+    <string name="auth_loading">Memuat...</string>
+    <string name="auth_version">versi %1$s</string>
+    <string name="auth_understood">Mengerti</string>
+    <string name="auth_retry">Coba Lagi</string>
+    <string name="auth_login_again">Login Ulang</string>
+    <string name="auth_error_invalid">Email/username atau password salah. Silakan coba lagi.</string>
+    <string name="auth_error_locked_title">Akun terkunci sementara</string>
+    <string name="auth_error_locked">Akun terkunci sementara. Coba lagi dalam 15 menit.</string>
+    <string name="auth_error_disabled_title">Akun Dinonaktifkan</string>
+    <string name="auth_error_disabled">Akun Anda tidak aktif. Hubungi Admin.</string>
+    <string name="auth_error_not_activated_title">Akun belum diaktivasi</string>
+    <string name="auth_error_not_activated">Akun belum diaktivasi. Cek email undangan Anda.</string>
+    <string name="auth_error_forbidden_title">Akses tidak tersedia</string>
+    <string name="auth_error_forbidden">Akses ditolak. Akun ini tidak memiliki akses ke aplikasi ini.</string>
+    <string name="auth_error_offline_title">Tidak Ada Koneksi Internet</string>
+    <string name="auth_error_offline">Tidak dapat terhubung. Periksa koneksi Anda dan coba lagi.</string>
+    <string name="auth_error_timeout_title">Permintaan terlalu lama</string>
+    <string name="auth_error_timeout">Permintaan melewati batas waktu. Silakan coba lagi.</string>
+    <string name="auth_error_server_title">Terjadi Gangguan</string>
+    <string name="auth_error_server">Server sedang tidak tersedia untuk sementara. Coba lagi beberapa saat.</string>
+    <string name="auth_error_expired_title">Sesi tidak dapat diperbarui</string>
+    <string name="auth_error_expired">Sesi Anda telah berakhir atau tidak dapat diperbarui.</string>
+
+    <!-- Shell: bottom navigation per role (PRD v3 "Login on mobile"). -->
+    <string name="nav_beranda">Beranda</string>
+    <string name="nav_partner">Partner</string>
+    <string name="nav_tim">Tim</string>
+    <string name="nav_aktivitas">Aktivitas</string>
+    <string name="nav_akun">Akun</string>
+    <string name="nav_kunjungan">Kunjungan</string>
+    <string name="nav_kinerja">Kinerja</string>
+
+    <!-- Akun (AKN-01). -->
+    <string name="account_title">Akun</string>
+    <string name="account_role_tl">Team Leader</string>
+    <string name="account_role_sr">Sales Representative</string>
+    <string name="account_role_sa">Sales Agent</string>
+    <string name="account_level">Level %1$s</string>
+    <string name="account_username">Username</string>
+    <string name="account_email">Email</string>
+    <string name="account_phone">No. Handphone</string>
+    <string name="account_area">Area</string>
+    <string name="account_supervisor">Atasan</string>
+    <string name="account_logout">Keluar</string>
+    <string name="account_logout_confirm_title">Keluar dari aplikasi?</string>
+    <string name="account_logout_confirm">Anda perlu login lagi untuk masuk.</string>
+    <string name="account_reset_demo">Reset data demo</string>
+    <string name="account_reset_demo_confirm_title">Reset data demo?</string>
+    <string name="account_reset_demo_confirm">Semua perubahan data contoh di perangkat ini dikembalikan ke awal.</string>
+    <string name="account_reset_demo_done">Data demo berhasil direset.</string>
+    <string name="common_cancel">Batal</string>
+    <string name="wip_screen">Halaman ini dibangun di tahap berikutnya.</string>
 </resources>

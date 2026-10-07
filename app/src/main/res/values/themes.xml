@@ -13,6 +13,6 @@
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
     </style>
-    <!-- Partner Registration: no action bar (the screens draw the DS App Bar), light, edge-to-edge. -->
-    <style name="Theme.And_sales_portal.Registration" parent="Theme.MaterialComponents.Light.NoActionBar" />
+    <!-- Sales app screens: no action bar (the screens draw the DS App Bar), light, edge-to-edge. -->
+    <style name="Theme.And_sales_portal.App" parent="Theme.MaterialComponents.Light.NoActionBar" />
 </resources>

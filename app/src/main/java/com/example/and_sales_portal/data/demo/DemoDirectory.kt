@@ -1,0 +1,56 @@
+package com.example.and_sales_portal.data.demo
+
+/**
+ * Areas and people of the prototype, identical to the web portal sample data
+ * (`admin-sales-portal/src/lib/constants.js` AREAS, `src/api/db.js` users) so both apps show the same organisation.
+ * Supabase RLS only returns the signed-in user's own `app_user` row, so names of leaders and team members come from here.
+ */
+object DemoDirectory {
+
+    data class Area(val id: Int, val code: String, val name: String, val province: String, val city: String, val district: String, val village: String, val lat: Double, val lng: Double)
+
+    data class Person(val id: Long, val fullName: String, val role: String, val areaId: Int, val supervisorId: Long?, val status: String, val tlLevel: String? = null) {
+        val username: String get() = fullName.lowercase().replace(Regex("[^a-z ]"), "").trim().replace(Regex("\\s+"), ".")
+        val email: String get() = "$username@amarbank.co.id"
+        /** Same formula as the portal sample (`81` + digits), shown with +62. */
+        val phone: String get() = "81" + (200_000_000 + id * 7919).toString().take(9)
+    }
+
+    val areas = listOf(
+        Area(1, "MKS", "Makassar", "Sulawesi Selatan", "Kota Makassar", "Panakkukang", "Pandang", -5.1477, 119.4327),
+        Area(2, "BDG", "Bandung", "Jawa Barat", "Kota Bandung", "Coblong", "Dago", -6.8915, 107.6107),
+        Area(3, "MDN", "Medan", "Sumatera Utara", "Kota Medan", "Medan Petisah", "Sei Sikambing D", 3.5952, 98.6722),
+        Area(4, "SBY", "Surabaya", "Jawa Timur", "Kota Surabaya", "Tegalsari", "Kedungdoro", -7.2575, 112.7521),
+        Area(5, "JKT", "Jakarta", "DKI Jakarta", "Kota Jakarta Barat", "Grogol Petamburan", "Tanjung Duren Selatan", -6.1767, 106.7905),
+        Area(6, "DPS", "Denpasar", "Bali", "Kota Denpasar", "Denpasar Barat", "Dauh Puri", -8.6705, 115.2126),
+        Area(7, "PLG", "Palembang", "Sumatera Selatan", "Kota Palembang", "Ilir Timur I", "Sungai Pangeran", -2.9761, 104.7754),
+    )
+
+    val people = listOf(
+        Person(3, "Hasan Basri", "APL", 1, null, "ACTIVE"),
+        Person(4, "Lestari Wulandari", "APL", 2, null, "ACTIVE"),
+        Person(5, "Joko Susilo", "APL", 3, null, "ACTIVE"),
+        Person(6, "Andi Pratama", "TL", 1, 3, "ACTIVE", "SENIOR"),
+        Person(7, "Budi Santoso", "TL", 2, 4, "ACTIVE", "JUNIOR"),
+        Person(8, "Rahmat Hidayat", "TL", 3, 5, "ACTIVE", "JUNIOR"),
+        Person(9, "Maya Anggraini", "TL", 5, 4, "ACTIVE", "SENIOR"),
+        Person(10, "Fajar Nugroho", "TL", 4, 5, "PENDING", "SENIOR"),
+        Person(11, "Siti Rahmawati", "SR", 1, 6, "ACTIVE"),
+        Person(12, "Dewi Lestari", "SR", 2, 7, "ACTIVE"),
+        Person(13, "Agus Setiawan", "SR", 5, 9, "ACTIVE"),
+        Person(14, "Yohana Sitorus", "SR", 3, 8, "PENDING"),
+        Person(15, "Eko Saputra", "SA", 1, 6, "ACTIVE"),
+        Person(16, "Nurul Hidayah", "SA", 1, 6, "ACTIVE"),
+        Person(17, "Taufik Hidayat", "SA", 2, 7, "ACTIVE"),
+        Person(18, "Wulan Sari", "SA", 5, 9, "ACTIVE"),
+        Person(19, "Putri Ayuningtyas", "SA", 2, 7, "PENDING"),
+        Person(20, "Nanda Kurniawan", "SA", 3, 8, "PENDING"),
+        Person(21, "Rizky Ramadhan", "SA", 1, 6, "DISABLED"),
+    )
+
+    fun area(id: Int): Area? = areas.firstOrNull { it.id == id }
+    fun person(id: Long?): Person? = id?.let { pid -> people.firstOrNull { it.id == pid } }
+
+    /** Active SA/SR led by [tlId] (PRD C5 "Tim"). */
+    fun teamOf(tlId: Long): List<Person> = people.filter { it.supervisorId == tlId && it.role in setOf("SA", "SR") && it.status != "DISABLED" }
+}

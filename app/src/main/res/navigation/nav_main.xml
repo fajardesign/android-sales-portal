@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sales app (TL, SR, SA): splash (MLG-00), login (MLG-01) and the bottom navigation tabs per role (PRD v3). -->
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nav_main"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:startDestination="@id/splash">
+
+    <fragment android:id="@+id/splash" android:name="com.example.and_sales_portal.ui.auth.SplashFragment" />
+    <fragment android:id="@+id/login" android:name="com.example.and_sales_portal.ui.auth.LoginFragment" />
+
+    <fragment android:id="@+id/tl_home" android:name="com.example.and_sales_portal.ui.shell.TlHomeFragment" />
+    <fragment android:id="@+id/sales_home" android:name="com.example.and_sales_portal.ui.shell.SalesHomeFragment" />
+    <fragment android:id="@+id/partner_tab" android:name="com.example.and_sales_portal.ui.shell.PartnerTabFragment" />
+    <fragment android:id="@+id/team_tab" android:name="com.example.and_sales_portal.ui.shell.TeamTabFragment" />
+    <fragment android:id="@+id/activity_tab" android:name="com.example.and_sales_portal.ui.shell.ActivityTabFragment" />
+    <fragment android:id="@+id/visits_tab" android:name="com.example.and_sales_portal.ui.shell.VisitsTabFragment" />
+    <fragment android:id="@+id/performance_tab" android:name="com.example.and_sales_portal.ui.shell.PerformanceTabFragment" />
+    <fragment android:id="@+id/account_tab" android:name="com.example.and_sales_portal.ui.shell.AccountFragment" />
+</navigation>

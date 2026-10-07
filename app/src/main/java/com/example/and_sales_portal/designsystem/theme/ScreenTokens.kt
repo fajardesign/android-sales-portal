@@ -38,3 +38,21 @@ object AmarSuccessTokens {
     val SummaryGap = AmarSpace.S12
     val RowGap = AmarSpace.S8
 }
+
+/** Login (`02 | Login`) and splash (`01 | Splash Screen | Loading`) layout, raw values from Figma "Sales - Partner Dashboard - Android". */
+object AmarAuthTokens {
+    /** `login-content`: padding top 60, sides 16; logo ↔ form 52. */
+    val ContentPaddingTop = 60.dp
+    val ContentPadding = AmarSpace.S16
+    val LogoToForm = 52.dp
+    /** Form ↔ actions 24; fields 16; title ↔ subtitle 4; button ↔ "Lupa password?" 16. */
+    val SectionGap = AmarSpace.S24
+    val FieldGap = AmarSpace.S16
+    val IntroGap = AmarSpace.S4
+    val ActionGap = AmarSpace.S16
+    /** Footer with the version: padding 16. */
+    val FooterPadding = AmarSpace.S16
+    /** Splash: logo ↔ title ↔ loading 48; spinner ↔ "Memuat..." 16. */
+    val SplashGap = 48.dp
+    val SplashLoadingGap = AmarSpace.S16
+}
