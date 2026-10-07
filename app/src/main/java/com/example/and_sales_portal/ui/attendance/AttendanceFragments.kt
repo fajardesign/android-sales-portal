@@ -66,7 +66,7 @@ class AttendanceFragment : ComposeFragment() {
 
         fun attendanceState(repo: ActivityRepository, online: Boolean): AttendanceUiState {
             val today = repo.today()
-            fun day(d: LocalDate) = repo.attendanceOf(d).let { AttendanceDay(d, it, ActivityRules.attendanceStatus(it, d, today)) }
+            fun day(d: LocalDate) = repo.attendanceOf(d).let { AttendanceDay(d, it, ActivityRules.attendanceStatus(it, d, today, repo.isDayOff(d))) }
             val history = (1..HISTORY_DAYS).map { today.minusDays(it) }.filter(ActivityRules::isWorkday).map(::day)
             return AttendanceUiState(day(today), history, online)
         }

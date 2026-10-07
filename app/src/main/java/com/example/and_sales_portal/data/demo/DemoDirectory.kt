@@ -9,7 +9,19 @@ object DemoDirectory {
 
     data class Area(val id: Int, val code: String, val name: String, val province: String, val city: String, val district: String, val village: String, val lat: Double, val lng: Double)
 
-    data class Person(val id: Long, val fullName: String, val role: String, val areaId: Int, val supervisorId: Long?, val status: String, val tlLevel: String? = null) {
+    data class Person(
+        val id: Long,
+        val fullName: String,
+        val role: String,
+        val areaId: Int,
+        val supervisorId: Long?,
+        val status: String,
+        val tlLevel: String? = null,
+        /** Account created this many hours before the portal's reference time (7 Oct 2026, 10:30 WIB). */
+        val createdHoursAgo: Long = 24 * 30,
+    ) {
+        /** Registration date ("Terdaftar"). */
+        val createdAt: Long get() = REFERENCE - createdHoursAgo * 3_600_000L
         val username: String get() = fullName.lowercase().replace(Regex("[^a-z ]"), "").trim().replace(Regex("\\s+"), ".")
         val email: String get() = "$username@amarbank.co.id"
         /** Same formula as the portal sample (`81` + digits), shown with +62. */
@@ -27,26 +39,29 @@ object DemoDirectory {
     )
 
     val people = listOf(
-        Person(3, "Hasan Basri", "APL", 1, null, "ACTIVE"),
-        Person(4, "Lestari Wulandari", "APL", 2, null, "ACTIVE"),
-        Person(5, "Joko Susilo", "APL", 3, null, "ACTIVE"),
-        Person(6, "Andi Pratama", "TL", 1, 3, "ACTIVE", "SENIOR"),
-        Person(7, "Budi Santoso", "TL", 2, 4, "ACTIVE", "JUNIOR"),
-        Person(8, "Rahmat Hidayat", "TL", 3, 5, "ACTIVE", "JUNIOR"),
-        Person(9, "Maya Anggraini", "TL", 5, 4, "ACTIVE", "SENIOR"),
-        Person(10, "Fajar Nugroho", "TL", 4, 5, "PENDING", "SENIOR"),
-        Person(11, "Siti Rahmawati", "SR", 1, 6, "ACTIVE"),
-        Person(12, "Dewi Lestari", "SR", 2, 7, "ACTIVE"),
-        Person(13, "Agus Setiawan", "SR", 5, 9, "ACTIVE"),
-        Person(14, "Yohana Sitorus", "SR", 3, 8, "PENDING"),
-        Person(15, "Eko Saputra", "SA", 1, 6, "ACTIVE"),
-        Person(16, "Nurul Hidayah", "SA", 1, 6, "ACTIVE"),
-        Person(17, "Taufik Hidayat", "SA", 2, 7, "ACTIVE"),
-        Person(18, "Wulan Sari", "SA", 5, 9, "ACTIVE"),
-        Person(19, "Putri Ayuningtyas", "SA", 2, 7, "PENDING"),
-        Person(20, "Nanda Kurniawan", "SA", 3, 8, "PENDING"),
-        Person(21, "Rizky Ramadhan", "SA", 1, 6, "DISABLED"),
+        Person(3, "Hasan Basri", "APL", 1, null, "ACTIVE", createdHoursAgo = 2160),
+        Person(4, "Lestari Wulandari", "APL", 2, null, "ACTIVE", createdHoursAgo = 2112),
+        Person(5, "Joko Susilo", "APL", 3, null, "ACTIVE", createdHoursAgo = 2040),
+        Person(6, "Andi Pratama", "TL", 1, 3, "ACTIVE", "SENIOR", createdHoursAgo = 1920),
+        Person(7, "Budi Santoso", "TL", 2, 4, "ACTIVE", "JUNIOR", createdHoursAgo = 1872),
+        Person(8, "Rahmat Hidayat", "TL", 3, 5, "ACTIVE", "JUNIOR", createdHoursAgo = 1800),
+        Person(9, "Maya Anggraini", "TL", 5, 4, "ACTIVE", "SENIOR", createdHoursAgo = 1680),
+        Person(10, "Fajar Nugroho", "TL", 4, 5, "PENDING", "SENIOR", createdHoursAgo = 3),
+        Person(11, "Siti Rahmawati", "SR", 1, 6, "ACTIVE", createdHoursAgo = 1560),
+        Person(12, "Dewi Lestari", "SR", 2, 7, "ACTIVE", createdHoursAgo = 1536),
+        Person(13, "Agus Setiawan", "SR", 5, 9, "ACTIVE", createdHoursAgo = 1440),
+        Person(14, "Yohana Sitorus", "SR", 3, 8, "PENDING", createdHoursAgo = 40),
+        Person(15, "Eko Saputra", "SA", 1, 6, "ACTIVE", createdHoursAgo = 1488),
+        Person(16, "Nurul Hidayah", "SA", 1, 6, "ACTIVE", createdHoursAgo = 1392),
+        Person(17, "Taufik Hidayat", "SA", 2, 7, "ACTIVE", createdHoursAgo = 1368),
+        Person(18, "Wulan Sari", "SA", 5, 9, "ACTIVE", createdHoursAgo = 1320),
+        Person(19, "Putri Ayuningtyas", "SA", 2, 7, "PENDING", createdHoursAgo = 5),
+        Person(20, "Nanda Kurniawan", "SA", 3, 8, "PENDING", createdHoursAgo = 30),
+        Person(21, "Rizky Ramadhan", "SA", 1, 6, "DISABLED", createdHoursAgo = 2400),
     )
+
+    /** Reference time of the web portal sample (`admin-sales-portal/src/api/db.js` BASE). */
+    private const val REFERENCE = 1_791_343_800_000L
 
     fun area(id: Int): Area? = areas.firstOrNull { it.id == id }
     fun person(id: Long?): Person? = id?.let { pid -> people.firstOrNull { it.id == pid } }

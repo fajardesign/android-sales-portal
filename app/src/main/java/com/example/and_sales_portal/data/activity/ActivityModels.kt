@@ -12,16 +12,20 @@ import java.time.ZoneId
  * Operational data of one user in the prototype (PRD v3 data model: `attendance`, `visit_plan`), stored on the device
  * per account by [ActivityRepository]. Partners and toko are shared ([com.example.and_sales_portal.data.partner.PartnerRepository]).
  */
+/** Operations of every SA/SR/TL on the device (shared, like partners): attendance, visit plans and days off. */
 @Serializable
-data class DemoData(
+data class OpsData(
     val version: Int = VERSION,
     val attendance: List<Attendance> = emptyList(),
     val visits: List<Visit> = emptyList(),
-    /** Days (ISO) whose visit plan has been generated, so a day is planned once. */
+    /** `employeeId:date` whose plan exists (generated or edited by the TL), so a day is generated once. */
     val plannedDays: Set<String> = emptySet(),
+    /** `employeeId:date` marked as day off by the TL (PRD C7 "mark days off"). */
+    val daysOff: Set<String> = emptySet(),
 ) {
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
+        fun key(employeeId: Long, date: LocalDate) = "$employeeId:$date"
     }
 }
 
@@ -40,6 +44,7 @@ data class Punch(
 
 @Serializable
 data class Attendance(
+    val employeeId: Long,
     /** Work date (ISO, WIB). */
     val date: String,
     val clockIn: Punch? = null,
@@ -52,6 +57,8 @@ enum class VisitState { SCHEDULED, IN_PROGRESS, DONE, CANCELLED }
 @Serializable
 data class Visit(
     val id: String,
+    /** SA/SR (or TL) who visits. */
+    val employeeId: Long,
     val storeId: String,
     val date: String,
     /** Planned time (WIB), `HH:mm`. */
@@ -62,10 +69,12 @@ data class Visit(
     val note: String? = null,
     /** TL who planned the visit. */
     val createdBy: Long,
+    /** Why it was cancelled (by the TL, or because the partner was unassigned). */
+    val cancelReason: String? = null,
 )
 
 /** Attendance status shown in the history (PRD D2 "Tepat waktu / Terlambat"; absent days in the history too). */
-enum class AttendanceStatus { NOT_YET, ON_TIME, LATE, ABSENT }
+enum class AttendanceStatus { NOT_YET, ON_TIME, LATE, ABSENT, DAY_OFF }
 
 /** Visit status chip (PRD D3) and outcome (PRD C7). */
 enum class VisitStatus { NOT_STARTED, ONGOING, DONE, MISSED, CANCELLED }
@@ -86,12 +95,16 @@ object ActivityRules {
     /** PRD C7: up to 3 visits per day. */
     const val MAX_VISITS_PER_DAY = 3
 
+    /** Times offered when planning a visit (not in the PRD: 30-minute steps of the working day). */
+    val PLAN_TIMES: List<String> = (7 * 2..19 * 2).map { "%02d:%02d".format(it / 2, it % 2 * 30) }
+
     /** Monday to Saturday (same as the web portal sample). */
     fun isWorkday(date: LocalDate) = date.dayOfWeek != DayOfWeek.SUNDAY
 
-    fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate): AttendanceStatus {
+    fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate, dayOff: Boolean = false): AttendanceStatus {
         val inAt = a?.clockIn?.at
         return when {
+            inAt == null && dayOff -> AttendanceStatus.DAY_OFF
             inAt != null -> if (Instant.ofEpochMilli(inAt).atZone(ZONE).toLocalTime() <= CLOCK_IN_LIMIT) AttendanceStatus.ON_TIME else AttendanceStatus.LATE
             date < today -> AttendanceStatus.ABSENT
             else -> AttendanceStatus.NOT_YET

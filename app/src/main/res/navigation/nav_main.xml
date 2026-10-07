@@ -11,7 +11,7 @@
     <fragment android:id="@+id/tl_home" android:name="com.example.and_sales_portal.ui.shell.TlHomeFragment" />
     <fragment android:id="@+id/sales_home" android:name="com.example.and_sales_portal.ui.shell.SalesHomeFragment" />
     <fragment android:id="@+id/partner_tab" android:name="com.example.and_sales_portal.ui.partner.PartnerTabFragment" />
-    <fragment android:id="@+id/team_tab" android:name="com.example.and_sales_portal.ui.shell.TeamTabFragment" />
+    <fragment android:id="@+id/team_tab" android:name="com.example.and_sales_portal.ui.team.TeamTabFragment" />
     <fragment android:id="@+id/activity_tab" android:name="com.example.and_sales_portal.ui.shell.ActivityTabFragment" />
     <fragment android:id="@+id/visits_tab" android:name="com.example.and_sales_portal.ui.visits.VisitsTabFragment" />
     <fragment android:id="@+id/performance_tab" android:name="com.example.and_sales_portal.ui.shell.PerformanceTabFragment" />
@@ -30,6 +30,12 @@
     <fragment android:id="@+id/revision" android:name="com.example.and_sales_portal.ui.partner.RevisionFragment" />
     <fragment android:id="@+id/partner_detail" android:name="com.example.and_sales_portal.ui.partner.PartnerDetailFragment" />
     <fragment android:id="@+id/add_store" android:name="com.example.and_sales_portal.ui.partner.AddStoreFragment" />
+
+    <!-- Tim, Assign SA/SR, Jadwal Kunjungan (TL-01 … TL-05; PRD v3 C5-C7). -->
+    <fragment android:id="@+id/team_detail" android:name="com.example.and_sales_portal.ui.team.MemberDetailFragment" />
+    <fragment android:id="@+id/assign" android:name="com.example.and_sales_portal.ui.team.AssignFragment" />
+    <fragment android:id="@+id/schedule" android:name="com.example.and_sales_portal.ui.team.ScheduleFragment" />
+    <fragment android:id="@+id/visit_plan_form" android:name="com.example.and_sales_portal.ui.team.VisitPlanFormFragment" />
 
     <!-- Placeholder for screens of later parts, and the debug simulation panel. -->
     <fragment android:id="@+id/wip" android:name="com.example.and_sales_portal.ui.shell.WipFragment" />

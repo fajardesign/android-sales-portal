@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.update
 import java.time.Instant
 import java.time.ZoneId
 
+/** Why an assignment is refused (PRD v3 C6). */
+enum class AssignError { SaLimit, SrLimit, NotOwner, OtherArea, NotLeader }
+
 /**
  * Partners of the organisation on this device (shared by every account, so an SR's submission shows up for their TL),
  * standing in for the Partner Pipeline API. Spec: REG-01 … REG-11, PRT-01 … PRT-02 (PRD v3 C2, C3, C4, D4).
@@ -83,6 +86,48 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         return s
     }
 
+    // region Assign SA/SR (TL-03; PRD C6)
+
+    /** Active partners with a toko assigned to [employeeId]. */
+    fun assignedPartners(employeeId: Long): List<Partner> =
+        _partners.value.filter { p -> p.status == PartnerStatus.ACTIVE && p.stores.any { employeeId in it.assigned } }
+
+    /**
+     * Why [employeeId] cannot be assigned to [partnerId] by [tlId]: SA max 1 partner, SR max 3; only partners owned by
+     * the TL in the person's area; the TL must be the person's direct leader.
+     */
+    fun assignmentError(tlId: Long, employeeId: Long, partnerId: String): AssignError? {
+        val person = DemoDirectory.person(employeeId) ?: return AssignError.NotLeader
+        val p = get(partnerId) ?: return AssignError.NotOwner
+        val current = assignedPartners(employeeId).filter { it.id != partnerId }
+        return when {
+            person.supervisorId != tlId -> AssignError.NotLeader
+            p.ownerTlId != tlId || p.status != PartnerStatus.ACTIVE -> AssignError.NotOwner
+            p.areaId != person.areaId -> AssignError.OtherArea
+            person.role == "SA" && current.isNotEmpty() -> AssignError.SaLimit
+            person.role == "SR" && current.size >= SR_MAX_PARTNERS -> AssignError.SrLimit
+            else -> null
+        }
+    }
+
+    /** Assignment is per partner and covers all its active toko (PRD C6). */
+    fun assign(tlId: Long, employeeId: Long, partnerId: String): AssignError? {
+        assignmentError(tlId, employeeId, partnerId)?.let { return it }
+        val p = requireNotNull(get(partnerId))
+        replace(p.copy(stores = p.stores.map { if (it.status == "ACTIVE" && employeeId !in it.assigned) it.copy(assigned = it.assigned + employeeId) else it }))
+        return null
+    }
+
+    /** Removes [employeeId] from every toko of [partnerId]; returns the toko ids. */
+    fun unassign(employeeId: Long, partnerId: String): Set<String> {
+        val p = get(partnerId) ?: return emptySet()
+        val ids = p.stores.filter { employeeId in it.assigned }.map { it.id }.toSet()
+        replace(p.copy(stores = p.stores.map { it.copy(assigned = it.assigned - employeeId) }))
+        return ids
+    }
+
+    // endregion
+
     // region Simulasi Admin (debug): the web portal's actions, so the whole lifecycle can be tried on the device.
 
     fun adminRequestRevision(id: String) {
@@ -138,6 +183,8 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     companion object {
         private val ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
         const val ADMIN = "Rina Saraswati (Admin)"
+        /** PRD C6: SA max 1 partner, SR max 3. */
+        const val SR_MAX_PARTNERS = 3
 
         /** Name of the person who moved a status (user id or Admin name). */
         fun actorName(by: String): String = by.toLongOrNull()?.let { DemoDirectory.person(it)?.fullName } ?: by

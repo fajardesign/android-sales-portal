@@ -18,15 +18,16 @@ class ActivityRulesTest {
 
     @Test
     fun attendanceStatus() {
-        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(today.toString(), punch("08:00")), today, today))
-        assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(today.toString(), punch("08:01")), today, today))
+        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("08:00")), today, today))
+        assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("08:01")), today, today))
         assertEquals(AttendanceStatus.NOT_YET, ActivityRules.attendanceStatus(null, today, today))
         assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(null, today.minusDays(1), today))
+        assertEquals(AttendanceStatus.DAY_OFF, ActivityRules.attendanceStatus(null, today.minusDays(1), today, dayOff = true))
     }
 
     @Test
     fun visitOutcomeAndStatus() {
-        val v = Visit("v", "s", today.toString(), "10:00", createdBy = 6)
+        val v = Visit("v", 11, "s", today.toString(), "10:00", createdBy = 6)
         assertNull(ActivityRules.visitOutcome(v))
         assertEquals(VisitOutcome.ON_TIME, ActivityRules.visitOutcome(v.copy(checkIn = punch("10:15"))))
         assertEquals(VisitOutcome.LATE, ActivityRules.visitOutcome(v.copy(checkIn = punch("10:16"))))

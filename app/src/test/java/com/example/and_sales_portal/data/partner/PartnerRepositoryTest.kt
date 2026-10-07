@@ -84,4 +84,18 @@ class PartnerRepositoryTest {
         assertEquals("ACTIVE", s.status)
         assertEquals(2, repo.get(p.id)!!.stores.size)
     }
+
+    @Test
+    fun assignmentRules() {
+        // Eko (SA) already has Jaya Abadi Cellular: a second partner is refused.
+        assertEquals(AssignError.SaLimit, repo.assignmentError(6, 15, "REG2026-0132"))
+        // Siti (SR) has 2 partners; a 3rd would be allowed if one existed in the area; not owner / other leader refused.
+        assertEquals(AssignError.NotLeader, repo.assignmentError(7, 11, "REG2026-0139"))
+        assertEquals(AssignError.NotOwner, repo.assignmentError(6, 16, "REG2026-0138"))
+        // Nurul (SA) moves: unassign then assign covers every toko.
+        repo.unassign(16, "REG2026-0132")
+        assertTrue(repo.assignedPartners(16).isEmpty())
+        assertNull(repo.assign(6, 16, "REG2026-0139"))
+        assertTrue(repo.get("REG2026-0139")!!.stores.all { 16L in it.assigned })
+    }
 }

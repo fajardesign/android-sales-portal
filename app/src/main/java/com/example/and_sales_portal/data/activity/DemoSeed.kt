@@ -28,8 +28,21 @@ object DemoSeed {
         return stores.filter { it.status == "ACTIVE" }
     }
 
-    /** First data of a user: [HISTORY_DAYS] of attendance and visits before [today] plus today's plan. */
-    fun initial(userId: Long, role: SalesRole, areaId: Int?, today: LocalDate, partners: List<Partner>): DemoData {
+    /** Active SA, SR and TL of the directory (the people who clock in and visit). */
+    fun employees(): List<DemoDirectory.Person> = DemoDirectory.people.filter { it.role in setOf("TL", "SR", "SA") && it.status == "ACTIVE" }
+
+    /** First data of the device: history and today's plan of every active SA/SR/TL. */
+    fun initial(today: LocalDate, partners: List<Partner>): OpsData {
+        val parts = employees().map { p -> initialOf(p.id, SalesRole.valueOf(p.role), p.areaId, today, partners) }
+        return OpsData(
+            attendance = parts.flatMap { it.attendance },
+            visits = parts.flatMap { it.visits },
+            plannedDays = parts.flatMap { it.plannedDays }.toSet(),
+        )
+    }
+
+    /** [HISTORY_DAYS] of attendance and visits before [today] plus today's plan of one person. */
+    private fun initialOf(userId: Long, role: SalesRole, areaId: Int?, today: LocalDate, partners: List<Partner>): OpsData {
         val stores = storesOf(partners, userId, role)
         val area = areaId?.let { DemoDirectory.area(it) }
         val attendance = mutableListOf<Attendance>()
@@ -51,6 +64,7 @@ object DemoSeed {
                 val lat = round6(area.lat + (rnd.nextDouble() - 0.5) * 0.03)
                 val lng = round6(area.lng + (rnd.nextDouble() - 0.5) * 0.03)
                 attendance += Attendance(
+                    employeeId = userId,
                     date = d.toString(),
                     clockIn = Punch(inAt.atZone(ActivityRules.ZONE).toInstant().toEpochMilli(), lat, lng),
                     clockOut = Punch(outAt.atZone(ActivityRules.ZONE).toInstant().toEpochMilli(), lat, lng),
@@ -71,7 +85,7 @@ object DemoSeed {
                 }
             }
         }
-        return DemoData(attendance = attendance, visits = visits, plannedDays = days.map { it.toString() }.toSet())
+        return OpsData(attendance = attendance, visits = visits, plannedDays = days.map { OpsData.key(userId, it) }.toSet())
     }
 
     /** The TL's visit plan of [userId] on [date] (same pattern as the web portal sample). */
@@ -86,7 +100,7 @@ object DemoSeed {
             SalesRole.SA -> listOf(stores.first() to "10:00")
             SalesRole.SR -> stores.take(ActivityRules.MAX_VISITS_PER_DAY).zip(listOf("10:00", "13:00", "16:00"))
         }
-        return picks.map { (s, time) -> Visit(id = "V-$userId-$date-${s.id}", storeId = s.id, date = date.toString(), plannedTime = time, createdBy = tlId) }
+        return picks.map { (s, time) -> Visit(id = "V-$userId-$date-${s.id}", employeeId = userId, storeId = s.id, date = date.toString(), plannedTime = time, createdBy = tlId) }
     }
 
     private fun round6(v: Double) = Math.round(v * 1e6) / 1e6

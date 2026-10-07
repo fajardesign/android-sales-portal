@@ -2,12 +2,14 @@ package com.example.and_sales_portal
 
 import android.app.Application
 import com.example.and_sales_portal.data.activity.ActivityRepository
+import com.example.and_sales_portal.data.activity.OperationsRepository
 import com.example.and_sales_portal.data.auth.AuthRepository
 import com.example.and_sales_portal.data.auth.SalesSession
 import com.example.and_sales_portal.data.device.Connectivity
 import com.example.and_sales_portal.data.device.LocationService
 import com.example.and_sales_portal.data.device.SimulationSettings
 import com.example.and_sales_portal.data.partner.PartnerRepository
+import com.example.and_sales_portal.data.team.TeamService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,6 +41,8 @@ class AppContainer(app: Application) {
 
     val demo = DemoStore(app)
     val partners = PartnerRepository(demo)
+    val operations = OperationsRepository(demo, partners)
+    val team = TeamService(partners, operations)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val simulation = SimulationSettings(app)
@@ -51,7 +55,7 @@ class AppContainer(app: Application) {
     fun activity(session: SalesSession): ActivityRepository {
         val user = session.user
         activityRepo?.takeIf { it.userId == user.id }?.let { return it }
-        return ActivityRepository(demo, partners, user.id, session.role, user.areaIds.firstOrNull()).also { activityRepo = it }
+        return ActivityRepository(operations, partners, user.id, session.role).also { activityRepo = it }
     }
 
     val auth = AuthRepository(supabase, secureStore, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY)

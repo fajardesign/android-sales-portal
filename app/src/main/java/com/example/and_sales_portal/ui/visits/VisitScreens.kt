@@ -124,7 +124,7 @@ fun VisitDetailScreen(item: VisitItem, online: Boolean, now: () -> Long, onBack:
         when (item.status) {
             VisitStatus.NOT_STARTED -> if (!online) AmarInfoBox(stringResource(R.string.vis_offline_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
             VisitStatus.MISSED -> AmarInfoBox(stringResource(R.string.vis_missed_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Error)
-            VisitStatus.CANCELLED -> AmarInfoBox(stringResource(R.string.vis_cancelled_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
+            VisitStatus.CANCELLED -> AmarInfoBox(v.cancelReason ?: stringResource(R.string.vis_cancelled_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
             else -> Unit
         }
         val checkIn = v.checkIn

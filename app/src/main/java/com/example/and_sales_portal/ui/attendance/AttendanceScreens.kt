@@ -115,6 +115,7 @@ fun AttendanceBadge(status: AttendanceStatus) {
         AttendanceStatus.ON_TIME -> R.string.att_status_on_time to AmarBadgeType.Success
         AttendanceStatus.LATE -> R.string.att_status_late to AmarBadgeType.Warning
         AttendanceStatus.ABSENT -> R.string.att_status_absent to AmarBadgeType.Error
+        AttendanceStatus.DAY_OFF -> R.string.att_status_day_off to AmarBadgeType.Info
     }
     AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small)
 }

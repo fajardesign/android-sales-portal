@@ -43,10 +43,10 @@ class ActivityScreensScreenshotTest {
     @Test
     fun attendance() {
         val history = (1L..6L).map { today.minusDays(it) }.filter(ActivityRules::isWorkday).mapIndexed { i, d ->
-            day(if (i == 2) null else Attendance(d.toString(), Punch(at(if (i == 1) "08:12" else "07:41", d), 0.0, 0.0), Punch(at("17:20", d), 0.0, 0.0)), d)
+            day(if (i == 2) null else Attendance(11, d.toString(), Punch(at(if (i == 1) "08:12" else "07:41", d), 0.0, 0.0), Punch(at("17:20", d), 0.0, 0.0)), d)
         }
         capture("01_not_yet") { AttendanceScreen(AttendanceUiState(day(null), history, online = true), {}, {}, {}) }
-        val clockedIn = Attendance(today.toString(), Punch(at("07:52"), 0.0, 0.0))
+        val clockedIn = Attendance(11, today.toString(), Punch(at("07:52"), 0.0, 0.0))
         capture("01_clocked_in") { AttendanceScreen(AttendanceUiState(day(clockedIn), history, online = true), {}, {}, {}) }
         capture("01_offline") { AttendanceScreen(AttendanceUiState(day(null), history, online = false), {}, {}, {}) }
         val done = clockedIn.copy(clockOut = Punch(at("17:05"), 0.0, 0.0))

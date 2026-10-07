@@ -74,7 +74,8 @@ class AccountFragment : ComposeFragment() {
                 onConfirm = {
                     confirmReset = false
                     container.partners.reset()
-                    activityRepo.reset()
+                    container.operations.reset()
+                    container.demo.reset(current.user.id)
                     toast = resetDone
                 },
                 onDismiss = { confirmReset = false },
@@ -126,8 +127,8 @@ class ActivityTabFragment : ComposeFragment() {
                 Entry(R.string.vis_title_own, R.string.act_visits_desc) { navigate(R.id.my_visits) },
             ),
             R.string.act_team to listOf(
-                Entry(R.string.act_schedule, R.string.act_schedule_desc, wip(R.string.act_schedule)),
-                Entry(R.string.act_assign, R.string.act_assign_desc, wip(R.string.act_assign)),
+                Entry(R.string.act_schedule, R.string.act_schedule_desc) { navigate(R.id.schedule) },
+                Entry(R.string.act_assign, R.string.act_assign_desc) { navigate(R.id.assign) },
             ),
             R.string.act_reports to listOf(
                 Entry(R.string.act_productivity, R.string.act_productivity_desc, wip(R.string.act_productivity)),
@@ -180,7 +181,6 @@ abstract class PendingTabFragment(private val title: Int) : ComposeFragment() {
     }
 }
 
-class TeamTabFragment : PendingTabFragment(R.string.nav_tim)
 class PerformanceTabFragment : PendingTabFragment(R.string.nav_kinerja)
 
 @Composable

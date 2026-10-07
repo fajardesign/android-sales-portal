@@ -1,15 +1,15 @@
 package com.example.and_sales_portal.data.demo
 
 import android.content.Context
-import com.example.and_sales_portal.data.activity.DemoData
+import com.example.and_sales_portal.data.activity.OpsData
 import com.example.and_sales_portal.data.partner.Partner
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 
 /**
- * Local sample data of the prototype, one file per signed-in user (decision 2026-10-07: kept on the device until
- * "Reset data demo"). Partners, toko, assignments, visits, attendance, loans and incentives live here because the
+ * Local sample data of the prototype (decision 2026-10-07: kept on the device until "Reset data demo"): partners and
+ * operations shared by every account on the device, plus each user's registration draft. Partners, toko, assignments, visits, attendance, loans and incentives live here because the
  * Supabase backend only holds `app_user`.
  */
 class DemoStore(context: Context) {
@@ -19,14 +19,12 @@ class DemoStore(context: Context) {
     /** Selfies taken in the prototype (evidence of clock in and visit check-in). */
     val selfieDir: File get() = File(dir, "selfies").apply { mkdirs() }
 
-    internal fun fileOf(userId: Long) = File(dir, "user_$userId.json")
-
-    /** Saved data of [userId], or `null` when there is none (or it is from an older prototype version). */
-    fun load(userId: Long): DemoData? = runCatching {
-        json.decodeFromString(DemoData.serializer(), fileOf(userId).readText()).takeIf { it.version == DemoData.VERSION }
+    /** Attendance, visits and days off of every SA/SR/TL, or `null` when there is none (or from an older version). */
+    fun loadOps(): OpsData? = runCatching {
+        json.decodeFromString(OpsData.serializer(), File(dir, OPS).readText()).takeIf { it.version == OpsData.VERSION }
     }.getOrNull()
 
-    fun save(userId: Long, data: DemoData) = write(fileOf(userId).name, json.encodeToString(DemoData.serializer(), data))
+    fun saveOps(data: OpsData) = write(OPS, json.encodeToString(OpsData.serializer(), data))
 
     /** Partners of the organisation, shared by every account on the device. */
     fun loadPartners(): List<Partner>? = runCatching {
@@ -51,14 +49,14 @@ class DemoStore(context: Context) {
         tmp.renameTo(File(dir, name))
     }
 
-    /** Back to the initial sample data for [userId]. */
+    /** Removes what only [userId] has on the device (registration draft). */
     fun reset(userId: Long) {
-        fileOf(userId).delete()
         deleteDraft(userId)
     }
 
     private companion object {
         const val PARTNERS = "partners.json"
+        const val OPS = "operations.json"
     }
 }
 
