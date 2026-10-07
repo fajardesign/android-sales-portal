@@ -93,6 +93,11 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
+    // Absensi & Kunjungan (ATT): device location, biometric/PIN before clock in.
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.ktor:ktor-client-mock:3.1.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")

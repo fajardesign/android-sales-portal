@@ -37,7 +37,7 @@ import com.example.and_sales_portal.designsystem.theme.AmarTheme
  * (MLG-02); leader and area names from [DemoDirectory]. "Reset data demo" restores the prototype's local sample data.
  */
 @Composable
-fun AccountScreen(session: SalesSession, onLogout: () -> Unit, onResetDemo: () -> Unit) {
+fun AccountScreen(session: SalesSession, onLogout: () -> Unit, onResetDemo: () -> Unit, onSimulation: (() -> Unit)? = null) {
     val c = AmarTheme.colors
     val user = session.user
     Column(Modifier.fillMaxSize().background(c.background.canvas)) {
@@ -63,18 +63,13 @@ fun AccountScreen(session: SalesSession, onLogout: () -> Unit, onResetDemo: () -
             }
             AmarButton(stringResource(R.string.account_logout), onLogout, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Large)
             AmarButton(stringResource(R.string.account_reset_demo), onResetDemo, Modifier.fillMaxWidth(), type = AmarButtonType.Naked, size = AmarButtonSize.Large)
+            onSimulation?.let { AmarButton(stringResource(R.string.account_simulation), it, Modifier.fillMaxWidth(), type = AmarButtonType.Naked, size = AmarButtonSize.Large) }
         }
     }
 }
 
 @Composable
-private fun InfoRow(label: Int, value: String) {
-    val c = AmarTheme.colors
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AmarSuccessTokens.RowGap), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(label), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        Text(value, Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.bodyMdMedium, textAlign = TextAlign.End)
-    }
-}
+private fun InfoRow(label: Int, value: String) = com.example.and_sales_portal.ui.common.InfoRow(stringResource(label), value)
 
 fun roleLabel(role: SalesRole): Int = when (role) {
     SalesRole.TL -> R.string.account_role_tl

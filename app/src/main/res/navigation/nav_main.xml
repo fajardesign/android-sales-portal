@@ -13,7 +13,18 @@
     <fragment android:id="@+id/partner_tab" android:name="com.example.and_sales_portal.ui.shell.PartnerTabFragment" />
     <fragment android:id="@+id/team_tab" android:name="com.example.and_sales_portal.ui.shell.TeamTabFragment" />
     <fragment android:id="@+id/activity_tab" android:name="com.example.and_sales_portal.ui.shell.ActivityTabFragment" />
-    <fragment android:id="@+id/visits_tab" android:name="com.example.and_sales_portal.ui.shell.VisitsTabFragment" />
+    <fragment android:id="@+id/visits_tab" android:name="com.example.and_sales_portal.ui.visits.VisitsTabFragment" />
     <fragment android:id="@+id/performance_tab" android:name="com.example.and_sales_portal.ui.shell.PerformanceTabFragment" />
     <fragment android:id="@+id/account_tab" android:name="com.example.and_sales_portal.ui.shell.AccountFragment" />
+
+    <!-- Absensi & Kunjungan (ATT-01 … ATT-05, PRD v3 D2, D3, C8). -->
+    <fragment android:id="@+id/attendance" android:name="com.example.and_sales_portal.ui.attendance.AttendanceFragment" />
+    <fragment android:id="@+id/capture" android:name="com.example.and_sales_portal.ui.attendance.CaptureFragment" />
+    <fragment android:id="@+id/my_visits" android:name="com.example.and_sales_portal.ui.visits.MyVisitsFragment" />
+    <fragment android:id="@+id/visit_detail" android:name="com.example.and_sales_portal.ui.visits.VisitDetailFragment" />
+    <fragment android:id="@+id/visit_checkout" android:name="com.example.and_sales_portal.ui.visits.VisitCheckOutFragment" />
+
+    <!-- Placeholder for screens of later parts, and the debug simulation panel. -->
+    <fragment android:id="@+id/wip" android:name="com.example.and_sales_portal.ui.shell.WipFragment" />
+    <fragment android:id="@+id/simulation" android:name="com.example.and_sales_portal.ui.simulation.SimulationFragment" />
 </navigation>

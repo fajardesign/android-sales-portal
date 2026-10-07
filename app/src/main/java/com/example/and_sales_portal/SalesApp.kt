@@ -1,7 +1,15 @@
 package com.example.and_sales_portal
 
 import android.app.Application
+import com.example.and_sales_portal.data.activity.ActivityRepository
 import com.example.and_sales_portal.data.auth.AuthRepository
+import com.example.and_sales_portal.data.auth.SalesSession
+import com.example.and_sales_portal.data.device.Connectivity
+import com.example.and_sales_portal.data.device.LocationService
+import com.example.and_sales_portal.data.device.SimulationSettings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import com.example.and_sales_portal.data.auth.SecureStore
 import com.example.and_sales_portal.data.demo.DemoStore
 import io.github.jan.supabase.auth.Auth
@@ -29,6 +37,20 @@ class AppContainer(app: Application) {
     }
 
     val demo = DemoStore(app)
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    val simulation = SimulationSettings(app)
+    val connectivity = Connectivity(app, simulation, scope)
+    val location = LocationService(app, simulation)
+
+    private var activityRepo: ActivityRepository? = null
+
+    /** Attendance and visits of the signed-in user (one repository per account, rebuilt when the account changes). */
+    fun activity(session: SalesSession): ActivityRepository {
+        val user = session.user
+        activityRepo?.takeIf { it.userId == user.id }?.let { return it }
+        return ActivityRepository(demo, user.id, session.role, user.areaIds.firstOrNull()).also { activityRepo = it }
+    }
 
     val auth = AuthRepository(supabase, secureStore, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY)
 }

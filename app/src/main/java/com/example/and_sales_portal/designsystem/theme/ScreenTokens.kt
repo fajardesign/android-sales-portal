@@ -56,3 +56,21 @@ object AmarAuthTokens {
     val SplashGap = 48.dp
     val SplashLoadingGap = AmarSpace.S16
 }
+
+/**
+ * Absensi card (Figma "01 | Team Leader Dashboard" › `Attendance hero`) and the ATT screens. Figma has no frames for
+ * the clock-in steps or the visit screens; their sizes reuse spacing steps (noted per value).
+ */
+object AmarActivityTokens {
+    /** `Attendance sequence` gap Spacing/Gap/SM; `Time sequence` gap Spacing/Gap/SM. */
+    val SequenceGap = AmarSpace.S8
+    val TileGap = AmarSpace.S8
+    /** `Time step`: padding Spacing/Padding/SM, radius 8 (raw), label ↔ time Spacing/Gap/XS. */
+    val TilePadding = AmarSpace.S12
+    val TileRadius = AmarRadius.R8
+    val TileTextGap = AmarSpace.S4
+    /** Not in Figma: map preview and selfie preview height (Space 128 + 32). */
+    val PreviewHeight = AmarSpace.S128 + AmarSpace.S32
+    /** Not in Figma: gap between cards in lists (Spacing/Gap/MD). */
+    val ListGap = AmarSpace.S12
+}
