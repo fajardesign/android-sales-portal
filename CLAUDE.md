@@ -50,7 +50,7 @@ Path relatif terhadap `okf_repository_design/products/sales_dashboard/`.
     - Entri di `products/sales_dashboard/log.md` (di dalam tabel, entri terbaru di bawah).
     - Laporkan perubahan bundle di ringkasan akhir pekerjaan.
   File di luar `flows_android/` (mis. `flows_web/`, `design_system/`) tetap hanya diubah bila diminta.
-- Setiap edit bundle mengikuti `okf_repository_design/CLAUDE.md` (frontmatter, format UX Flow, dan entri wajib di `products/sales_dashboard/log.md`). Referensi ke kode repo ini ditulis dengan prefix `android_sales_portal/…`. Jangan commit di repo bundle; repo itu punya perubahan lain yang belum di-commit.
+- Setiap edit bundle mengikuti `okf_repository_design/CLAUDE.md` (frontmatter, format UX Flow, dan entri wajib di `products/sales_dashboard/log.md`). Referensi ke kode repo ini ditulis dengan prefix `android_sales_portal/…`. Commit di repo bundle hanya bila diminta, di branch fitur (contoh `feat/sales-app-flows`), berisi file bundle yang diubah pekerjaan ini saja; cek `git status` dulu karena repo itu bisa punya perubahan lain.
 
 ## 2. Pemetaan Tipe Komponen Bundle → Android
 
