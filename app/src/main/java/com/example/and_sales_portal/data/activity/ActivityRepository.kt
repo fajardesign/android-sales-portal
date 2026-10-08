@@ -1,6 +1,7 @@
 package com.example.and_sales_portal.data.activity
 
 import com.example.and_sales_portal.data.auth.SalesRole
+import com.example.and_sales_portal.data.device.Place
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.PartnerRepository
 import com.example.and_sales_portal.data.partner.Store
@@ -24,6 +25,12 @@ class ActivityRepository(
     fun today(): LocalDate = ops.today()
 
     fun stores(): List<Store> = DemoSeed.storesOf(partners.partners.value, userId, role)
+
+    /**
+     * Where check in / check out kerja is allowed (revision 2026-10-08): the office of the user's area, then the toko
+     * (SA/SR: assigned toko; TL: toko of the partners they own).
+     */
+    fun attendancePlaces(): List<Place> = DemoSeed.attendancePlaces(partners.partners.value, userId, role)
     fun store(id: String): Store? = partners.partners.value.flatMap { it.stores }.firstOrNull { it.id == id }
     fun partnerOf(storeId: String): Partner? = partners.partners.value.firstOrNull { p -> p.stores.any { it.id == storeId } }
 
@@ -31,12 +38,13 @@ class ActivityRepository(
     fun isDayOff(date: LocalDate): Boolean = ops.isDayOff(userId, date)
     fun visit(id: String): Visit? = ops.visit(id)
     fun visitsOn(date: LocalDate): List<Visit> = ops.visitsOf(userId, date)
-
-    fun ensurePlanned() = ops.ensurePlanned()
+    fun visitWeek(date: LocalDate): VisitWeek = ops.visitWeek(userId, ActivityRules.weekStart(date))
+    fun ongoingVisit(): Visit? = ops.ongoingVisit(userId)
+    fun checkInBlock(storeId: String): VisitCheckInBlock? = ops.checkInBlock(userId, storeId)
 
     fun clockIn(punch: Punch) = ops.clockIn(userId, punch)
     fun clockOut(punch: Punch) = ops.clockOut(userId, punch)
-    fun checkIn(visitId: String, punch: Punch) = ops.checkIn(visitId, punch)
+    fun checkIn(storeId: String, punch: Punch): Visit? = ops.checkIn(userId, storeId, punch)
     fun checkOut(visitId: String, punch: Punch, note: String?) = ops.checkOut(visitId, punch, note)
 
     /** Number of check-outs saved offline. */

@@ -94,11 +94,8 @@ fun CaptureScreen(state: CaptureUiState, actions: CaptureActions) {
         }
         CaptureStep.Selfie -> {
             {
-                when (state.liveness) {
-                    Liveness.None -> PersistentAction(stringResource(R.string.cap_take_selfie), actions.onTakeSelfie)
-                    Liveness.Checking -> PersistentAction(stringResource(state.mode.submitLabel()), {}, loading = true)
-                    Liveness.Passed -> PersistentAction(stringResource(state.mode.submitLabel()), actions.onSubmit, enabled = state.online)
-                }
+                if (state.selfie == null) PersistentAction(stringResource(R.string.cap_take_selfie), actions.onTakeSelfie)
+                else PersistentAction(stringResource(state.mode.submitLabel()), actions.onSubmit, enabled = state.online)
             }
         }
     }
@@ -108,7 +105,7 @@ fun CaptureScreen(state: CaptureUiState, actions: CaptureActions) {
             CaptureStep.Selfie -> SelfieStep(state, actions)
         }
     }
-    state.sheet?.let { CaptureSheetFor(it, actions) }
+    state.sheet?.let { CaptureSheetFor(it, actions, attendance = state.mode != CaptureMode.CHECK_IN) }
     if (state.mockDetected) MockLocationDialog(actions.onMockClose)
 }
 
@@ -121,6 +118,7 @@ private fun LocationStep(state: CaptureUiState, actions: CaptureActions) {
         stringResource(if (state.mode == CaptureMode.CHECK_IN) R.string.cap_location_desc_visit else R.string.cap_location_desc_attendance),
     )
     state.storeName?.let { Text(it, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold) }
+    if (state.mode != CaptureMode.CHECK_IN) AmarInfoBox(stringResource(R.string.cap_radius_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
         val found = state.found
         if (found == null) {
@@ -135,8 +133,9 @@ private fun LocationStep(state: CaptureUiState, actions: CaptureActions) {
         } else {
             MapPreview(found.lat, found.lng, { actions.onOpenMaps(found.lat, found.lng) })
             InfoRow(stringResource(R.string.cap_address), found.address ?: stringResource(R.string.cap_address_unknown))
+            if (state.mode != CaptureMode.CHECK_IN) state.nearest?.name?.let { InfoRow(stringResource(R.string.cap_nearest), it) }
             state.distance?.let { d ->
-                InfoRow(stringResource(R.string.cap_distance), distanceLabel(d))
+                InfoRow(stringResource(if (state.mode == CaptureMode.CHECK_IN) R.string.cap_distance else R.string.cap_distance_nearest), distanceLabel(d))
                 AmarBadge(
                     stringResource(if (state.inRadius) R.string.cap_in_radius else R.string.cap_out_of_radius),
                     type = if (state.inRadius) AmarBadgeType.Success else AmarBadgeType.Error,
@@ -167,29 +166,24 @@ private fun SelfieStep(state: CaptureUiState, actions: CaptureActions) {
             Icon(painterResource(R.drawable.ds_ic_camera_24), null, Modifier.size(AmarTheme.iconSizes.lg), tint = c.icon.brand)
         }
     }
-    when (state.liveness) {
-        Liveness.Checking -> Row(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.SequenceGap), verticalAlignment = Alignment.CenterVertically) {
-            AmarSpinner(c.icon.brand)
-            Text(stringResource(R.string.cap_liveness_checking), color = c.content.secondary, style = AmarTheme.typography.bodyMd)
-        }
-        Liveness.Passed -> {
-            AmarBadge(stringResource(R.string.cap_liveness_ok), type = AmarBadgeType.Success, size = AmarBadgeSize.Medium)
-            AmarButton(stringResource(R.string.cap_retake), actions.onTakeSelfie, type = AmarButtonType.Naked, size = AmarButtonSize.Small, leftIcon = painterResource(R.drawable.ds_ic_refresh_24))
-        }
-        Liveness.None -> Unit
+    if (state.selfie != null) {
+        AmarButton(stringResource(R.string.cap_retake), actions.onTakeSelfie, type = AmarButtonType.Naked, size = AmarButtonSize.Small, leftIcon = painterResource(R.drawable.ds_ic_refresh_24))
     }
     if (!state.online) AmarInfoBox(stringResource(R.string.cap_offline), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
 }
 
 @Composable
-internal fun CaptureSheetFor(sheet: CaptureSheet, actions: CaptureActions) {
+internal fun CaptureSheetFor(sheet: CaptureSheet, actions: CaptureActions, attendance: Boolean = false) {
     data class Spec(val illustration: Int, val title: Int, val message: Int, val primary: Int, val second: Int?)
     val s = when (sheet) {
         CaptureSheet.Permission -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_permission_title, R.string.cap_err_permission, R.string.cap_err_permission_allow, null)
         CaptureSheet.GpsOff -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_gps_title, R.string.cap_err_gps, R.string.cap_err_gps_enable, R.string.common_retry)
         CaptureSheet.Unavailable -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_unavailable_title, R.string.cap_err_unavailable, R.string.common_retry, null)
-        CaptureSheet.Radius -> Spec(R.drawable.ds_ill_medium_stopper, R.string.cap_err_radius_title, R.string.cap_err_radius, R.string.common_retry, null)
-        CaptureSheet.Liveness -> Spec(R.drawable.ds_ill_medium_rejected, R.string.cap_err_liveness_title, R.string.cap_err_liveness, R.string.cap_retake, null)
+        CaptureSheet.Radius -> if (attendance) {
+            Spec(R.drawable.ds_ill_medium_stopper, R.string.cap_err_radius_attendance_title, R.string.cap_err_radius_attendance, R.string.common_retry, null)
+        } else {
+            Spec(R.drawable.ds_ill_medium_stopper, R.string.cap_err_radius_title, R.string.cap_err_radius, R.string.common_retry, null)
+        }
     }
     AmarBottomSheet(
         onDismissRequest = actions.onDismissSheet,

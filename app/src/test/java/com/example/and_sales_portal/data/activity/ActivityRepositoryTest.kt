@@ -41,9 +41,24 @@ class ActivityRepositoryTest {
 
     @Test
     fun seedsEveryActiveEmployee() {
-        assertEquals(3, siti().visitsOn(wednesday).size)
-        assertEquals(1, ops.visitsOf(15, wednesday).size)
+        // Revision 2026-10-08: no planned visits; today starts empty, history has check-ins 12:00–16:59 local time.
+        assertTrue(siti().visitsOn(wednesday).isEmpty())
+        val history = ops.data.value.visits.filter { it.employeeId == 11L }
+        assertTrue(history.isNotEmpty())
+        history.forEach { v ->
+            assertEquals(VisitState.DONE, v.state)
+            val local = java.time.Instant.ofEpochMilli(v.checkIn!!.at).atZone(ActivityRules.zoneOf(11)).toLocalTime()
+            assertTrue(local.hour in 12..16)
+            assertTrue(v.checkIn!!.distance!! <= ActivityRules.VISIT_RADIUS_METERS)
+        }
+        // At most one visit a day in the sample.
+        assertEquals(history.size, history.map { it.date }.toSet().size)
         assertTrue(ops.data.value.attendance.any { it.employeeId == 6L })
+        // Sample punches are within 3 km of the area office or a toko and record where (revision 2026-10-08).
+        ops.data.value.attendance.mapNotNull { it.clockIn }.forEach { p ->
+            assertNotNull(p.place)
+            assertTrue(p.distance!! <= ActivityRules.ATTENDANCE_RADIUS_METERS)
+        }
         assertNull(siti().attendanceOf(wednesday))
     }
 
@@ -58,8 +73,9 @@ class ActivityRepositoryTest {
     @Test
     fun offlineCheckOutIsSyncedLater() {
         val r = siti()
-        val v = r.visitsOn(wednesday).first()
-        r.checkIn(v.id, Punch(now.toEpochMilli(), 0.0, 0.0))
+        r.clockIn(Punch(now.toEpochMilli(), 0.0, 0.0))
+        now = at(wednesday, "11:00") // 12:00 WITA in Makassar
+        val v = requireNotNull(r.checkIn("REG2026-0139-2", Punch(now.toEpochMilli(), 0.0, 0.0)))
         r.checkOut(v.id, Punch(now.plusSeconds(1800).toEpochMilli(), 0.0, 0.0, synced = false), "  Stok aman ")
         assertEquals(1, r.pendingSync())
         assertEquals("Stok aman", r.visit(v.id)?.note)
@@ -68,54 +84,44 @@ class ActivityRepositoryTest {
     }
 
     @Test
-    fun nextDayGetsItsPlanAndYesterdayIsMissed() {
-        now = at(wednesday.plusDays(1), "07:00")
-        ops.ensurePlanned()
-        assertEquals(3, ops.visitsOf(11, wednesday.plusDays(1)).size)
-        assertTrue(ops.visitsOf(11, wednesday).all { ActivityRules.visitStatus(it, wednesday.plusDays(1)) == VisitStatus.MISSED })
-    }
-
-    @Test
-    fun planningRules() {
-        val friday = wednesday.plusDays(2)
+    fun visitCheckInRules() {
+        val r = siti()
         val store = "REG2026-0139-2"
-        assertNull(ops.addVisit(11, friday, store, "09:00", 6))
-        assertEquals(PlanError.DuplicateTime, ops.addVisit(11, friday, "REG2026-0139-3", "09:00", 6))
-        assertEquals(PlanError.StoreNotAssigned, ops.addVisit(11, friday, "REG2026-0139-1", "10:00", 6))
-        assertEquals(PlanError.PastDate, ops.addVisit(11, wednesday.minusDays(1), store, "10:00", 6))
-        assertEquals(PlanError.PastDate, ops.addVisit(11, wednesday, store, "08:00", 6))
-        assertNull(ops.addVisit(11, friday, store, "11:00", 6))
-        assertNull(ops.addVisit(11, friday, store, "13:00", 6))
-        assertEquals(PlanError.MaxPerDay, ops.addVisit(11, friday, store, "15:00", 6))
+        // SOP: check in kerja first; then from 12:00 local time (09:00 WIB is 10:00 WITA).
+        assertEquals(VisitCheckInBlock.NotWorkCheckedIn, r.checkInBlock(store))
+        r.clockIn(Punch(now.toEpochMilli(), 0.0, 0.0))
+        assertEquals(VisitCheckInBlock.BeforeStart, r.checkInBlock(store))
+        assertNull(r.checkIn(store, Punch(now.toEpochMilli(), 0.0, 0.0)))
+        now = at(wednesday, "11:00")
+        assertNull(r.checkInBlock(store))
+        // Only at toko assigned to the SR (REG2026-0139-1 is Eko's).
+        assertEquals(VisitCheckInBlock.StoreNotAssigned, r.checkInBlock("REG2026-0139-1"))
+        val first = requireNotNull(r.checkIn(store, Punch(now.toEpochMilli(), 0.0, 0.0)))
+        assertEquals(VisitCheckInBlock.Ongoing, r.checkInBlock("REG2026-0139-3"))
+        r.checkOut(first.id, Punch(now.plusSeconds(1800).toEpochMilli(), 0.0, 0.0), null)
+        // A second visit the same day is allowed but counts once in the weekly target.
+        val before = r.visitWeek(wednesday).visited
+        assertNotNull(r.checkIn("REG2026-0139-3", Punch(now.plusSeconds(3600).toEpochMilli(), 0.0, 0.0)))
+        assertEquals(2, r.visitsOn(wednesday).size)
+        assertEquals(before, r.visitWeek(wednesday).visited)
     }
 
     @Test
-    fun dayOffCancelsScheduledVisitsAndBlocksPlanning() {
-        ops.setDayOff(11, wednesday, true, "Hari libur")
-        assertTrue(ops.visitsOf(11, wednesday).all { it.state == VisitState.CANCELLED })
-        assertEquals(PlanError.DayOff, ops.addVisit(11, wednesday, "REG2026-0139-2", "17:00", 6))
-        assertEquals(AttendanceStatus.DAY_OFF, ops.attendanceStatus(11, wednesday))
-    }
-
-    @Test
-    fun copyLastWeekFillsEmptyDaysFromToday() {
+    fun weeklyTargetAndDaysOff() {
         val monday = wednesday.minusDays(2)
-        // Wednesday already has its plan; Thursday to Saturday are empty and get last week's visits.
-        val expected = (1L..3L).sumOf { d -> ops.visitsOf(11, wednesday.plusDays(d).minusWeeks(1)).count { it.state != VisitState.CANCELLED } }
-        assertEquals(expected, ops.copyLastWeek(11, monday, 6))
-        assertTrue(expected > 0)
-        assertEquals(3, ops.visitsOf(11, wednesday).size)
-    }
-
-    @Test
-    fun editAndCancelBeforeCheckIn() {
-        val v = ops.visitsOf(11, wednesday).last()
-        assertNull(ops.editVisit(v.id, v.storeId, "18:00"))
-        assertEquals("18:00", ops.visit(v.id)?.plannedTime)
-        ops.cancelVisit(v.id, "Dibatalkan oleh Team Leader")
-        assertEquals(VisitState.CANCELLED, ops.visit(v.id)?.state)
-        val started = ops.visitsOf(11, wednesday).first()
-        ops.checkIn(started.id, Punch(now.toEpochMilli(), 0.0, 0.0))
-        assertEquals(PlanError.AlreadyStarted, ops.editVisit(started.id, started.storeId, "19:00"))
+        val week = ops.visitWeek(11, monday)
+        assertEquals(6, week.target)
+        val visitedBefore = ops.visitsBetween(11, monday, wednesday.minusDays(1)).map { it.date }.toSet().size
+        assertEquals(visitedBefore, week.visited)
+        // A day off leaves the target; past days cannot be changed.
+        ops.setDayOff(11, wednesday.plusDays(2), true)
+        assertEquals(5, ops.visitWeek(11, monday).target)
+        ops.setDayOff(11, monday, true)
+        assertEquals(5, ops.visitWeek(11, monday).target)
+        ops.setDayOff(11, wednesday, true)
+        assertEquals(AttendanceStatus.DAY_OFF, ops.attendanceStatus(11, wednesday))
+        assertEquals(VisitCheckInBlock.DayOff, siti().checkInBlock("REG2026-0139-2"))
+        ops.setDayOff(11, wednesday, false)
+        assertEquals(AttendanceStatus.NOT_YET, ops.attendanceStatus(11, wednesday))
     }
 }

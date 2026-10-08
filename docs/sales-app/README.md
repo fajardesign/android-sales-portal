@@ -17,16 +17,18 @@ Spesifikasi: knowledge bundle `okf_repository_design/products/sales_dashboard/fl
 
 ## Akun demo (password `Demo1234`)
 
-| Akun | Role | Isi |
-|---|---|---|
-| `andi.pratama` | TL Senior, Makassar | Tim: Siti (SR), Eko (SA), Nurul (SA); partner Jaya Abadi Cellular dan PT Bintang Gadget Store |
-| `siti.rahmawati` | SR, Makassar | 3 toko di 2 partner, 3 kunjungan per hari |
-| `eko.saputra` | SA, Makassar | 1 toko (Jaya Abadi Cellular), 1 kunjungan per hari |
-| `nurul.hidayah` | SA, Makassar | 1 toko (PT Bintang Gadget Store) |
-| `fajar.nugroho` | TL Pending | Login ditolak: *Akun belum diaktivasi* |
-| `rizky.ramadhan` | SA Disabled | Login ditolak: *Akun Anda tidak aktif* |
+Login dengan **email atau nomor telepon** (revisi stakeholder 2026-10-08; username lama ditolak). Nomor boleh ditulis `08…`, `62…`, `+62…`, atau `8…`.
 
-Akun lain dari portal web (mis. `budi.santoso`, `dewi.lestari`) juga bisa login dengan data area masing-masing.
+| Email | No. telepon | Role | Isi |
+|---|---|---|---|
+| `andi.pratama@amarbank.co.id` | `081200047514` | TL Senior, Makassar | Tim: Siti (SR), Eko (SA), Nurul (SA); partner Jaya Abadi Cellular dan PT Bintang Gadget Store |
+| `siti.rahmawati@amarbank.co.id` | `081200087109` | SR, Makassar | 3 toko di 2 partner (di bawah minimum SR 4 toko) |
+| `eko.saputra@amarbank.co.id` | `081200118785` | SA, Makassar | 1 toko (Jaya Abadi Cellular) |
+| `nurul.hidayah@amarbank.co.id` | `081200126704` | SA, Makassar | 1 toko (PT Bintang Gadget Store) |
+| `fajar.nugroho@amarbank.co.id` | `081200079190` | TL Pending | Login ditolak: *Akun belum diaktivasi* |
+| `rizky.ramadhan@amarbank.co.id` | `081200166299` | SA Disabled | Login ditolak: *Akun Anda tidak aktif* |
+
+Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@amarbank.co.id`) juga bisa login dengan data area masing-masing.
 
 ## Navigasi per role
 
@@ -41,10 +43,10 @@ Akun lain dari portal web (mis. `budi.santoso`, `dewi.lestari`) juga bisa login 
 | Flow ID | Layar | Kode |
 |---|---|---|
 | MLG-00 … MLG-02 | Splash, Login, sesi | `ui/auth/`, `data/auth/` |
-| ATT-01 … ATT-05 | Absensi, Clock In/Out, Kunjungan, Check-in/out | `ui/attendance/`, `ui/visits/`, `data/activity/` |
+| ATT-01 … ATT-05 | Absensi, Check In/Out Kerja, Kunjungan (target mingguan), Check-in/out | `ui/attendance/`, `ui/visits/`, `data/activity/` |
 | REG-01 … REG-11 | Tab Partner, pendaftaran, Pengajuan, revisi | `ui/partner/`, `ui/partnerregistration/`, `data/partner/` |
 | PRT-01, PRT-02 | Detail Partner, Tambah Toko | `ui/partner/` |
-| TL-01 … TL-05 | Tim, Assign SA/SR, Jadwal Kunjungan | `ui/team/`, `data/team/` |
+| TL-01 … TL-04 | Tim, Assign SA/SR (per toko), Jadwal Kunjungan (mingguan + libur; TL-05 dihapus) | `ui/team/`, `data/team/` |
 | TL-06 … TL-10 | Beranda TL, Produktivitas, Kinerja Penjualan, Pinjaman, Insentif | `ui/dashboard/`, `data/sales/` |
 | SLS-01 … SLS-04 | Beranda SA/SR, tab Kinerja | `ui/dashboard/` |
 | AKN-01 | Akun | `ui/account/`, `ui/shell/TabFragments.kt` |
@@ -58,12 +60,12 @@ Akun lain dari portal web (mis. `budi.santoso`, `dewi.lestari`) juga bisa login 
 
 ## Simulasi (debug)
 
-**Akun › Simulasi (debug)**: lokasi (Di lokasi toko / GPS perangkat / Di luar radius), lokasi palsu, mode offline, liveness gagal. Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk menjalankan aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Aktifkan, Tolak, Batalkan, Nonaktifkan).
+**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline. Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk menjalankan aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Aktifkan, Tolak, Batalkan, Nonaktifkan).
 
 ## Batasan prototype
 
 - Backend hanya untuk akun (Supabase); data operasional lokal per perangkat, tidak tersinkron antarperangkat atau dengan portal web.
-- Peta berupa placeholder (koordinat + "Buka di Maps"); liveness disimulasikan; kamera memakai aplikasi kamera bawaan.
+- Peta berupa placeholder (koordinat + "Buka di Maps"); kamera memakai aplikasi kamera bawaan. Absensi tanpa biometrik/liveness, radius 3 km dari kantor contoh area atau toko (revisi stakeholder 2026-10-08).
 - Pinjaman dikreditkan ke SA/SR yang saat ini ditugaskan di toko (riwayat ikut pindah saat penugasan berubah).
 - Target paid out dan MFP adalah data contoh (sumber target masih TBD di PRD).
 - Keputusan yang masih terbuka dicatat di bagian *Pertanyaan Terbuka* tiap file flow di bundle.

@@ -149,6 +149,7 @@ class PartnerRegistrationViewModel(
     fun setAddress(value: String) = updatePartner { it.copy(address = value.take(255)) }
     fun setRt(value: String) = updatePartner { it.copy(rt = value.filter(Char::isDigit).take(3)) }
     fun setRw(value: String) = updatePartner { it.copy(rw = value.filter(Char::isDigit).take(3)) }
+    fun setReferralCode(value: String) = updatePartner { it.copy(referralCode = value) }
 
     /** Choosing a parent region clears its children and loads the next list (children stay disabled until then). */
     fun selectProvince(region: Region) {
@@ -307,7 +308,7 @@ class PartnerRegistrationViewModel(
         val formPartner = s.toPartner(now, null)
         if (Sections.PARTNER in sections) {
             p = p.copy(name = formPartner.name, address = formPartner.address, province = formPartner.province, regency = formPartner.regency,
-                district = formPartner.district, village = formPartner.village, rt = formPartner.rt, rw = formPartner.rw)
+                district = formPartner.district, village = formPartner.village, rt = formPartner.rt, rw = formPartner.rw, referralCode = formPartner.referralCode)
         }
         if (Sections.BUSINESS in sections || Sections.STORE in sections) {
             val form = formPartner.stores.first()
@@ -374,6 +375,7 @@ class PartnerRegistrationViewModel(
             address = f.address.trim(),
             province = f.province?.name.orEmpty(), regency = f.regency?.name.orEmpty(), district = f.district?.name.orEmpty(), village = f.village?.name.orEmpty(),
             rt = f.rt, rw = f.rw,
+            referralCode = f.referralCode.trim(),
             email = business.email.trim(),
             channel = choices[RegChoice.Channel].orEmpty(),
             outletCount = business.outletCount.toIntOrNull() ?: 1,
@@ -413,7 +415,7 @@ class PartnerRegistrationViewModel(
             }
         }.filterValues { it.isNotEmpty() }
         return PartnerRegistrationState(
-            partner = PartnerInfoForm(p.name, p.address, Region(p.province, p.province), Region(p.regency, p.regency), Region(p.district, p.district), Region(p.village, p.village), p.rt, p.rw),
+            partner = PartnerInfoForm(p.name, p.address, Region(p.province, p.province), Region(p.regency, p.regency), Region(p.district, p.district), Region(p.village, p.village), p.rt, p.rw, p.referralCode.orEmpty()),
             business = BusinessForm(p.email, (st?.omzet ?: 0L).toString(), p.outletCount.toString()),
             pic = PicForm(p.picName, p.picEmail, p.picPhone, p.privyId.orEmpty(), p.pksInviteEmail ?: p.picEmail, pksEmailEdited = true),
             bank = BankForm(Bank(p.bankCode, p.bankName), p.bankBranch, p.accountNumber, p.accountName),

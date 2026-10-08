@@ -63,6 +63,7 @@ class DemoStore(context: Context) {
 @Serializable
 private data class PartnersFile(val version: Int = VERSION, val partners: List<Partner>) {
     companion object {
-        const val VERSION = 1
+        /** 2: Kode Referral (revision 2026-10-08). */
+        const val VERSION = 2
     }
 }

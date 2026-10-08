@@ -84,8 +84,8 @@ data class LoginFormState(
 }
 
 /**
- * Spec: MLG-01 Login (PRD v3 "Login on mobile"; Figma "02 | Login"). Field label follows the PRD ("Email atau Username";
- * Figma's "Email atau No. Handphone" is overridden because phone is contact-only).
+ * Spec: MLG-01 Login (PRD v3 "Login on mobile"; Figma "02 | Login"). Stakeholder revision 2026-10-08: "Email atau Nomor
+ * Telepon", no username; `sp-mobile-login` normalises the phone number (08…, 62…, +62…, 8…).
  */
 @Composable
 fun LoginScreen(

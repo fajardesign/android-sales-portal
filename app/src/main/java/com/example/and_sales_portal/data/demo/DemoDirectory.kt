@@ -78,6 +78,19 @@ object DemoDirectory {
         Person(21, "Rizky Ramadhan", "SA", 1, 6, "DISABLED", createdHoursAgo = 2400),
     )
 
+    /** Registered office of an area (revision 2026-10-08: attendance within 3 km of an office or a toko). */
+    data class Office(val areaId: Int, val name: String, val lat: Double, val lng: Double)
+
+    /**
+     * One sample office per area, same as the web portal (`admin-sales-portal/src/lib/constants.js` OFFICES: area
+     * point +0.004 lat, −0.003 lng). Offices are managed by the Admin on the web later.
+     */
+    val offices: List<Office> = areas.map { Office(it.id, "Kantor Amar Bank ${it.name}", round6(it.lat + 0.004), round6(it.lng - 0.003)) }
+
+    fun office(areaId: Int): Office? = offices.firstOrNull { it.areaId == areaId }
+
+    private fun round6(v: Double) = Math.round(v * 1e6) / 1e6
+
     /** Reference time of the web portal sample (`admin-sales-portal/src/api/db.js` BASE). */
     private const val REFERENCE = 1_791_343_800_000L
 

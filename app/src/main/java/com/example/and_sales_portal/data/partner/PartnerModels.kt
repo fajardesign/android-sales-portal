@@ -123,6 +123,8 @@ data class Partner(
     val village: String,
     val rt: String,
     val rw: String,
+    /** Kode Referral (stakeholder revision 2026-10-08): letters and digits, max. 20; `null` in data saved before it. */
+    val referralCode: String? = null,
     val email: String,
     val channel: String,
     val outletCount: Int,

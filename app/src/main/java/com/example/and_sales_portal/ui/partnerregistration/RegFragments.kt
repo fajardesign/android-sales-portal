@@ -71,6 +71,7 @@ class RegPartnerInfoFragment : RegFragment() {
                 onVillage = viewModel::selectVillage,
                 onRt = viewModel::setRt,
                 onRw = viewModel::setRw,
+                onReferral = viewModel::setReferralCode,
                 onContinue = { if (viewModel.submitStep(RegStep.PartnerInfo)) navigate(R.id.action_reg02_to_reg03) },
                 onBack = ::back,
             ),

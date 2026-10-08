@@ -43,12 +43,15 @@ import com.example.and_sales_portal.designsystem.theme.AmarActivityTokens
 import com.example.and_sales_portal.designsystem.theme.AmarFormTokens
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.ui.attendance.AttendanceBadge
+import com.example.and_sales_portal.ui.attendance.PresenceBadge
+import com.example.and_sales_portal.ui.attendance.distanceLabel
+import com.example.and_sales_portal.data.activity.Attendance
 import com.example.and_sales_portal.ui.common.Fmt
 import com.example.and_sales_portal.ui.common.InfoRow
 import com.example.and_sales_portal.ui.common.ScreenScaffold
 import com.example.and_sales_portal.ui.partner.rupiah
 import com.example.and_sales_portal.ui.visits.VisitItem
-import com.example.and_sales_portal.ui.visits.VisitOutcomeBadge
+import com.example.and_sales_portal.ui.visits.VisitWeekBadge
 import com.example.and_sales_portal.ui.visits.VisitStatusBadge
 import java.time.LocalDate
 
@@ -71,14 +74,22 @@ fun TabbedScaffold(title: String, onBack: (() -> Unit)?, tabs: List<Int>, select
     }
 }
 
-/** Productivity lines of a person (attendance and visits). */
+/** Productivity lines of a person: attendance, and visits per week against the target (revision 2026-10-08). */
 @Composable
 fun ProductivityCard(title: String, p: Productivity, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     val c = AmarTheme.colors
     AmarCard(modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = onClick) {
         Text(title, color = c.content.primary, style = AmarTheme.typography.headingSm)
         Text(stringResource(R.string.prod_attendance, p.present, p.workdays, p.onTime, p.late), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        Text(stringResource(R.string.prod_visits, p.visitsDone, p.visitsPlanned, p.visitsLate, p.visitsMissed), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        p.weeks.forEach { w ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (p.weeks.size == 1) stringResource(R.string.vis_week) else stringResource(R.string.prod_week_label, Fmt.shortDate(w.start)),
+                    Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm,
+                )
+                VisitWeekBadge(w)
+            }
+        }
     }
 }
 
@@ -183,7 +194,7 @@ fun TeamProductivityScreen(period: Period, onPeriod: (Period) -> Unit, rows: Lis
 }
 
 /** A day of attendance evidence. */
-data class EvidenceDay(val date: LocalDate, val status: AttendanceStatus, val clockIn: Long?, val lat: Double?, val lng: Double?, val selfie: String?, val visits: List<VisitItem>)
+data class EvidenceDay(val date: LocalDate, val status: AttendanceStatus, val attendance: Attendance?, val visits: List<VisitItem>)
 
 /** Spec: TL-07 Bukti absensi & kunjungan of one SA/SR (PRD C9 "with selfie and map evidence"). */
 @Composable
@@ -199,17 +210,19 @@ fun EvidenceScreen(name: String, period: Period, onPeriod: (Period) -> Unit, day
                     Text(Fmt.shortDate(d.date), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                     AttendanceBadge(d.status)
                 }
-                Text(d.clockIn?.let { stringResource(R.string.prod_clock_in, Fmt.timeLabel(it)) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-                if (d.clockIn != null) {
-                    Text(if (d.selfie != null) stringResource(R.string.prod_selfie) else stringResource(R.string.prod_selfie_missing), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
-                    if (d.lat != null && d.lng != null) AmarButton(stringResource(R.string.prod_map), { onMap(d.lat, d.lng) }, type = AmarButtonType.Naked, size = AmarButtonSize.Small)
+                val inPunch = d.attendance?.clockIn
+                PresenceBadge(d.attendance)
+                Text(inPunch?.let { stringResource(R.string.prod_clock_in, Fmt.timeLabel(it.at)) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+                if (inPunch != null) {
+                    inPunch.place?.let { place -> Text(inPunch.distance?.let { stringResource(R.string.prod_place, place, distanceLabel(it)) } ?: place, color = c.content.secondary, style = AmarTheme.typography.bodySm) }
+                    Text(if (inPunch.selfie != null) stringResource(R.string.prod_selfie) else stringResource(R.string.prod_selfie_missing), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+                    AmarButton(stringResource(R.string.prod_map), { onMap(inPunch.lat, inPunch.lng) }, type = AmarButtonType.Naked, size = AmarButtonSize.Small)
                 }
                 d.visits.forEach { v ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                        Text(v.visit.plannedTime, color = c.content.primary, style = AmarTheme.typography.bodySm)
+                        Text(v.visit.checkIn?.let { Fmt.time(it.at) } ?: "-", color = c.content.primary, style = AmarTheme.typography.bodySm)
                         Text(v.store.name, Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm, maxLines = 1)
                         VisitStatusBadge(v.status)
-                        v.outcome?.let { VisitOutcomeBadge(it) }
                     }
                 }
             }

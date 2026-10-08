@@ -42,7 +42,7 @@ class RegScreensScreenshotTest {
         capture("02_error") { RegPartnerInfoScreen(errors, PartnerInfoActions()) }
         val r = { name: String -> Region(name, name) }
         val short = PartnerRegistrationState(
-            partner = PartnerInfoForm("Ab", "Jl 1", r("Sulawesi Selatan"), r("Kota Makassar"), r("Panakkukang"), r("Pandang"), "3", "005"),
+            partner = PartnerInfoForm("Ab", "Jl 1", r("Sulawesi Selatan"), r("Kota Makassar"), r("Panakkukang"), r("Pandang"), "3", "005", "AMR-1"),
             showErrors = setOf(RegStep.PartnerInfo),
         )
         capture("02_rules") { RegPartnerInfoScreen(short, PartnerInfoActions()) }

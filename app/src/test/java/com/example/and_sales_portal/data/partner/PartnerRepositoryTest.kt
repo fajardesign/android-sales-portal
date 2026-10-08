@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoStore
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -51,8 +52,11 @@ class PartnerRepositoryTest {
 
     @Test
     fun submitGivesTheNextNumberAndUnderReview() {
-        val p = repo.submit(repo.get("REG2026-0148")!!.copy(id = "", name = "Toko Baru", submittedBy = 11, submittedAt = now.toEpochMilli()))
+        // Sample Kode Referral like the web portal: AMR + submitter id + number.
+        assertEquals("AMR6148", repo.get("REG2026-0148")!!.referralCode)
+        val p = repo.submit(repo.get("REG2026-0148")!!.copy(id = "", name = "Toko Baru", submittedBy = 11, submittedAt = now.toEpochMilli(), referralCode = "SITI11"))
         assertEquals("REG2026-0149", p.id)
+        assertEquals("SITI11", repo.get(p.id)!!.referralCode)
         assertEquals(PartnerStatus.UNDER_REVIEW, p.status)
         assertEquals("REG2026-0149-1", p.stores.first().id)
         assertTrue(p.id in repo.submissionsFor(6, SalesRole.TL).map { it.id })
@@ -87,15 +91,31 @@ class PartnerRepositoryTest {
 
     @Test
     fun assignmentRules() {
-        // Eko (SA) already has Jaya Abadi Cellular: a second partner is refused.
-        assertEquals(AssignError.SaLimit, repo.assignmentError(6, 15, "REG2026-0132"))
-        // Siti (SR) has 2 partners; a 3rd would be allowed if one existed in the area; not owner / other leader refused.
-        assertEquals(AssignError.NotLeader, repo.assignmentError(7, 11, "REG2026-0139"))
-        assertEquals(AssignError.NotOwner, repo.assignmentError(6, 16, "REG2026-0138"))
-        // Nurul (SA) moves: unassign then assign covers every toko.
-        repo.unassign(16, "REG2026-0132")
-        assertTrue(repo.assignedPartners(16).isEmpty())
-        assertNull(repo.assign(6, 16, "REG2026-0139"))
-        assertTrue(repo.get("REG2026-0139")!!.stores.all { 16L in it.assigned })
+        // Per toko (revision 2026-10-08). Eko (SA) has 1 toko, Siti (SR) 3 toko: Siti is below the SR minimum of 4.
+        assertEquals(1, repo.assignedStores(15).size)
+        assertEquals(3, repo.assignedStores(11).size)
+        assertFalse(repo.belowMinimum(15))
+        assertTrue(repo.belowMinimum(11))
+        // A 4th toko for Siti reaches the minimum; a toko can be shared with an SA.
+        assertNull(repo.assign(6, 11, "REG2026-0139-1"))
+        assertFalse(repo.belowMinimum(11))
+        assertEquals(listOf(15L, 11L), repo.get("REG2026-0139")!!.stores.first().assigned)
+        // SA: up to 3 toko, the 4th is refused.
+        assertNull(repo.assign(6, 15, "REG2026-0132-1"))
+        assertNull(repo.assign(6, 15, "REG2026-0132-2"))
+        assertEquals(AssignError.SaLimit, repo.assignmentError(6, 15, "REG2026-0139-2"))
+        // SR: up to 6 toko, the 7th is refused.
+        assertNull(repo.assign(6, 11, "REG2026-0132-1"))
+        val p = repo.get("REG2026-0139")!!
+        val extra = (1..2).map { repo.addStore(p.id, p.stores.first().copy(name = "Cabang Baru $it", primary = false, assigned = emptyList())) }
+        assertNull(repo.assign(6, 11, extra[0].id))
+        assertEquals(6, repo.assignedStores(11).size)
+        assertEquals(AssignError.SrLimit, repo.assignmentError(6, 11, extra[1].id))
+        // Not the direct leader, not the TL's partner.
+        assertEquals(AssignError.NotLeader, repo.assignmentError(7, 11, "REG2026-0139-1"))
+        assertEquals(AssignError.NotOwner, repo.assignmentError(6, 16, "REG2026-0138-1"))
+        // Unassign one toko only.
+        repo.unassign(15, "REG2026-0132-2")
+        assertEquals(2, repo.assignedStores(15).size)
     }
 }

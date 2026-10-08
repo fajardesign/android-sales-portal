@@ -28,7 +28,8 @@ data class AppUser(
     val id: Long,
     @SerialName("full_name") val fullName: String,
     val role: String,
-    val username: String,
+    /** Internal (Keycloak; filled with the email since revision 2026-10-08), never shown in the app. */
+    val username: String = "",
     val email: String,
     val phone: String? = null,
     @SerialName("tl_level") val tlLevel: String? = null,

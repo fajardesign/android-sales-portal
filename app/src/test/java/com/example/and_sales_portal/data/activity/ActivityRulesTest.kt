@@ -3,7 +3,6 @@ package com.example.and_sales_portal.data.activity
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.partner.PartnerSeed
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -20,28 +19,55 @@ class ActivityRulesTest {
     @Test
     fun attendanceStatus() {
         assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:00")), today, today))
+        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:00:59")), today, today))
         assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:01")), today, today))
+        // Late check in is still allowed and recorded; no check in by the end of the day = Absen.
+        assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("15:30")), today, today))
         assertEquals(AttendanceStatus.NOT_YET, ActivityRules.attendanceStatus(null, today, today))
         assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(null, today.minusDays(1), today))
         // Local time decides: 10:00 WIB is 11:00 WITA in Makassar, so late.
         val wib = today.atTime(LocalTime.of(10, 0)).atZone(java.time.ZoneId.of("Asia/Jakarta")).toInstant().toEpochMilli()
         assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(wib, 0.0, 0.0)), today, today))
         assertEquals("WITA", com.example.and_sales_portal.data.demo.DemoDirectory.area(1)?.zoneLabel)
-        assertEquals("10:00", ActivityRules.PLAN_TIMES.first())
-        assertEquals("23:30", ActivityRules.PLAN_TIMES.last())
         assertEquals(AttendanceStatus.DAY_OFF, ActivityRules.attendanceStatus(null, today.minusDays(1), today, dayOff = true))
     }
 
     @Test
-    fun visitOutcomeAndStatus() {
-        val v = Visit("v", 11, "s", today.toString(), "10:00", createdBy = 6)
-        assertNull(ActivityRules.visitOutcome(v))
-        assertEquals(VisitOutcome.ON_TIME, ActivityRules.visitOutcome(v.copy(checkIn = punch("10:15"))))
-        assertEquals(VisitOutcome.LATE, ActivityRules.visitOutcome(v.copy(checkIn = punch("10:16"))))
-        assertEquals(VisitStatus.NOT_STARTED, ActivityRules.visitStatus(v, today))
-        assertEquals(VisitStatus.MISSED, ActivityRules.visitStatus(v, today.plusDays(1)))
-        assertEquals(VisitStatus.ONGOING, ActivityRules.visitStatus(v.copy(state = VisitState.IN_PROGRESS), today))
-        assertEquals(VisitStatus.CANCELLED, ActivityRules.visitStatus(v.copy(state = VisitState.CANCELLED), today.plusDays(1)))
+    fun attendancePlacesAndRadius() {
+        val partners = PartnerSeed.partners()
+        // Office of Makassar (same as the web portal OFFICES) first, then the SR's 3 toko.
+        val places = DemoSeed.attendancePlaces(partners, 11, SalesRole.SR)
+        assertEquals(listOf("Kantor Amar Bank Makassar", "Jaya Abadi Cellular Mall Panakkukang", "Jaya Abadi Cellular Sudiang", "PT Bintang Gadget Store Tamalanrea"), places.map { it.name })
+        assertEquals(-5.1437, places.first().lat, 1e-9)
+        assertEquals(119.4297, places.first().lng, 1e-9)
+        // TL: office + the toko of the partners they own.
+        assertEquals(6, DemoSeed.attendancePlaces(partners, 6, SalesRole.TL).size)
+        // Haversine like the portal: 0.027 deg latitude is about 3 km.
+        val office = places.first()
+        assertEquals(3002, ActivityRules.distanceMeters(office.lat, office.lng, office.lat + 0.027, office.lng))
+        val (near, d) = ActivityRules.nearest(places, office.lat + 0.001, office.lng)!!
+        assertEquals("Kantor Amar Bank Makassar", near.name)
+        assertTrue(d <= ActivityRules.ATTENDANCE_RADIUS_METERS)
+        // The "Di luar radius" simulation (0.06 deg north-east of the office) is outside 3 km of every place.
+        assertTrue(ActivityRules.nearest(places, office.lat + 0.06, office.lng + 0.06)!!.second > ActivityRules.ATTENDANCE_RADIUS_METERS)
+    }
+
+    @Test
+    fun visitRules() {
+        // Check-in opens at 12:00 local time (Makassar WITA for employee 11).
+        assertTrue(!ActivityRules.visitOpen(java.time.Instant.ofEpochMilli(at("11:59")), 11))
+        assertTrue(ActivityRules.visitOpen(java.time.Instant.ofEpochMilli(at("12:00")), 11))
+        assertEquals(3_000, ActivityRules.VISIT_RADIUS_METERS)
+        // Weekly target: Monday–Saturday minus days off; one visit counts per day.
+        val monday = LocalDate.of(2026, 10, 5)
+        assertEquals(monday, ActivityRules.weekStart(today))
+        val two = ActivityRules.visitWeek(monday, setOf(monday, monday.plusDays(1))) { false }
+        assertEquals(VisitWeek(monday, 2, 6), two)
+        assertTrue(!two.complete)
+        val all = (0L..5L).map { monday.plusDays(it) }.toSet()
+        assertTrue(ActivityRules.visitWeek(monday, all) { false }.complete)
+        // Sunday visits do not count; a day off leaves the target.
+        assertEquals(VisitWeek(monday, 5, 5), ActivityRules.visitWeek(monday, all - monday.plusDays(5) + monday.plusDays(6)) { it == monday.plusDays(5) })
     }
 
     @Test
@@ -50,19 +76,5 @@ class ActivityRulesTest {
         assertEquals(listOf("REG2026-0139-1"), DemoSeed.storesOf(partners, 15, SalesRole.SA).map { it.id })
         assertEquals(listOf("REG2026-0139-2", "REG2026-0139-3", "REG2026-0132-2"), DemoSeed.storesOf(partners, 11, SalesRole.SR).map { it.id })
         assertEquals(5, DemoSeed.storesOf(partners, 6, SalesRole.TL).size)
-    }
-
-    @Test
-    fun dailyPlan() {
-        val partners = PartnerSeed.partners()
-        val sa = DemoSeed.plan(15, SalesRole.SA, DemoSeed.storesOf(partners, 15, SalesRole.SA), today)
-        assertEquals(listOf("10:00"), sa.map { it.plannedTime })
-        assertEquals(6L, sa.single().createdBy)
-        val sr = DemoSeed.plan(11, SalesRole.SR, DemoSeed.storesOf(partners, 11, SalesRole.SR), today)
-        assertEquals(listOf("10:00", "13:00", "16:00"), sr.map { it.plannedTime })
-        assertTrue(sr.size <= ActivityRules.MAX_VISITS_PER_DAY)
-        val tl = DemoSeed.plan(6, SalesRole.TL, DemoSeed.storesOf(partners, 6, SalesRole.TL), today)
-        assertEquals(listOf("14:00"), tl.map { it.plannedTime })
-        assertTrue(DemoSeed.plan(15, SalesRole.SA, DemoSeed.storesOf(partners, 15, SalesRole.SA), LocalDate.of(2026, 10, 11)).isEmpty())
     }
 }

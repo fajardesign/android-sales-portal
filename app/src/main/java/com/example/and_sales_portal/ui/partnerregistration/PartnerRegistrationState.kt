@@ -66,7 +66,7 @@ enum class RegChoice(@StringRes val label: Int, val options: List<ChoiceOption>)
 
 /** Fields that can show an error under them. */
 enum class RegField {
-    PartnerName, Address, Province, Regency, District, Village, Rt, Rw,
+    PartnerName, Address, Province, Regency, District, Village, Rt, Rw, ReferralCode,
     Email, Revenue, OutletCount,
     PicName, PicEmail, PicPhone, PksEmail,
     Bank, Branch, AccountNumber, AccountName,
@@ -86,6 +86,8 @@ data class PartnerInfoForm(
     val village: Region? = null,
     val rt: String = "",
     val rw: String = "",
+    /** REG-02 only (revision 2026-10-08). */
+    val referralCode: String = "",
 )
 
 @Serializable

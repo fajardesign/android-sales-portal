@@ -27,11 +27,14 @@ class PartnerInfoActions(
     val onRw: (String) -> Unit = {},
     val onContinue: () -> Unit = {},
     val onBack: () -> Unit = {},
+    /** REG-02 only. */
+    val onReferral: (String) -> Unit = {},
 )
 
 /**
  * Spec: REG-02 Informasi Partner (PRD v3 C2 step 1; Figma "01 | Partner Information"): Nama Partner (3–100), Alamat
- * sesuai legalitas (5–255), Provinsi → Kabupaten/Kota → Kecamatan → Kelurahan, RT and RW (3 digits). Region Dropdowns
+ * sesuai legalitas (5–255), Provinsi → Kabupaten/Kota → Kecamatan → Kelurahan, RT and RW (3 digits), Kode Referral
+ * (revision 2026-10-08: required, letters and digits, max. 20). Region Dropdowns
  * cascade: each one stays disabled until its parent is chosen and its list is loaded.
  */
 @Composable
@@ -47,6 +50,7 @@ fun RegPartnerInfoScreen(state: PartnerRegistrationState, actions: PartnerInfoAc
         val errors = if (RegStep.PartnerInfo in state.showErrors) PartnerRegistrationValidator.partnerInfo(state.partner) else emptyMap()
         RegTextField(state.partner.name, actions.onName, R.string.reg_partner_name, R.string.reg_partner_name_placeholder, errors[RegField.PartnerName])
         AddressFields(state.partner, state.regions, actions, errors)
+        RegTextField(state.partner.referralCode, actions.onReferral, R.string.reg_referral, R.string.reg_referral_placeholder, errors[RegField.ReferralCode])
     }
 }
 
@@ -108,8 +112,8 @@ fun RegBusinessScreen(state: PartnerRegistrationState, actions: DetailsActions) 
 }
 
 /**
- * Spec: REG-04 Informasi PIC & PKS (PRD v3 C2 step 3): Nama PIC, Email PIC (becomes the PIC username), No. Handphone
- * (+62, contact), Status PIC, Privy ID (optional) and Email undangan PKS (defaults to Email PIC).
+ * Spec: REG-04 Informasi PIC & PKS (PRD v3 C2 step 3): Nama PIC, Email PIC and No. Handphone (+62; both used to sign in
+ * to the Partner account, revision 2026-10-08), Status PIC, Privy ID (optional) and Email undangan PKS (defaults to Email PIC).
  */
 @Composable
 fun RegPicScreen(state: PartnerRegistrationState, actions: DetailsActions) {
