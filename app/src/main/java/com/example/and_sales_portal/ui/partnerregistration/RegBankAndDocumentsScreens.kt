@@ -40,7 +40,7 @@ class BankAccountActions(
 
 /**
  * Spec: REG-05 Data Rekening (PRD v3 C2 step 4): Bank, Cabang, No. Rekening, Nama Rekening (as printed), with the note
- * "Data rekening akan diverifikasi manual oleh Admin." No bank inquiry in phase 1 (PRD overrides the Figma "Periksa").
+ * "Pastikan data rekening sesuai buku rekening yang diunggah." (revision 2026-10-08: no Admin bank-data verification). No bank inquiry in phase 1 (PRD overrides the Figma "Periksa").
  */
 @Composable
 fun RegBankAccountScreen(state: PartnerRegistrationState, actions: BankAccountActions) {

@@ -18,7 +18,6 @@ import com.example.and_sales_portal.data.sales.SalesSummary
 import com.example.and_sales_portal.data.team.TeamService
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.ui.attendance.AttendanceDay
-import com.example.and_sales_portal.ui.visits.visitItem
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Before
 import org.junit.Test
@@ -59,14 +58,12 @@ class DashboardScreensScreenshotTest {
 
     @Test
     fun homes() {
-        val visits = ops.visitsOf(11, today).mapNotNull { v ->
-            val p = partners.partners.value.first { pt -> pt.stores.any { it.id == v.storeId } }
-            visitItem(v, p.stores.first { it.id == v.storeId }, p, today)
-        }
-        val sr = SalesHomeState("Siti", SalesRole.SR, today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, visits, partners.myPartners(11, SalesRole.SR), summary(11), sales.salesIncentive(11, SalesRole.SR))
-        capture("sls_01_home") { SalesHomeScreen(sr, noop, {}, {}, {}, {}) }
+        val week = ops.visitWeek(11, ActivityRules.weekStart(today))
+        val stores = DemoSeed.storesOf(partners.partners.value, 11, SalesRole.SR)
+        val sr = SalesHomeState("Siti", SalesRole.SR, today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, week, false, false, stores, partners.myPartners(11, SalesRole.SR), summary(11), sales.salesIncentive(11, SalesRole.SR))
+        capture("sls_01_home") { SalesHomeScreen(sr, noop, {}, {}, {}) }
         val tl = TlHomeState(
-            "Andi", today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, 0, 1, 2, 1, 0, 5, 1, 0, 0,
+            "Andi", today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, ops.visitWeek(6, ActivityRules.weekStart(today)), 2, 1, 0, 1, 2, 0, 3,
             partners.submissionsFor(6, SalesRole.TL).groupingBy { it.status }.eachCount() + (PartnerStatus.REVISION_REQUIRED to 1),
             SalesSummary.of(sales.loansOfTl(6), today.withDayOfMonth(1), today), sales.tlIncentive(6),
             listOf("Siti Rahmawati" to 52.4, "Eko Saputra" to 28.1, "Nurul Hidayah" to 19.5),
@@ -104,7 +101,7 @@ class DashboardScreensScreenshotTest {
         capture("tl_08_sales_partner") { TeamSalesScreen(Period.MONTH, {}, 1, {}, total, members2, perPartner, null, members, {}, null, own, {}, {}) }
         val days = (0L..3L).map { today.minusDays(it) }.map { d ->
             val a = ops.attendanceOf(15, d)
-            EvidenceDay(d, ops.attendanceStatus(15, d), a?.clockIn?.at, a?.clockIn?.lat, a?.clockIn?.lng, null, emptyList())
+            EvidenceDay(d, ops.attendanceStatus(15, d), a, emptyList())
         }
         capture("tl_07_evidence") { EvidenceScreen(DemoDirectory.person(15)!!.fullName, Period.WEEK, {}, days, {}, { _, _ -> }) }
     }

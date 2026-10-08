@@ -140,6 +140,8 @@ object PartnerSeed {
             id = reg, name = name, entity = entity,
             address = street, province = area.province, regency = area.city, district = area.district, village = area.village,
             rt = "003", rw = "005",
+            // Same as the web portal sample: AMR + submitter id + number.
+            referralCode = "AMR$submittedBy$n",
             email = "admin@${bare.filter { it in 'a'..'z' }}.co.id", channel = "STORE", outletCount = stores.size,
             picName = picName, picEmail = picEmail, picPhone = "85" + (300_000_000 + n * 104_729).toString().take(9),
             picStatus = cfg.picStatus, privyId = cfg.privyId, pksInviteEmail = picEmail,

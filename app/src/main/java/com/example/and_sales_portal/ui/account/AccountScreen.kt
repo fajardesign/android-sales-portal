@@ -55,7 +55,6 @@ fun AccountScreen(session: SalesSession, onLogout: () -> Unit, onResetDemo: () -
                     AmarBadge(stringResource(roleLabel(session.role)), size = AmarBadgeSize.Small)
                     user.tlLevel?.let { AmarBadge(stringResource(R.string.account_level, it.lowercase().replaceFirstChar(Char::uppercase)), size = AmarBadgeSize.Small) }
                 }
-                InfoRow(R.string.account_username, user.username)
                 InfoRow(R.string.account_email, user.email)
                 user.phone?.let { InfoRow(R.string.account_phone, "+62 $it") }
                 InfoRow(R.string.account_area, user.areaIds.mapNotNull { DemoDirectory.area(it)?.name }.joinToString().ifEmpty { "-" })

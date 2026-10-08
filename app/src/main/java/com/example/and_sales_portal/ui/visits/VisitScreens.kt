@@ -20,10 +20,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.Visit
-import com.example.and_sales_portal.data.activity.VisitOutcome
+import com.example.and_sales_portal.data.activity.VisitCheckInBlock
+import com.example.and_sales_portal.data.activity.VisitWeek
 import com.example.and_sales_portal.data.activity.VisitStatus
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.Store
+import com.example.and_sales_portal.designsystem.components.actions.AmarButton
+import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
+import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadge
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeSize
 import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeType
@@ -34,6 +38,7 @@ import com.example.and_sales_portal.designsystem.components.layout.AmarCard
 import com.example.and_sales_portal.designsystem.components.layout.AmarCardStyle
 import com.example.and_sales_portal.designsystem.theme.AmarActivityTokens
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
+import com.example.and_sales_portal.ui.attendance.distanceLabel
 import com.example.and_sales_portal.ui.common.Fmt
 import com.example.and_sales_portal.ui.common.InfoRow
 import com.example.and_sales_portal.ui.common.MapPreview
@@ -43,26 +48,25 @@ import com.example.and_sales_portal.ui.common.SectionTitle
 import kotlinx.coroutines.delay
 
 /** A visit with its toko and partner, as shown on ATT-03 … ATT-05. */
-data class VisitItem(val visit: Visit, val store: Store, val partner: Partner, val status: VisitStatus, val outcome: VisitOutcome?) {
+data class VisitItem(val visit: Visit, val store: Store, val partner: Partner, val status: VisitStatus) {
     val pendingSync: Boolean get() = visit.checkOut?.synced == false
 }
 
 @Composable
 fun VisitStatusBadge(status: VisitStatus) {
     val (label, type, solid) = when (status) {
-        VisitStatus.NOT_STARTED -> Triple(R.string.vis_status_not_started, AmarBadgeType.Info, false)
         VisitStatus.ONGOING -> Triple(R.string.vis_status_ongoing, AmarBadgeType.Info, true)
         VisitStatus.DONE -> Triple(R.string.vis_status_done, AmarBadgeType.Success, false)
-        VisitStatus.MISSED -> Triple(R.string.vis_status_missed, AmarBadgeType.Error, false)
-        VisitStatus.CANCELLED -> Triple(R.string.vis_status_cancelled, AmarBadgeType.Warning, false)
     }
     AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small, solid = solid)
 }
 
+/** "Lengkap n/n" (Success) or "Belum lengkap n/m" (Warning), revision 2026-10-08. */
 @Composable
-fun VisitOutcomeBadge(outcome: VisitOutcome) = when (outcome) {
-    VisitOutcome.ON_TIME -> AmarBadge(stringResource(R.string.vis_outcome_on_time), type = AmarBadgeType.Success, size = AmarBadgeSize.Small)
-    VisitOutcome.LATE -> AmarBadge(stringResource(R.string.vis_outcome_late), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
+fun VisitWeekBadge(week: VisitWeek) = if (week.complete) {
+    AmarBadge(stringResource(R.string.vis_week_complete, week.visited, week.target), type = AmarBadgeType.Success, size = AmarBadgeSize.Small)
+} else {
+    AmarBadge(stringResource(R.string.vis_week_incomplete, week.visited, week.target), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -70,81 +74,120 @@ fun VisitOutcomeBadge(outcome: VisitOutcome) = when (outcome) {
 private fun Badges(item: VisitItem) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
         VisitStatusBadge(item.status)
-        item.outcome?.let { VisitOutcomeBadge(it) }
         if (item.pendingSync) AmarBadge(stringResource(R.string.vis_pending_sync), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
     }
 }
 
+/** What ATT-03 shows (revision 2026-10-08: no hourly plan). */
+data class VisitListUiState(
+    val date: String,
+    val week: VisitWeek,
+    val visitedToday: Boolean,
+    val dayOff: Boolean,
+    /** Assigned toko (TL: toko of own partners) with their partner. */
+    val stores: List<Pair<Partner, Store>>,
+    val visits: List<VisitItem>,
+    val online: Boolean,
+    /** Why check-in is not possible right now, if so. */
+    val block: VisitCheckInBlock?,
+)
+
 /**
- * Spec: ATT-03 Jadwal Kunjungan hari ini (PRD v3 D3: toko, partner, planned time, status). SA/SR: tab Kunjungan
+ * Spec: ATT-03 Kunjungan (PRD v3 D3; stakeholder revision 2026-10-08): this week's progress against the weekly target,
+ * today's visits, and the assigned toko with `Check-In` (from 12:00 local, after check in kerja). SA/SR: tab Kunjungan
  * (no back); TL: Aktivitas › Kunjungan Saya.
  */
 @Composable
-fun VisitListScreen(title: String, date: String, items: List<VisitItem>, online: Boolean, onBack: (() -> Unit)?, onOpen: (VisitItem) -> Unit) {
+fun VisitListScreen(
+    title: String,
+    s: VisitListUiState,
+    onBack: (() -> Unit)?,
+    onOpen: (VisitItem) -> Unit,
+    onCheckIn: (Store) -> Unit,
+    onWorkCheckIn: () -> Unit,
+) {
     val c = AmarTheme.colors
     ScreenScaffold(title, onBack) {
-        if (!online) AmarInfoBox(stringResource(R.string.vis_offline_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
+        if (!s.online) AmarInfoBox(stringResource(R.string.vis_offline_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
+        AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.vis_week), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
+                VisitWeekBadge(s.week)
+            }
+            Text(
+                stringResource(
+                    when {
+                        s.dayOff -> R.string.vis_today_off
+                        s.visitedToday -> R.string.vis_today_done
+                        else -> R.string.vis_today_not_yet
+                    },
+                ),
+                color = c.content.primary,
+                style = AmarTheme.typography.bodyMd,
+            )
+            Text(stringResource(R.string.vis_week_rule), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+        }
+        if (s.online) {
+            when (s.block) {
+                // SOP decision 2026-10-08: check in kerja first, then the visit check-in at the toko.
+                VisitCheckInBlock.NotWorkCheckedIn -> AmarInfoBox(
+                    stringResource(R.string.vis_need_work_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning,
+                    buttonLabel = stringResource(R.string.att_clock_in), onButtonClick = onWorkCheckIn,
+                )
+                VisitCheckInBlock.BeforeStart -> AmarInfoBox(stringResource(R.string.vis_before_start, ActivityRules.ZONE_LABEL), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
+                VisitCheckInBlock.DayOff -> AmarInfoBox(stringResource(R.string.vis_day_off_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
+                VisitCheckInBlock.Ongoing -> AmarInfoBox(stringResource(R.string.vis_ongoing_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
+                VisitCheckInBlock.StoreNotAssigned, null -> Unit
+            }
+        }
         Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
             SectionTitle(stringResource(R.string.vis_today))
-            Text(date, color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            Text(s.date, color = c.content.secondary, style = AmarTheme.typography.bodySm)
         }
-        if (items.isEmpty()) {
-            AmarInfoBox(stringResource(R.string.vis_empty), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
-        }
-        items.forEach { item ->
+        if (s.visits.isEmpty()) Text(stringResource(R.string.vis_empty), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        s.visits.forEach { item ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onOpen(item) }) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.vis_planned, Fmt.withZone(item.visit.plannedTime)), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
-                }
+                item.visit.checkIn?.let { Text(stringResource(R.string.att_time, Fmt.timeLabel(it.at)), color = c.content.primary, style = AmarTheme.typography.headingSm) }
                 Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                     Text(item.store.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                     Text(item.partner.name, color = c.content.secondary, style = AmarTheme.typography.bodySm)
-                    Text(item.store.address, color = c.content.tertiary, style = AmarTheme.typography.bodySm, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 Badges(item)
+            }
+        }
+        SectionTitle(stringResource(R.string.vis_stores))
+        if (s.stores.isEmpty()) Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        s.stores.forEach { (p, store) ->
+            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
+                        Text(store.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
+                        Text(p.name, color = c.content.secondary, style = AmarTheme.typography.bodySm)
+                        Text(store.address, color = c.content.tertiary, style = AmarTheme.typography.bodySm, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    AmarButton(stringResource(R.string.vis_check_in), { onCheckIn(store) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = s.online && s.block == null)
+                }
             }
         }
     }
 }
 
 /**
- * Spec: ATT-04 Detail Kunjungan (PRD v3 D3): toko, partner, planned time and status; "Check-In Sekarang" before the
- * visit (only after today's check in kerja, SOP decision 2026-10-08), the running timer during it, the summary after it.
+ * Spec: ATT-04 Detail Kunjungan (PRD v3 D3): the running timer and `Check Out` during the visit, the summary after it,
+ * and the toko.
  */
 @Composable
 fun VisitDetailScreen(
     item: VisitItem,
-    online: Boolean,
     now: () -> Long,
     onBack: () -> Unit,
     onOpenMaps: (Double, Double) -> Unit,
-    onCheckIn: () -> Unit,
     onCheckOut: () -> Unit,
-    workCheckedIn: Boolean = true,
-    onWorkCheckIn: () -> Unit = {},
 ) {
     val c = AmarTheme.colors
     val v = item.visit
-    val action: (@Composable () -> Unit)? = when (item.status) {
-        VisitStatus.NOT_STARTED -> { { PersistentAction(stringResource(R.string.vis_check_in_now), onCheckIn, enabled = online && workCheckedIn) } }
-        VisitStatus.ONGOING -> { { PersistentAction(stringResource(R.string.vis_check_out), onCheckOut) } }
-        else -> null
-    }
+    val action: (@Composable () -> Unit)? = if (item.status == VisitStatus.ONGOING) { { PersistentAction(stringResource(R.string.vis_check_out), onCheckOut) } } else null
     ScreenScaffold(stringResource(R.string.vis_detail_title), onBack, action = action) {
-        when (item.status) {
-            VisitStatus.NOT_STARTED -> when {
-                !online -> AmarInfoBox(stringResource(R.string.vis_offline_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
-                // Decision 2026-10-08 (SOP): check in kerja first, then the visit check-in at the toko.
-                !workCheckedIn -> AmarInfoBox(
-                    stringResource(R.string.vis_need_work_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning,
-                    buttonLabel = stringResource(R.string.att_clock_in), onButtonClick = onWorkCheckIn,
-                )
-                else -> Unit
-            }
-            VisitStatus.MISSED -> AmarInfoBox(stringResource(R.string.vis_missed_info, ActivityRules.ZONE_LABEL), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Error)
-            VisitStatus.CANCELLED -> AmarInfoBox(v.cancelReason ?: stringResource(R.string.vis_cancelled_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
-            else -> Unit
-        }
         val checkIn = v.checkIn
         if (item.status == VisitStatus.ONGOING && checkIn != null) {
             var elapsed by remember { mutableLongStateOf(now() - checkIn.at) }
@@ -175,7 +218,7 @@ fun VisitDetailScreen(
             Badges(item)
             InfoRow(stringResource(R.string.vis_partner), item.partner.name)
             InfoRow(stringResource(R.string.vis_store_code), item.store.code ?: "-")
-            InfoRow(stringResource(R.string.vis_planned_time), stringResource(R.string.vis_planned, Fmt.withZone(v.plannedTime)))
+            checkIn?.distance?.let { InfoRow(stringResource(R.string.cap_distance), distanceLabel(it)) }
             InfoRow(stringResource(R.string.vis_pic), "${item.partner.picName} · +62 ${item.partner.picPhone}")
             Text(item.store.address, color = c.content.secondary, style = AmarTheme.typography.bodySm)
             MapPreview(item.store.lat, item.store.lng, { onOpenMaps(item.store.lat, item.store.lng) })
@@ -213,10 +256,10 @@ fun duration(millis: Long): String {
     return stringResource(R.string.vis_duration_value, (minutes / 60).toInt(), (minutes % 60).toInt())
 }
 
-/** Visit with its toko, partner, status and outcome; `null` when the toko is no longer in the data. */
-fun visitItem(v: Visit, store: Store?, partner: Partner?, today: java.time.LocalDate): VisitItem? {
+/** Visit with its toko, partner and status; `null` when the toko is no longer in the data. */
+fun visitItem(v: Visit, store: Store?, partner: Partner?): VisitItem? {
     if (store == null || partner == null) return null
-    return VisitItem(v, store, partner, ActivityRules.visitStatus(v, today), ActivityRules.visitOutcome(v))
+    return VisitItem(v, store, partner, ActivityRules.visitStatus(v))
 }
 
 private const val TICK_MILLIS = 1_000L

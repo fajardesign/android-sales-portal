@@ -35,8 +35,9 @@ import com.example.and_sales_portal.ui.attendance.AttendanceDay
 import com.example.and_sales_portal.ui.common.Fmt
 import com.example.and_sales_portal.ui.common.ScreenScaffold
 import com.example.and_sales_portal.ui.partner.PartnerStatusBadge
-import com.example.and_sales_portal.ui.visits.VisitItem
-import com.example.and_sales_portal.ui.visits.VisitStatusBadge
+import com.example.and_sales_portal.ui.visits.VisitWeekBadge
+import com.example.and_sales_portal.data.activity.VisitWeek
+import com.example.and_sales_portal.data.partner.Store
 import java.time.LocalDate
 
 class AttendanceActions(val onClockIn: () -> Unit, val onClockOut: () -> Unit, val onHistory: () -> Unit)
@@ -56,22 +57,26 @@ data class SalesHomeState(
     val date: LocalDate,
     val attendance: AttendanceDay,
     val online: Boolean,
-    val visits: List<VisitItem>,
+    /** This week's visits against the target (revision 2026-10-08). */
+    val week: VisitWeek,
+    val visitedToday: Boolean,
+    val dayOff: Boolean,
+    val stores: List<Store>,
     val partners: List<Partner>,
     val month: SalesSummary,
     val incentive: Incentive,
 )
 
 /**
- * Spec: SLS-01 Beranda SA/SR (PRD v3 D1): Absensi card, today's visit schedule with status chips, assigned partners, this
- * month's # submitted, # accepted, # paid out and paid-out amount, incentive estimate.
+ * Spec: SLS-01 Beranda SA/SR (PRD v3 D1; revision 2026-10-08): Absensi card, this week's visits ("Lengkap n/n" / "Belum
+ * lengkap n/m", today) with the assigned toko, assigned partners, this month's # submitted, # accepted, # paid out and
+ * paid-out amount, incentive estimate.
  */
 @Composable
 fun SalesHomeScreen(
     s: SalesHomeState,
     attendance: AttendanceActions,
     onVisits: () -> Unit,
-    onVisit: (VisitItem) -> Unit,
     onPartners: () -> Unit,
     onIncentive: () -> Unit,
 ) {
@@ -80,17 +85,22 @@ fun SalesHomeScreen(
         PriorityHeading(s.role, s.date)
         AttendanceCard(s.attendance, s.online, attendance.onClockIn, attendance.onClockOut, onHistory = attendance.onHistory)
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
-            SectionHeader(stringResource(R.string.home_visits_today), stringResource(R.string.home_see_all), onVisits)
-            if (s.visits.isEmpty()) Text(stringResource(R.string.home_no_visits), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-            s.visits.forEach { v ->
-                AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onVisit(v) }) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                        Text(stringResource(R.string.vis_planned, Fmt.withZone(v.visit.plannedTime)), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
-                        Text(v.store.name, Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm, maxLines = 1)
-                        VisitStatusBadge(v.status)
-                    }
-                }
-            }
+            SectionHeader(stringResource(R.string.home_week_visits), stringResource(R.string.home_see_all), onVisits)
+            VisitWeekBadge(s.week)
+            Text(
+                stringResource(
+                    when {
+                        s.dayOff -> R.string.vis_today_off
+                        s.visitedToday -> R.string.vis_today_done
+                        else -> R.string.vis_today_not_yet
+                    },
+                ),
+                color = c.content.primary,
+                style = AmarTheme.typography.bodyMd,
+            )
+            Text(stringResource(R.string.vis_stores), color = c.content.secondary, style = AmarTheme.typography.captionSm)
+            if (s.stores.isEmpty()) Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            s.stores.forEach { Text(it.name, color = c.content.primary, style = AmarTheme.typography.labelMdMedium) }
         }
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
             SectionHeader(stringResource(R.string.home_partners), stringResource(R.string.home_see_all), onPartners)
@@ -109,15 +119,16 @@ data class TlHomeState(
     val date: LocalDate,
     val attendance: AttendanceDay,
     val online: Boolean,
-    val myVisitsDone: Int,
-    val myVisitsTotal: Int,
+    /** Own visits this week (TL toko); `null` when the TL has no toko. */
+    val myWeek: VisitWeek?,
     val teamPresent: Int,
     val teamNotYet: Int,
     val teamAbsent: Int,
-    val visitsPlanned: Int,
-    val visitsDone: Int,
-    val visitsLate: Int,
-    val visitsMissed: Int,
+    /** Team members with a visit today, without, and with a complete week (revision 2026-10-08). */
+    val teamVisitedToday: Int,
+    val teamNotVisitedToday: Int,
+    val teamCompleteWeek: Int,
+    val teamSize: Int,
     val submissions: Map<PartnerStatus, Int>,
     val teamMonth: SalesSummary,
     val incentive: Incentive,
@@ -135,8 +146,8 @@ class TlHomeActions(
 )
 
 /**
- * Spec: TL-06 Beranda TL (PRD v3 C1; Figma "01 | Team Leader Dashboard"): Absensi card; today — own visits, team attendance
- * and team visits; Pengajuan Partner by status with Revision Required highlighted; this month's team sales and own
+ * Spec: TL-06 Beranda TL (PRD v3 C1; Figma "01 | Team Leader Dashboard"): Absensi card; team attendance today, team visits
+ * (today and complete weeks, revision 2026-10-08), own visits this week; Pengajuan Partner by status with Revision Required highlighted; this month's team sales and own
  * incentive estimate; shortcuts. Figma's Lead and RTS metrics are out of scope (PRD) and replaced by today's activity.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -156,15 +167,13 @@ fun TlHomeScreen(s: TlHomeState, attendance: AttendanceActions, a: TlHomeActions
         MetricTilesCard(
             stringResource(R.string.home_team_visits),
             listOf(
-                s.visitsPlanned.toString() to stringResource(R.string.home_planned),
-                s.visitsDone.toString() to stringResource(R.string.home_done),
-                s.visitsLate.toString() to stringResource(R.string.home_late),
-                s.visitsMissed.toString() to stringResource(R.string.home_missed),
+                s.teamVisitedToday.toString() to stringResource(R.string.home_visited_today),
+                s.teamNotVisitedToday.toString() to stringResource(R.string.home_not_yet),
             ),
-        )
+        ) { Text(stringResource(R.string.home_team_visits_week, s.teamCompleteWeek, s.teamSize), color = c.content.secondary, style = AmarTheme.typography.bodySm) }
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
-            SectionHeader(stringResource(R.string.home_my_visits), stringResource(R.string.home_see_all), a.onMyVisits)
-            Text(stringResource(R.string.home_my_visits_value, s.myVisitsDone, s.myVisitsTotal), color = c.content.secondary, style = AmarTheme.typography.bodyMd)
+            SectionHeader(stringResource(R.string.home_my_week), stringResource(R.string.home_see_all), a.onMyVisits)
+            s.myWeek?.let { VisitWeekBadge(it) } ?: Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         }
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
             SectionHeader(stringResource(R.string.home_submissions), stringResource(R.string.home_see_all), a.onSubmissions)

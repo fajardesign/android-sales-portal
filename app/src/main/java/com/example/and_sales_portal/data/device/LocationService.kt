@@ -20,8 +20,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import kotlin.coroutines.resume
 
-/** A place the user must be at (toko), or the reference point of the work area (attendance). */
-data class Place(val lat: Double, val lng: Double, val address: String?)
+/** A place the user must be near: a toko (visit), or an office or toko (attendance, revision 2026-10-08). */
+data class Place(val lat: Double, val lng: Double, val address: String?, val name: String? = null)
 
 sealed interface LocationResult {
     data class Found(val lat: Double, val lng: Double, val address: String?, val mock: Boolean) : LocationResult
@@ -88,7 +88,7 @@ class LocationService(private val context: Context, private val simulation: Simu
         private const val TIMEOUT_MS = 10_000L
         /** About 10 m: a GPS fix is never exactly on the toko. */
         private const val JITTER = 0.00007
-        /** About 150 m north-east. */
-        private const val OUT_OF_RADIUS = 0.001
+        /** About 9 km north-east: outside the 3 km radius of every office and toko of the area. */
+        private const val OUT_OF_RADIUS = 0.06
     }
 }

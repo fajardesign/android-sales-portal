@@ -73,6 +73,7 @@ fun AttendanceCard(
                 }
                 AttendanceBadge(day.status)
             }
+            PresenceBadge(a)
             Row(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
                 TimeTile(stringResource(R.string.att_clock_in), a?.clockIn?.at, c.background.brandSubtle)
                 TimeTile(stringResource(R.string.att_clock_out), a?.clockOut?.at, c.background.canvas)
@@ -108,7 +109,10 @@ private fun RowScope.TimeTile(label: String, millis: Long?, background: Color) {
     }
 }
 
-/** Figma `Attendance status`: Badge Small; "Belum Absen" Warning, "Tepat Waktu" Success (Terlambat Warning, Tidak Hadir Error). */
+/**
+ * Figma `Attendance status`: Badge Small; labels from the revision 2026-10-08: "Belum Check In" Warning, "Tepat Waktu"
+ * Success, "Terlambat" Warning, "Absen" Error, "Libur" Info.
+ */
 @Composable
 fun AttendanceBadge(status: AttendanceStatus) {
     val (label, type) = when (status) {
@@ -119,6 +123,17 @@ fun AttendanceBadge(status: AttendanceStatus) {
         AttendanceStatus.DAY_OFF -> R.string.att_status_day_off to AmarBadgeType.Info
     }
     AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small)
+}
+
+/** "Sudah Check In" / "Sudah Check Out" (revision 2026-10-08 report labels); nothing before check in. */
+@Composable
+fun PresenceBadge(a: Attendance?) {
+    val label = when {
+        a?.clockOut != null -> R.string.att_status_checked_out
+        a?.clockIn != null -> R.string.att_status_checked_in
+        else -> return
+    }
+    AmarBadge(stringResource(label), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
 }
 
 /** Spec: ATT-01 Absensi (PRD v3 D2: clock in/out and history with dates, times and status). */
@@ -147,7 +162,10 @@ private fun HistoryRow(day: AttendanceDay) {
                     style = AmarTheme.typography.bodySm,
                 )
             }
-            AttendanceBadge(day.status)
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
+                AttendanceBadge(day.status)
+                PresenceBadge(a)
+            }
         }
     }
 }

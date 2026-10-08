@@ -15,9 +15,6 @@ import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.AttendanceStatus
 import com.example.and_sales_portal.data.activity.DemoSeed
 import com.example.and_sales_portal.data.activity.Visit
-import com.example.and_sales_portal.data.activity.VisitOutcome
-import com.example.and_sales_portal.data.activity.VisitState
-import com.example.and_sales_portal.data.activity.VisitStatus
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoDirectory
 import com.example.and_sales_portal.data.partner.Store
@@ -32,7 +29,6 @@ import com.example.and_sales_portal.ui.common.ComposeFragment
 import com.example.and_sales_portal.ui.common.WithToast
 import com.example.and_sales_portal.ui.shell.SalesTab
 import com.example.and_sales_portal.ui.shell.ShellNavigator
-import com.example.and_sales_portal.ui.visits.VisitDetailFragment
 import com.example.and_sales_portal.ui.visits.VisitItem
 import com.example.and_sales_portal.ui.visits.openMaps
 import com.example.and_sales_portal.ui.visits.visitItem
@@ -40,9 +36,9 @@ import java.time.LocalDate
 
 private const val ARG_EMPLOYEE = "employee_id"
 
-private fun AppContainer.item(v: Visit, today: LocalDate): VisitItem? {
+private fun AppContainer.item(v: Visit): VisitItem? {
     val partner = partners.partners.value.firstOrNull { p -> p.stores.any { it.id == v.storeId } }
-    return visitItem(v, partner?.stores?.firstOrNull { it.id == v.storeId }, partner, today)
+    return visitItem(v, partner?.stores?.firstOrNull { it.id == v.storeId }, partner)
 }
 
 private fun AppContainer.storesOf(id: Long, role: SalesRole): List<Store> = DemoSeed.storesOf(partners.partners.value, id, role)
@@ -82,7 +78,10 @@ class SalesHomeFragment : HomeBase() {
                 date = today,
                 attendance = AttendanceFragment.attendanceState(repo, online).today,
                 online = online,
-                visits = repo.visitsOn(today).mapNotNull { container.item(it, today) },
+                week = repo.visitWeek(today),
+                visitedToday = repo.visitsOn(today).isNotEmpty(),
+                dayOff = repo.isDayOff(today),
+                stores = repo.stores(),
                 partners = container.partners.myPartners(s.user.id, s.role),
                 month = summary(container.sales.loansOfSales(s.user.id), Period.MONTH.range(today)),
                 incentive = container.sales.salesIncentive(s.user.id, s.role),
@@ -92,7 +91,6 @@ class SalesHomeFragment : HomeBase() {
             SalesHomeScreen(
                 state, attendanceActions(),
                 onVisits = { toTab(SalesTab.Visits) },
-                onVisit = { navigate(R.id.visit_detail, VisitDetailFragment.args(it.visit.id)) },
                 onPartners = { toTab(SalesTab.Partner) },
                 onIncentive = { toTab(SalesTab.Performance) },
             )
@@ -116,8 +114,7 @@ class TlHomeFragment : HomeBase() {
             val o = container.operations
             val team = container.team.teamOf(tlId).filter { it.status == "ACTIVE" }
             val statuses = team.map { o.attendanceStatus(it.id, today) }
-            val teamVisits = team.flatMap { o.visitsOf(it.id, today) }.filter { it.state != VisitState.CANCELLED }
-            val myVisits = o.visitsOf(tlId, today).filter { it.state != VisitState.CANCELLED }
+            val visitedToday = team.count { o.visitsOf(it.id, o.todayOf(it.id)).isNotEmpty() }
             val month = Period.MONTH.range(today)
             val teamLoans = container.sales.loansOfTl(tlId)
             val teamPaid = summary(teamLoans, month).paidOutAmount
@@ -126,15 +123,14 @@ class TlHomeFragment : HomeBase() {
                 date = today,
                 attendance = AttendanceFragment.attendanceState(repo, online).today,
                 online = online,
-                myVisitsDone = myVisits.count { it.state == VisitState.DONE },
-                myVisitsTotal = myVisits.size,
+                myWeek = if (repo.stores().isEmpty()) null else repo.visitWeek(today),
                 teamPresent = statuses.count { it == AttendanceStatus.ON_TIME || it == AttendanceStatus.LATE },
                 teamNotYet = statuses.count { it == AttendanceStatus.NOT_YET },
                 teamAbsent = statuses.count { it == AttendanceStatus.ABSENT || it == AttendanceStatus.DAY_OFF },
-                visitsPlanned = teamVisits.size,
-                visitsDone = teamVisits.count { it.state == VisitState.DONE },
-                visitsLate = teamVisits.count { ActivityRules.visitOutcome(it) == VisitOutcome.LATE },
-                visitsMissed = teamVisits.count { ActivityRules.visitStatus(it, today) == VisitStatus.MISSED },
+                teamVisitedToday = visitedToday,
+                teamNotVisitedToday = team.size - visitedToday,
+                teamCompleteWeek = team.count { o.visitWeek(it.id, ActivityRules.weekStart(today)).complete },
+                teamSize = team.size,
                 submissions = container.partners.submissionsFor(tlId, SalesRole.TL).groupingBy { it.status }.eachCount(),
                 teamMonth = summary(teamLoans, month),
                 incentive = container.sales.tlIncentive(tlId),
@@ -218,7 +214,7 @@ class EvidenceFragment : ComposeFragment() {
             val r = period.range(today)
             generateSequence(r.endInclusive) { it.minusDays(1) }.takeWhile { !it.isBefore(r.start) }.filter(ActivityRules::isWorkday).map { d ->
                 val a = o.attendanceOf(id, d)
-                EvidenceDay(d, o.attendanceStatus(id, d), a?.clockIn?.at, a?.clockIn?.lat, a?.clockIn?.lng, a?.clockIn?.selfie, o.visitsOf(id, d).mapNotNull { container.item(it, today) })
+                EvidenceDay(d, o.attendanceStatus(id, d), a, o.visitsOf(id, d).mapNotNull { container.item(it) })
             }.toList()
         }
         EvidenceScreen(person.fullName, period, { period = it }, days, ::back) { lat, lng -> openMaps(lat, lng) }

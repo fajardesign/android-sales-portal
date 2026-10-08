@@ -181,7 +181,7 @@ class RevisionFragment : ComposeFragment() {
             val save = { vm.saveSection(editing); Unit }
             CompositionLocalProvider(LocalRegFrame provides RegFrame(stringResource(R.string.rev_title), showStep = false, cta = stringResource(R.string.rev_save))) {
                 when (editing) {
-                    RegStep.PartnerInfo -> RegPartnerInfoScreen(state, PartnerInfoActions(vm::setPartnerName, vm::setAddress, vm::selectProvince, vm::selectRegency, vm::selectDistrict, vm::selectVillage, vm::setRt, vm::setRw, save, close))
+                    RegStep.PartnerInfo -> RegPartnerInfoScreen(state, PartnerInfoActions(vm::setPartnerName, vm::setAddress, vm::selectProvince, vm::selectRegency, vm::selectDistrict, vm::selectVillage, vm::setRt, vm::setRw, save, close, vm::setReferralCode))
                     RegStep.Business -> RegBusinessScreen(state, DetailsActions(onEmail = vm::setEmail, onRevenue = vm::setRevenue, onOutletCount = vm::setOutletCount, onChoose = vm::choose, onContinue = save, onBack = close))
                     RegStep.Pic -> RegPicScreen(state, DetailsActions(onPicName = vm::setPicName, onPicEmail = vm::setPicEmail, onPicPhone = vm::setPicPhone, onPrivyId = vm::setPrivyId, onPksEmail = vm::setPksEmail, onChoose = vm::choose, onContinue = save, onBack = close))
                     RegStep.BankAccount -> RegBankAccountScreen(state, BankAccountActions(vm::selectBank, vm::setBranch, vm::setAccountNumber, vm::setAccountName, save, close))

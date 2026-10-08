@@ -35,7 +35,6 @@
     <fragment android:id="@+id/team_detail" android:name="com.example.and_sales_portal.ui.team.MemberDetailFragment" />
     <fragment android:id="@+id/assign" android:name="com.example.and_sales_portal.ui.team.AssignFragment" />
     <fragment android:id="@+id/schedule" android:name="com.example.and_sales_portal.ui.team.ScheduleFragment" />
-    <fragment android:id="@+id/visit_plan_form" android:name="com.example.and_sales_portal.ui.team.VisitPlanFormFragment" />
 
     <!-- Laporan TL (TL-07 … TL-10; PRD v3 C9). -->
     <fragment android:id="@+id/team_productivity" android:name="com.example.and_sales_portal.ui.dashboard.TeamProductivityFragment" />

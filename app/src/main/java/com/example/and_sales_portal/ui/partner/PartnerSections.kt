@@ -79,6 +79,7 @@ fun PartnerSections(partner: Partner, onEdit: ((RegStep) -> Unit)? = null, showV
         InfoRow(stringResource(R.string.reg_village), "${partner.village}, ${partner.district}")
         InfoRow(stringResource(R.string.reg_regency), "${partner.regency}, ${partner.province}")
         InfoRow("${stringResource(R.string.reg_rt)} / ${stringResource(R.string.reg_rw)}", "${partner.rt} / ${partner.rw}")
+        InfoRow(stringResource(R.string.reg_referral), partner.referralCode ?: "-")
     }
     Section(R.string.sec_business, onEdit?.let { { it(RegStep.Business) } }) {
         InfoRow(stringResource(R.string.reg_email), partner.email)

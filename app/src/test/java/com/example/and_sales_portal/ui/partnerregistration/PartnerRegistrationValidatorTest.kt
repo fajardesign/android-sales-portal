@@ -15,16 +15,22 @@ import org.junit.Test
 class PartnerRegistrationValidatorTest {
 
     private val region = Region("x", "X")
-    private val full = PartnerInfoForm("Erafone", "Jl. Satrio 1", region, region, region, region, "001", "002")
+    private val full = PartnerInfoForm("Erafone", "Jl. Satrio 1", region, region, region, region, "001", "002", "AMR6148")
 
     @Test
     fun partnerInfoRules() {
-        assertEquals(RegField.entries.take(8).toSet(), PartnerRegistrationValidator.partnerInfo(PartnerInfoForm()).keys)
+        assertEquals(RegField.entries.take(9).toSet(), PartnerRegistrationValidator.partnerInfo(PartnerInfoForm()).keys)
         assertTrue(PartnerRegistrationValidator.partnerInfo(full).isEmpty())
         assertEquals(FieldError(R.string.reg_err_min, 3), PartnerRegistrationValidator.partnerInfo(full.copy(name = "Ab"))[RegField.PartnerName])
         assertEquals(FieldError(R.string.reg_err_min, 5), PartnerRegistrationValidator.partnerInfo(full.copy(address = "Jl 1"))[RegField.Address])
         assertEquals(FieldError(R.string.reg_err_digits3), PartnerRegistrationValidator.partnerInfo(full.copy(rt = "1"))[RegField.Rt])
         assertEquals(FieldError(R.string.reg_required), PartnerRegistrationValidator.partnerInfo(full.copy(rw = " "))[RegField.Rw])
+        // Kode Referral (revision 2026-10-08): required, letters and digits only, max. 20 after trimming.
+        assertEquals(FieldError(R.string.reg_required), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "  "))[RegField.ReferralCode])
+        assertEquals(FieldError(R.string.reg_err_format), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "AMR-61"))[RegField.ReferralCode])
+        assertEquals(FieldError(R.string.reg_err_format), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "AMR 61"))[RegField.ReferralCode])
+        assertEquals(FieldError(R.string.reg_err_max, 20), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "A".repeat(21)))[RegField.ReferralCode])
+        assertTrue(PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = " ab12CD34ef56GH78ij90 ")).isEmpty())
     }
 
     @Test

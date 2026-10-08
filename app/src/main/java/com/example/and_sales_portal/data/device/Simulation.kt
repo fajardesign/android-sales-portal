@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** Where the location step puts the user (prototype; production always uses the device GPS). */
 enum class LocationMode {
-    /** At the scheduled toko (attendance: the work area). Default, so the prototype works away from the toko. */
+    /** At the toko (attendance: the area office). Default, so the prototype works away from the toko. */
     AT_STORE,
     /** Real device location (fused location provider). */
     DEVICE,
-    /** About 150 m from the toko: check-in is refused (PRD D3 radius 50 m). */
+    /** About 9 km away: outside the 3 km radius of every office and toko, so check in is refused. */
     OUT_OF_RADIUS,
 }
 
@@ -23,7 +23,6 @@ data class Simulation(
     val location: LocationMode = LocationMode.AT_STORE,
     val mockLocation: Boolean = false,
     val offline: Boolean = false,
-    val livenessFails: Boolean = false,
 )
 
 class SimulationSettings(context: Context) {
@@ -40,7 +39,6 @@ class SimulationSettings(context: Context) {
             .putString(KEY_LOCATION, s.location.name)
             .putBoolean(KEY_MOCK, s.mockLocation)
             .putBoolean(KEY_OFFLINE, s.offline)
-            .putBoolean(KEY_LIVENESS, s.livenessFails)
             .apply()
         _state.value = s
     }
@@ -49,13 +47,11 @@ class SimulationSettings(context: Context) {
         location = prefs.getString(KEY_LOCATION, null)?.let { runCatching { LocationMode.valueOf(it) }.getOrNull() } ?: LocationMode.AT_STORE,
         mockLocation = prefs.getBoolean(KEY_MOCK, false),
         offline = prefs.getBoolean(KEY_OFFLINE, false),
-        livenessFails = prefs.getBoolean(KEY_LIVENESS, false),
     )
 
     private companion object {
         const val KEY_LOCATION = "location"
         const val KEY_MOCK = "mock_location"
         const val KEY_OFFLINE = "offline"
-        const val KEY_LIVENESS = "liveness_fails"
     }
 }

@@ -26,30 +26,43 @@ import com.example.and_sales_portal.ui.common.WithToast
 import androidx.fragment.app.Fragment
 
 /**
- * Spec: ATT-03 Jadwal Kunjungan hari ini. [VisitsTabFragment] is the SA/SR tab; [MyVisitsFragment] is TL Aktivitas ›
- * Kunjungan Saya (with back).
+ * Spec: ATT-03 Kunjungan. [VisitsTabFragment] is the SA/SR tab; [MyVisitsFragment] is TL Aktivitas › Kunjungan Saya (with
+ * back).
  */
 abstract class VisitListFragment(private val asTab: Boolean) : ComposeFragment() {
     @Composable
     override fun ScreenContent() {
         val repo = activityRepo
         val data by repo.data.collectAsState()
+        val partners by container.partners.partners.collectAsState()
         val online by container.connectivity.online.collectAsState()
         val (incoming, clearIncoming) = incomingToast()
         var synced by remember { mutableStateOf<String?>(null) }
         val syncedMessage = SyncPending(repo, online)
         LaunchedEffect(syncedMessage) { if (syncedMessage != null) synced = syncedMessage }
-        LaunchedEffect(Unit) { repo.ensurePlanned() }
         val today = repo.today()
-        val items = remember(data) { repo.visitsOn(today).mapNotNull { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId), today) } }
+        val state = remember(data, partners, online) {
+            val stores = repo.stores().mapNotNull { st -> repo.partnerOf(st.id)?.let { it to st } }
+            val visits = repo.visitsOn(today).mapNotNull { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) }
+            VisitListUiState(
+                date = Fmt.longDate(today),
+                week = repo.visitWeek(today),
+                visitedToday = visits.isNotEmpty(),
+                dayOff = repo.isDayOff(today),
+                stores = stores,
+                visits = visits,
+                online = online,
+                block = stores.firstOrNull()?.let { repo.checkInBlock(it.second.id) },
+            )
+        }
         WithToast(incoming ?: synced, { clearIncoming(); synced = null }) {
             VisitListScreen(
                 title = stringResource(if (asTab) R.string.vis_title else R.string.vis_title_own),
-                date = Fmt.longDate(today),
-                items = items,
-                online = online,
+                s = state,
                 onBack = if (asTab) null else ::back,
                 onOpen = { navigate(R.id.visit_detail, VisitDetailFragment.args(it.visit.id)) },
+                onCheckIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CHECK_IN, storeId = it.id)) },
+                onWorkCheckIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CLOCK_IN)) },
             )
         }
     }
@@ -71,7 +84,7 @@ class VisitDetailFragment : ComposeFragment() {
         val syncedMessage = SyncPending(repo, online)
         var synced by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(syncedMessage) { if (syncedMessage != null) synced = syncedMessage }
-        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId), repo.today()) } }
+        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) } }
         if (item == null) {
             LaunchedEffect(Unit) { back() }
             return
@@ -79,14 +92,10 @@ class VisitDetailFragment : ComposeFragment() {
         WithToast(incoming ?: synced, { clearIncoming(); synced = null }) {
             VisitDetailScreen(
                 item,
-                online,
                 now = { repo.now().toEpochMilli() },
                 onBack = ::back,
                 onOpenMaps = { lat, lng -> openMaps(lat, lng) },
-                onCheckIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CHECK_IN, visitId)) },
                 onCheckOut = { navigate(R.id.visit_checkout, args(visitId)) },
-                workCheckedIn = repo.attendanceOf(repo.today())?.clockIn != null,
-                onWorkCheckIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CLOCK_IN)) },
             )
         }
     }
@@ -108,7 +117,7 @@ class VisitCheckOutFragment : ComposeFragment() {
         val online by container.connectivity.online.collectAsState()
         var note by rememberSaveable { mutableStateOf("") }
         var confirm by remember { mutableStateOf(false) }
-        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId), repo.today()) } }
+        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) } }
         val checkIn = item?.visit?.checkIn
         if (item == null || checkIn == null) {
             LaunchedEffect(Unit) { back() }
