@@ -85,7 +85,7 @@ fun SalesHomeScreen(
             s.visits.forEach { v ->
                 AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onVisit(v) }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                        Text(stringResource(R.string.vis_planned, v.visit.plannedTime), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
+                        Text(stringResource(R.string.vis_planned, Fmt.withZone(v.visit.plannedTime)), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                         Text(v.store.name, Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm, maxLines = 1)
                         VisitStatusBadge(v.status)
                     }

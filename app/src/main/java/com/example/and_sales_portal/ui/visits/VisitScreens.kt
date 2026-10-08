@@ -94,7 +94,7 @@ fun VisitListScreen(title: String, date: String, items: List<VisitItem>, online:
         items.forEach { item ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onOpen(item) }) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.vis_planned, item.visit.plannedTime), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
+                    Text(stringResource(R.string.vis_planned, Fmt.withZone(item.visit.plannedTime)), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                     Text(item.store.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
@@ -109,21 +109,39 @@ fun VisitListScreen(title: String, date: String, items: List<VisitItem>, online:
 
 /**
  * Spec: ATT-04 Detail Kunjungan (PRD v3 D3): toko, partner, planned time and status; "Check-In Sekarang" before the
- * visit, the running timer during it, the summary after it.
+ * visit (only after today's check in kerja, SOP decision 2026-10-08), the running timer during it, the summary after it.
  */
 @Composable
-fun VisitDetailScreen(item: VisitItem, online: Boolean, now: () -> Long, onBack: () -> Unit, onOpenMaps: (Double, Double) -> Unit, onCheckIn: () -> Unit, onCheckOut: () -> Unit) {
+fun VisitDetailScreen(
+    item: VisitItem,
+    online: Boolean,
+    now: () -> Long,
+    onBack: () -> Unit,
+    onOpenMaps: (Double, Double) -> Unit,
+    onCheckIn: () -> Unit,
+    onCheckOut: () -> Unit,
+    workCheckedIn: Boolean = true,
+    onWorkCheckIn: () -> Unit = {},
+) {
     val c = AmarTheme.colors
     val v = item.visit
     val action: (@Composable () -> Unit)? = when (item.status) {
-        VisitStatus.NOT_STARTED -> { { PersistentAction(stringResource(R.string.vis_check_in_now), onCheckIn, enabled = online) } }
+        VisitStatus.NOT_STARTED -> { { PersistentAction(stringResource(R.string.vis_check_in_now), onCheckIn, enabled = online && workCheckedIn) } }
         VisitStatus.ONGOING -> { { PersistentAction(stringResource(R.string.vis_check_out), onCheckOut) } }
         else -> null
     }
     ScreenScaffold(stringResource(R.string.vis_detail_title), onBack, action = action) {
         when (item.status) {
-            VisitStatus.NOT_STARTED -> if (!online) AmarInfoBox(stringResource(R.string.vis_offline_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
-            VisitStatus.MISSED -> AmarInfoBox(stringResource(R.string.vis_missed_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Error)
+            VisitStatus.NOT_STARTED -> when {
+                !online -> AmarInfoBox(stringResource(R.string.vis_offline_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
+                // Decision 2026-10-08 (SOP): check in kerja first, then the visit check-in at the toko.
+                !workCheckedIn -> AmarInfoBox(
+                    stringResource(R.string.vis_need_work_check_in), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning,
+                    buttonLabel = stringResource(R.string.att_clock_in), onButtonClick = onWorkCheckIn,
+                )
+                else -> Unit
+            }
+            VisitStatus.MISSED -> AmarInfoBox(stringResource(R.string.vis_missed_info, ActivityRules.ZONE_LABEL), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Error)
             VisitStatus.CANCELLED -> AmarInfoBox(v.cancelReason ?: stringResource(R.string.vis_cancelled_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
             else -> Unit
         }
@@ -139,15 +157,15 @@ fun VisitDetailScreen(item: VisitItem, online: Boolean, now: () -> Long, onBack:
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
                 Text(stringResource(R.string.vis_ongoing_duration), color = c.content.secondary, style = AmarTheme.typography.captionSm)
                 Text(Fmt.clock(elapsed), color = c.content.primary, style = AmarTheme.typography.headingLg)
-                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.time(checkIn.at)))
+                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(checkIn.at)))
             }
         }
         val checkOut = v.checkOut
         if (item.status == VisitStatus.DONE && checkIn != null && checkOut != null) {
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
                 SectionTitle(stringResource(R.string.vis_summary))
-                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.time(checkIn.at)))
-                InfoRow(stringResource(R.string.vis_check_out_at), stringResource(R.string.att_time, Fmt.time(checkOut.at)))
+                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(checkIn.at)))
+                InfoRow(stringResource(R.string.vis_check_out_at), stringResource(R.string.att_time, Fmt.timeLabel(checkOut.at)))
                 InfoRow(stringResource(R.string.vis_duration), duration(checkOut.at - checkIn.at))
                 v.note?.let { InfoRow(stringResource(R.string.vis_note), it) }
             }
@@ -157,7 +175,7 @@ fun VisitDetailScreen(item: VisitItem, online: Boolean, now: () -> Long, onBack:
             Badges(item)
             InfoRow(stringResource(R.string.vis_partner), item.partner.name)
             InfoRow(stringResource(R.string.vis_store_code), item.store.code ?: "-")
-            InfoRow(stringResource(R.string.vis_planned_time), stringResource(R.string.vis_planned, v.plannedTime))
+            InfoRow(stringResource(R.string.vis_planned_time), stringResource(R.string.vis_planned, Fmt.withZone(v.plannedTime)))
             InfoRow(stringResource(R.string.vis_pic), "${item.partner.picName} · +62 ${item.partner.picPhone}")
             Text(item.store.address, color = c.content.secondary, style = AmarTheme.typography.bodySm)
             MapPreview(item.store.lat, item.store.lng, { onOpenMaps(item.store.lat, item.store.lng) })
@@ -181,7 +199,7 @@ fun VisitCheckOutScreen(item: VisitItem, note: String, online: Boolean, now: Lon
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
             Text(item.store.name, color = c.content.primary, style = AmarTheme.typography.headingSm)
             item.visit.checkIn?.let {
-                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.time(it.at)))
+                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(it.at)))
                 InfoRow(stringResource(R.string.vis_duration), duration(now - it.at))
             }
         }

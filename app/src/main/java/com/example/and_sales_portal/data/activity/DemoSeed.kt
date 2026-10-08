@@ -10,7 +10,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 /**
- * Initial sample data, mirroring the web portal sample (`admin-sales-portal/src/api/db.js`): attendance (Monday–Saturday, clock in 07:25–07:59 on time, 08:01–08:59 late) and the
+ * Initial sample data, mirroring the web portal sample (`admin-sales-portal/src/api/db.js`): attendance (Monday–Saturday, check in kerja 09:25–09:59 on time, 10:01–10:59 late, local time of the area) and the
  * TL's visit plans (SA: its toko at 10:00; SR: up to 3 toko at 10:00, 13:00, 16:00; TL: one own toko at 14:00).
  */
 object DemoSeed {
@@ -59,15 +59,15 @@ object DemoSeed {
             val absent = r < 0.05
             if (!absent && area != null) {
                 val late = r < 0.2
-                val inAt = d.atTime(if (late) LocalTime.of(8, 1 + rnd.nextInt(59)) else LocalTime.of(7, 25 + rnd.nextInt(35)))
-                val outAt = d.atTime(LocalTime.of(17 + rnd.nextInt(2), rnd.nextInt(60)))
+                val inAt = d.atTime(if (late) LocalTime.of(10, 1 + rnd.nextInt(59)) else LocalTime.of(9, 25 + rnd.nextInt(35)))
+                val outAt = d.atTime(LocalTime.of(18 + rnd.nextInt(2), rnd.nextInt(60)))
                 val lat = round6(area.lat + (rnd.nextDouble() - 0.5) * 0.03)
                 val lng = round6(area.lng + (rnd.nextDouble() - 0.5) * 0.03)
                 attendance += Attendance(
                     employeeId = userId,
                     date = d.toString(),
-                    clockIn = Punch(inAt.atZone(ActivityRules.ZONE).toInstant().toEpochMilli(), lat, lng),
-                    clockOut = Punch(outAt.atZone(ActivityRules.ZONE).toInstant().toEpochMilli(), lat, lng),
+                    clockIn = Punch(inAt.atZone(ActivityRules.zoneOf(userId)).toInstant().toEpochMilli(), lat, lng),
+                    clockOut = Punch(outAt.atZone(ActivityRules.zoneOf(userId)).toInstant().toEpochMilli(), lat, lng),
                 )
             }
             visits += dayVisits.map { v ->

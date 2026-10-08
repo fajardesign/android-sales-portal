@@ -13,15 +13,22 @@ import java.time.LocalTime
 class ActivityRulesTest {
 
     private val today = LocalDate.of(2026, 10, 7)
-    private fun at(time: String, date: LocalDate = today) = date.atTime(LocalTime.parse(time)).atZone(ActivityRules.ZONE).toInstant().toEpochMilli()
+    /** Local time of employee 11 (Makassar, WITA). */
+    private fun at(time: String, date: LocalDate = today) = date.atTime(LocalTime.parse(time)).atZone(ActivityRules.zoneOf(11)).toInstant().toEpochMilli()
     private fun punch(time: String) = Punch(at(time), 0.0, 0.0)
 
     @Test
     fun attendanceStatus() {
-        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("08:00")), today, today))
-        assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("08:01")), today, today))
+        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:00")), today, today))
+        assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:01")), today, today))
         assertEquals(AttendanceStatus.NOT_YET, ActivityRules.attendanceStatus(null, today, today))
         assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(null, today.minusDays(1), today))
+        // Local time decides: 10:00 WIB is 11:00 WITA in Makassar, so late.
+        val wib = today.atTime(LocalTime.of(10, 0)).atZone(java.time.ZoneId.of("Asia/Jakarta")).toInstant().toEpochMilli()
+        assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(wib, 0.0, 0.0)), today, today))
+        assertEquals("WITA", com.example.and_sales_portal.data.demo.DemoDirectory.area(1)?.zoneLabel)
+        assertEquals("10:00", ActivityRules.PLAN_TIMES.first())
+        assertEquals("23:30", ActivityRules.PLAN_TIMES.last())
         assertEquals(AttendanceStatus.DAY_OFF, ActivityRules.attendanceStatus(null, today.minusDays(1), today, dayOff = true))
     }
 

@@ -1,5 +1,6 @@
 package com.example.and_sales_portal.ui.attendance
 
+import com.example.and_sales_portal.data.activity.ActivityRules
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -100,7 +101,7 @@ private fun RowScope.TimeTile(label: String, millis: Long?, background: Color) {
     ) {
         Text(label, color = c.content.secondary, style = AmarTheme.typography.captionSm)
         Text(
-            millis?.let { stringResource(R.string.att_time, Fmt.time(it)) } ?: stringResource(R.string.att_time_empty),
+            millis?.let { stringResource(R.string.att_time, Fmt.timeLabel(it)) } ?: stringResource(R.string.att_time_empty, ActivityRules.ZONE_LABEL),
             color = c.content.primary,
             style = AmarTheme.typography.headingMd,
         )

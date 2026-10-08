@@ -225,7 +225,7 @@ class ScheduleFragment : ComposeFragment() {
         }
         when (val p = pending) {
             is Pending.Cancel -> ConfirmDialog(
-                stringResource(R.string.sch_cancel_confirm_title), stringResource(R.string.sch_cancel_confirm, p.store, p.time), stringResource(R.string.sch_cancel),
+                stringResource(R.string.sch_cancel_confirm_title), stringResource(R.string.sch_cancel_confirm, p.store, Fmt.withZone(p.time)), stringResource(R.string.sch_cancel),
                 onConfirm = {
                     pending = null
                     repo.cancelVisit(p.visitId, getString(R.string.sch_cancel_reason))
@@ -295,7 +295,7 @@ class VisitPlanFormFragment : ComposeFragment() {
                 val t = time
                 if (s != null && t != null) {
                     error = if (visitId != null) repo.editVisit(visitId, s, t) else repo.addVisit(employeeId, date, s, t, tl.user.id)
-                    if (error == null) backWithToast(getString(R.string.sch_saved, stores.first { it.id == s }.name, t))
+                    if (error == null) backWithToast(getString(R.string.sch_saved, stores.first { it.id == s }.name, Fmt.withZone(t)))
                 }
             },
         )

@@ -42,7 +42,7 @@ class OperationsRepository(
     fun isDayOff(employeeId: Long, date: LocalDate) = OpsData.key(employeeId, date) in _data.value.daysOff
 
     fun attendanceStatus(employeeId: Long, date: LocalDate): AttendanceStatus =
-        ActivityRules.attendanceStatus(attendanceOf(employeeId, date), date, today(), isDayOff(employeeId, date))
+        ActivityRules.attendanceStatus(attendanceOf(employeeId, date), date, today(), isDayOff(employeeId, date), ActivityRules.zoneOf(employeeId))
 
     fun visit(id: String): Visit? = _data.value.visits.firstOrNull { it.id == id }
 
@@ -111,7 +111,7 @@ class OperationsRepository(
     fun planError(employeeId: Long, date: LocalDate, storeId: String, time: String, editing: String? = null): PlanError? {
         val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return PlanError.StoreNotAssigned
         val sameDay = visitsOf(employeeId, date).filter { it.id != editing && it.state != VisitState.CANCELLED }
-        val nowTime = clock().atZone(ActivityRules.ZONE).toLocalTime()
+        val nowTime = clock().atZone(ActivityRules.zoneOf(employeeId)).toLocalTime()
         return when {
             editing != null && visit(editing)?.state != VisitState.SCHEDULED -> PlanError.AlreadyStarted
             date.isBefore(today()) || (date == today() && LocalTime.parse(time).isBefore(nowTime)) -> PlanError.PastDate

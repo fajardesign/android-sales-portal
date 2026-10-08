@@ -85,6 +85,8 @@ class VisitDetailFragment : ComposeFragment() {
                 onOpenMaps = { lat, lng -> openMaps(lat, lng) },
                 onCheckIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CHECK_IN, visitId)) },
                 onCheckOut = { navigate(R.id.visit_checkout, args(visitId)) },
+                workCheckedIn = repo.attendanceOf(repo.today())?.clockIn != null,
+                onWorkCheckIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CLOCK_IN)) },
             )
         }
     }

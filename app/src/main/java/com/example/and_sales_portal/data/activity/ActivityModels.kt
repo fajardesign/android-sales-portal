@@ -1,5 +1,6 @@
 package com.example.and_sales_portal.data.activity
 
+import com.example.and_sales_portal.data.demo.DemoDirectory
 import kotlinx.serialization.Serializable
 import java.time.DayOfWeek
 import java.time.Duration
@@ -81,13 +82,31 @@ enum class VisitStatus { NOT_STARTED, ONGOING, DONE, MISSED, CANCELLED }
 enum class VisitOutcome { ON_TIME, LATE }
 
 /**
- * Time rules. Work time and zone follow the PRD (WIB, "23:59 WIB"); the clock-in limit (08:00) is the web portal
- * sample's rule (`admin-sales-portal/src/api/db.js`): the PRD does not define it yet.
+ * Time rules. Decisions 2026-10-08 (prototype report): check in kerja is on time up to 10:00 **local time** of the
+ * person's area (Makassar WITA, Jabodetabek WIB, …); visit times start at 10:00 every 30 minutes with no end limit.
  */
 object ActivityRules {
-    val ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
-    /** TODO: confirm with the business; not in the PRD. */
-    val CLOCK_IN_LIMIT: LocalTime = LocalTime.of(8, 0)
+    /** Display zone: the signed-in user's area (set when the session starts); WIB until then. */
+    @Volatile
+    var ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
+        private set
+
+    /** "WIB", "WITA" or "WIT" of [ZONE]. */
+    @Volatile
+    var ZONE_LABEL: String = "WIB"
+        private set
+
+    fun useArea(areaId: Int?) {
+        val area = areaId?.let { DemoDirectory.area(it) } ?: return
+        ZONE = area.zone
+        ZONE_LABEL = area.zoneLabel
+    }
+
+    /** Local zone of a person's area. */
+    fun zoneOf(employeeId: Long): ZoneId = DemoDirectory.person(employeeId)?.let { DemoDirectory.area(it.areaId) }?.zone ?: ZONE
+
+    /** Check in kerja on time up to 10:00 local time (decision 2026-10-08). */
+    val CLOCK_IN_LIMIT: LocalTime = LocalTime.of(10, 0)
     /** PRD C7: on time when the check-in is at most 15 minutes after the planned time. */
     val VISIT_TOLERANCE: Duration = Duration.ofMinutes(15)
     /** PRD D3: GPS must match the toko within 50 m. */
@@ -95,23 +114,23 @@ object ActivityRules {
     /** PRD C7: up to 3 visits per day. */
     const val MAX_VISITS_PER_DAY = 3
 
-    /** Times offered when planning a visit (not in the PRD: 30-minute steps of the working day). */
-    val PLAN_TIMES: List<String> = (7 * 2..19 * 2).map { "%02d:%02d".format(it / 2, it % 2 * 30) }
+    /** Times offered when planning a visit: from 10:00 every 30 minutes, no end limit (decision 2026-10-08). */
+    val PLAN_TIMES: List<String> = (10 * 2 until 24 * 2).map { "%02d:%02d".format(it / 2, it % 2 * 30) }
 
     /** Monday to Saturday (same as the web portal sample). */
     fun isWorkday(date: LocalDate) = date.dayOfWeek != DayOfWeek.SUNDAY
 
-    fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate, dayOff: Boolean = false): AttendanceStatus {
+    fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate, dayOff: Boolean = false, zone: ZoneId = a?.let { zoneOf(it.employeeId) } ?: ZONE): AttendanceStatus {
         val inAt = a?.clockIn?.at
         return when {
             inAt == null && dayOff -> AttendanceStatus.DAY_OFF
-            inAt != null -> if (Instant.ofEpochMilli(inAt).atZone(ZONE).toLocalTime() <= CLOCK_IN_LIMIT) AttendanceStatus.ON_TIME else AttendanceStatus.LATE
+            inAt != null -> if (Instant.ofEpochMilli(inAt).atZone(zone).toLocalTime() <= CLOCK_IN_LIMIT) AttendanceStatus.ON_TIME else AttendanceStatus.LATE
             date < today -> AttendanceStatus.ABSENT
             else -> AttendanceStatus.NOT_YET
         }
     }
 
-    fun plannedAt(v: Visit) = LocalDate.parse(v.date).atTime(LocalTime.parse(v.plannedTime)).atZone(ZONE).toInstant()
+    fun plannedAt(v: Visit) = LocalDate.parse(v.date).atTime(LocalTime.parse(v.plannedTime)).atZone(zoneOf(v.employeeId)).toInstant()
 
     fun visitStatus(v: Visit, today: LocalDate): VisitStatus = when (v.state) {
         VisitState.CANCELLED -> VisitStatus.CANCELLED

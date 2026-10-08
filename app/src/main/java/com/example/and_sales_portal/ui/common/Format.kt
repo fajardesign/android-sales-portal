@@ -6,7 +6,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Dates and times in Indonesian, WIB (PRD v3). */
+/** Dates and times in Indonesian, in the local zone of the signed-in user's area (WIB, WITA). */
 object Fmt {
     private val id = Locale("id", "ID")
     private val time = DateTimeFormatter.ofPattern("HH:mm", id)
@@ -14,6 +14,12 @@ object Fmt {
     private val shortDate = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", id)
 
     fun time(millis: Long): String = time.format(Instant.ofEpochMilli(millis).atZone(ActivityRules.ZONE))
+
+    /** "08:30 WITA": time with the zone of the signed-in user's area. */
+    fun timeLabel(millis: Long): String = "${time(millis)} ${ActivityRules.ZONE_LABEL}"
+
+    /** "10:00 WIB" for a planned time. */
+    fun withZone(hhmm: String): String = "$hhmm ${ActivityRules.ZONE_LABEL}"
     fun longDate(date: LocalDate): String = longDate.format(date)
     fun shortDate(date: LocalDate): String = shortDate.format(date)
 

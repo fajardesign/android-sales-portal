@@ -1,5 +1,7 @@
 package com.example.and_sales_portal.data.demo
 
+import java.time.ZoneId
+
 /**
  * Areas and people of the prototype, identical to the web portal sample data
  * (`admin-sales-portal/src/lib/constants.js` AREAS, `src/api/db.js` users) so both apps show the same organisation.
@@ -7,7 +9,23 @@ package com.example.and_sales_portal.data.demo
  */
 object DemoDirectory {
 
-    data class Area(val id: Int, val code: String, val name: String, val province: String, val city: String, val district: String, val village: String, val lat: Double, val lng: Double)
+    data class Area(
+        val id: Int,
+        val code: String,
+        val name: String,
+        val province: String,
+        val city: String,
+        val district: String,
+        val village: String,
+        val lat: Double,
+        val lng: Double,
+        /** Local time of the area (decision 2026-10-08: work hours follow local time, e.g. Makassar WITA). */
+        val zoneId: String = "Asia/Jakarta",
+    ) {
+        val zone: ZoneId get() = ZoneId.of(zoneId)
+        /** WIB / WITA / WIT. */
+        val zoneLabel: String get() = when (zoneId) { "Asia/Makassar" -> "WITA"; "Asia/Jayapura" -> "WIT"; else -> "WIB" }
+    }
 
     data class Person(
         val id: Long,
@@ -29,12 +47,12 @@ object DemoDirectory {
     }
 
     val areas = listOf(
-        Area(1, "MKS", "Makassar", "Sulawesi Selatan", "Kota Makassar", "Panakkukang", "Pandang", -5.1477, 119.4327),
+        Area(1, "MKS", "Makassar", "Sulawesi Selatan", "Kota Makassar", "Panakkukang", "Pandang", -5.1477, 119.4327, "Asia/Makassar"),
         Area(2, "BDG", "Bandung", "Jawa Barat", "Kota Bandung", "Coblong", "Dago", -6.8915, 107.6107),
         Area(3, "MDN", "Medan", "Sumatera Utara", "Kota Medan", "Medan Petisah", "Sei Sikambing D", 3.5952, 98.6722),
         Area(4, "SBY", "Surabaya", "Jawa Timur", "Kota Surabaya", "Tegalsari", "Kedungdoro", -7.2575, 112.7521),
         Area(5, "JKT", "Jakarta", "DKI Jakarta", "Kota Jakarta Barat", "Grogol Petamburan", "Tanjung Duren Selatan", -6.1767, 106.7905),
-        Area(6, "DPS", "Denpasar", "Bali", "Kota Denpasar", "Denpasar Barat", "Dauh Puri", -8.6705, 115.2126),
+        Area(6, "DPS", "Denpasar", "Bali", "Kota Denpasar", "Denpasar Barat", "Dauh Puri", -8.6705, 115.2126, "Asia/Makassar"),
         Area(7, "PLG", "Palembang", "Sumatera Selatan", "Kota Palembang", "Ilir Timur I", "Sungai Pangeran", -2.9761, 104.7754),
     )
 

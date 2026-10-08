@@ -66,7 +66,7 @@ class AttendanceFragment : ComposeFragment() {
 
         fun attendanceState(repo: ActivityRepository, online: Boolean): AttendanceUiState {
             val today = repo.today()
-            fun day(d: LocalDate) = repo.attendanceOf(d).let { AttendanceDay(d, it, ActivityRules.attendanceStatus(it, d, today, repo.isDayOff(d))) }
+            fun day(d: LocalDate) = repo.attendanceOf(d).let { AttendanceDay(d, it, ActivityRules.attendanceStatus(it, d, today, repo.isDayOff(d), ActivityRules.zoneOf(repo.userId))) }
             val history = (1..HISTORY_DAYS).map { today.minusDays(it) }.filter(ActivityRules::isWorkday).map(::day)
             return AttendanceUiState(day(today), history, online)
         }
@@ -144,7 +144,7 @@ class CaptureFragment : ComposeFragment() {
             CaptureMode.CLOCK_OUT -> R.string.att_clock_out_done
             CaptureMode.CHECK_IN -> R.string.vis_check_in_done
         }
-        LaunchedEffect(finished) { finished?.let { backWithToast(getString(doneMessage, Fmt.time(it))) } }
+        LaunchedEffect(finished) { finished?.let { backWithToast(getString(doneMessage, Fmt.timeLabel(it))) } }
         LaunchedEffect(state.verified) { if (state.verified && state.found == null && !state.locating && state.sheet == null) startLocation() }
         CaptureScreen(
             state,

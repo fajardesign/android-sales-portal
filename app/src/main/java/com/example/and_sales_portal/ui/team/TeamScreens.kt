@@ -287,7 +287,7 @@ fun ScheduleScreen(
 private fun PlannedVisitCard(v: VisitItem, editable: Boolean, onEdit: () -> Unit, onCancel: () -> Unit) {
     val c = AmarTheme.colors
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
-        Text(stringResource(R.string.vis_planned, v.visit.plannedTime), color = c.content.primary, style = AmarTheme.typography.headingSm)
+        Text(stringResource(R.string.vis_planned, Fmt.withZone(v.visit.plannedTime)), color = c.content.primary, style = AmarTheme.typography.headingSm)
         Text(v.store.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
         Text(v.partner.name, color = c.content.secondary, style = AmarTheme.typography.bodySm)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
@@ -346,7 +346,7 @@ fun VisitPlanFormScreen(
             onSelect = onTime,
             sheetTitle = stringResource(R.string.sch_form_time_sheet),
             modifier = Modifier.fillMaxWidth(),
-            optionLabel = { res.getString(R.string.sch_time_option, it) },
+            optionLabel = { res.getString(R.string.sch_time_option, Fmt.withZone(it)) },
             label = stringResource(R.string.sch_form_time),
             required = true,
             placeholder = stringResource(R.string.sch_form_time_placeholder),

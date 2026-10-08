@@ -2,6 +2,7 @@ package com.example.and_sales_portal
 
 import android.app.Application
 import com.example.and_sales_portal.data.activity.ActivityRepository
+import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.OperationsRepository
 import com.example.and_sales_portal.data.auth.AuthRepository
 import com.example.and_sales_portal.data.auth.SalesSession
@@ -56,6 +57,7 @@ class AppContainer(app: Application) {
     /** Attendance and visits of the signed-in user (one repository per account, rebuilt when the account changes). */
     fun activity(session: SalesSession): ActivityRepository {
         val user = session.user
+        ActivityRules.useArea(user.areaIds.firstOrNull())
         activityRepo?.takeIf { it.userId == user.id }?.let { return it }
         return ActivityRepository(operations, partners, user.id, session.role).also { activityRepo = it }
     }

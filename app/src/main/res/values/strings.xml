@@ -59,19 +59,19 @@
     <string name="reg_entity_individual">Individu</string>
     <string name="reg_channel">Channel</string>
     <string name="reg_channel_store">Store</string>
-    <string name="reg_channel_non_store">Non-store</string>
+    <string name="reg_channel_non_store">Non-Store</string>
     <string name="reg_store_type">Tipe Toko</string>
     <string name="reg_store_type_online">Online</string>
     <string name="reg_store_type_offline">Offline</string>
     <string name="reg_store_scale">Skala Toko</string>
     <string name="reg_store_scale_modern">Modern</string>
-    <string name="reg_store_scale_traditional">Traditional</string>
+    <string name="reg_store_scale_traditional">Tradisional</string>
     <string name="reg_product_sold">Produk Dijual</string>
-    <string name="reg_product_sold_new">Brand New</string>
-    <string name="reg_product_sold_used">Used</string>
-    <string name="reg_product_sold_blended">Blended</string>
+    <string name="reg_product_sold_new">Baru</string>
+    <string name="reg_product_sold_used">Bekas</string>
+    <string name="reg_product_sold_blended">Campuran</string>
     <string name="reg_store_location">Lokasi Toko</string>
-    <string name="reg_store_location_separate">Separate</string>
+    <string name="reg_store_location_separate">Terpisah</string>
     <string name="reg_store_location_street">Pinggir Jalan</string>
     <string name="reg_store_location_mall">Mall</string>
     <string name="reg_product_type">Jenis Produk</string>
@@ -189,10 +189,10 @@
 
     <!-- Absensi (ATT-01, ATT-02; PRD v3 D2, C8). Card from Figma "01 | Team Leader Dashboard". -->
     <string name="att_title">Absensi</string>
-    <string name="att_clock_in">Clock In</string>
-    <string name="att_clock_out">Clock Out</string>
-    <string name="att_time_empty">--:-- WIB</string>
-    <string name="att_time">%1$s WIB</string>
+    <string name="att_clock_in">Check In Kerja</string>
+    <string name="att_clock_out">Check Out Kerja</string>
+    <string name="att_time_empty">--:-- %1$s</string>
+    <string name="att_time">%1$s</string>
     <string name="att_status_not_yet">Belum Absen</string>
     <string name="att_status_on_time">Tepat Waktu</string>
     <string name="att_status_late">Terlambat</string>
@@ -202,15 +202,15 @@
     <string name="att_see_history">Lihat riwayat</string>
     <string name="att_history">Riwayat absensi</string>
     <string name="att_history_row">Masuk %1$s · Pulang %2$s</string>
-    <string name="att_offline">Anda sedang offline. Clock in dan clock out membutuhkan koneksi internet.</string>
-    <string name="att_clock_in_done">Clock in berhasil pukul %1$s WIB.</string>
-    <string name="att_clock_out_done">Clock out berhasil pukul %1$s WIB.</string>
+    <string name="att_offline">Anda sedang offline. Check in dan check out kerja membutuhkan koneksi internet.</string>
+    <string name="att_clock_in_done">Check in kerja berhasil pukul %1$s.</string>
+    <string name="att_clock_out_done">Check out kerja berhasil pukul %1$s.</string>
 
-    <!-- Location, selfie and liveness steps (ATT-02 clock in/out, ATT-04 visit check-in). -->
+    <!-- Location, selfie and liveness steps (ATT-02 check in/out kerja, ATT-04 visit check-in). -->
     <string name="cap_step">LANGKAH %1$d DARI %2$d</string>
     <string name="cap_title_check_in">Check-In Kunjungan</string>
     <string name="cap_location_title">Periksa lokasi Anda</string>
-    <string name="cap_location_desc_attendance">Lokasi dicatat bersama waktu absensi Anda.</string>
+    <string name="cap_location_desc_attendance">Lokasi dicatat bersama waktu check in kerja Anda.</string>
     <string name="cap_location_desc_visit">Anda harus berada dalam radius 50 m dari toko yang dijadwalkan.</string>
     <string name="cap_locating">Mencari lokasi…</string>
     <string name="cap_map">Peta lokasi</string>
@@ -232,8 +232,8 @@
     <string name="cap_selfie">Foto selfie</string>
     <string name="cap_liveness_checking">Memeriksa keaslian wajah…</string>
     <string name="cap_liveness_ok">Wajah terverifikasi</string>
-    <string name="cap_submit_clock_in">Kirim Clock In</string>
-    <string name="cap_submit_clock_out">Kirim Clock Out</string>
+    <string name="cap_submit_clock_in">Kirim Check In</string>
+    <string name="cap_submit_clock_out">Kirim Check Out</string>
     <string name="cap_submit_check_in">Kirim Check-In</string>
     <string name="cap_offline">Anda sedang offline. Sambungkan internet untuk mengirim.</string>
     <string name="cap_biometric_title">Verifikasi identitas</string>
@@ -265,13 +265,14 @@
     <string name="vis_status_cancelled">Dibatalkan</string>
     <string name="vis_outcome_on_time">Tepat Waktu</string>
     <string name="vis_outcome_late">Terlambat</string>
-    <string name="vis_planned">%1$s WIB</string>
+    <string name="vis_planned">%1$s</string>
     <string name="vis_detail_title">Detail Kunjungan</string>
     <string name="vis_partner">Partner</string>
     <string name="vis_store_code">Kode toko</string>
     <string name="vis_planned_time">Waktu rencana</string>
     <string name="vis_pic">PIC</string>
     <string name="vis_check_in_now">Check-In Sekarang</string>
+    <string name="vis_need_work_check_in">Check in kerja dulu sesuai SOP sebelum check-in kunjungan di toko.</string>
     <string name="vis_check_in_at">Check-in</string>
     <string name="vis_check_out_at">Check-out</string>
     <string name="vis_duration">Durasi</string>
@@ -281,7 +282,7 @@
     <string name="vis_offline_check_out">Anda sedang offline. Check-out tetap disimpan dan dikirim otomatis saat online.</string>
     <string name="vis_pending_sync">Menunggu sinkronisasi</string>
     <string name="vis_synced">%1$d check-out berhasil dikirim.</string>
-    <string name="vis_check_in_done">Check-in berhasil pukul %1$s WIB.</string>
+    <string name="vis_check_in_done">Check-in kunjungan berhasil pukul %1$s.</string>
     <string name="vis_check_out_title">Check Out Kunjungan</string>
     <string name="vis_check_out_desc">Waktu check-out dicatat saat Anda menekan tombol di bawah.</string>
     <string name="vis_note_label">Catatan kunjungan</string>
@@ -292,14 +293,14 @@
     <string name="vis_check_out_done">Kunjungan selesai. Durasi %1$s.</string>
     <string name="vis_summary">Ringkasan kunjungan</string>
     <string name="vis_note">Catatan</string>
-    <string name="vis_missed_info">Kunjungan ini terlewat karena tidak ada check-in sampai pukul 23:59 WIB.</string>
+    <string name="vis_missed_info">Kunjungan ini terlewat karena tidak ada check-in sampai pukul 23:59 %1$s.</string>
     <string name="vis_cancelled_info">Kunjungan ini dibatalkan oleh Team Leader.</string>
 
     <!-- TL Aktivitas tab (decision 2026-10-07). -->
     <string name="act_mine">Aktivitas saya</string>
     <string name="act_team">Tim</string>
     <string name="act_reports">Laporan</string>
-    <string name="act_attendance_desc">Clock in, clock out, dan riwayat absensi</string>
+    <string name="act_attendance_desc">Check in, check out kerja, dan riwayat absensi</string>
     <string name="act_visits_desc">Jadwal hari ini dan check-in kunjungan</string>
     <string name="act_schedule">Jadwal Kunjungan</string>
     <string name="act_schedule_desc">Rencana kunjungan SA/SR per minggu</string>
@@ -548,7 +549,7 @@
     <string name="sch_edit">Ubah</string>
     <string name="sch_cancel">Batalkan</string>
     <string name="sch_cancel_confirm_title">Batalkan kunjungan?</string>
-    <string name="sch_cancel_confirm">Kunjungan ke %1$s pukul %2$s WIB dibatalkan.</string>
+    <string name="sch_cancel_confirm">Kunjungan ke %1$s pukul %2$s dibatalkan.</string>
     <string name="sch_cancel_reason">Dibatalkan oleh Team Leader</string>
     <string name="sch_cancel_done">Kunjungan dibatalkan.</string>
     <string name="sch_count">%1$d/3 kunjungan</string>
@@ -565,14 +566,14 @@
     <string name="sch_form_time_placeholder">Pilih waktu</string>
     <string name="sch_form_time_sheet">Pilih Waktu</string>
     <string name="sch_form_save">Simpan Kunjungan</string>
-    <string name="sch_saved">Kunjungan %1$s pukul %2$s WIB disimpan.</string>
+    <string name="sch_saved">Kunjungan %1$s pukul %2$s disimpan.</string>
     <string name="sch_err_past">Tanggal atau waktu sudah lewat</string>
     <string name="sch_err_off">Hari ini ditandai libur</string>
     <string name="sch_err_max">Maksimal 3 kunjungan per hari</string>
     <string name="sch_err_duplicate">Sudah ada kunjungan pada waktu ini</string>
     <string name="sch_err_store">Toko bukan milik partner yang ditugaskan</string>
     <string name="sch_err_started">Kunjungan sudah dimulai dan tidak bisa diubah</string>
-    <string name="sch_time_option">%1$s WIB</string>
+    <string name="sch_time_option">%1$s</string>
 
     <!-- Beranda (TL-06; SLS-01), Kinerja, Pinjaman, Insentif, Produktivitas (TL-07 … TL-10; SLS-02 … SLS-04). -->
     <string name="home_greeting">Halo, %1$s</string>
@@ -666,7 +667,7 @@
     <string name="prod_visits">Kunjungan %1$d/%2$d selesai · terlambat %3$d · terlewat %4$d</string>
     <string name="prod_evidence">Bukti absensi &amp; kunjungan</string>
     <string name="prod_clock_in">Masuk %1$s</string>
-    <string name="prod_no_clock_in">Tidak ada clock in</string>
+    <string name="prod_no_clock_in">Tidak ada check in kerja</string>
     <string name="prod_selfie">Selfie</string>
     <string name="prod_selfie_missing">Selfie tidak tersedia (data contoh)</string>
     <string name="prod_map">Lokasi</string>

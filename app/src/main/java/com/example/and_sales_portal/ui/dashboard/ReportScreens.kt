@@ -199,7 +199,7 @@ fun EvidenceScreen(name: String, period: Period, onPeriod: (Period) -> Unit, day
                     Text(Fmt.shortDate(d.date), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                     AttendanceBadge(d.status)
                 }
-                Text(d.clockIn?.let { stringResource(R.string.prod_clock_in, Fmt.time(it)) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+                Text(d.clockIn?.let { stringResource(R.string.prod_clock_in, Fmt.timeLabel(it)) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
                 if (d.clockIn != null) {
                     Text(if (d.selfie != null) stringResource(R.string.prod_selfie) else stringResource(R.string.prod_selfie_missing), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
                     if (d.lat != null && d.lng != null) AmarButton(stringResource(R.string.prod_map), { onMap(d.lat, d.lng) }, type = AmarButtonType.Naked, size = AmarButtonSize.Small)
