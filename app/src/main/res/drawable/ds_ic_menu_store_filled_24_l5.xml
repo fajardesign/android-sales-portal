@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "menu / store (Filled)" 3371:227 (24x24), layer 5 of 6 (white). Tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:translateX="1"
+        android:translateY="2.0">
+        <path
+            android:pathData="M9.00021 17.0029C9.00021 16.4506 8.5525 16.0029 8.00021 16.0029C7.44793 16.0029 7.00021 16.4506 7.00021 17.0029H8.00021H9.00021ZM7.00021 19.0038V20.0038H9.00021V19.0038H8.00021H7.00021ZM8.00021 17.0029H7.00021V19.0038H8.00021H9.00021V17.0029H8.00021Z"
+            android:fillColor="#FF000000" />
+    </group>
+</vector>

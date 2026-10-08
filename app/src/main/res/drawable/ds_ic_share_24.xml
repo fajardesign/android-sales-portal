@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "share" 1278:5535 (24x24; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M8.553,10.114C9.594,11.156 9.594,12.844 8.553,13.886C7.511,14.927 5.823,14.927 4.781,13.886C3.74,12.844 3.74,11.156 4.781,10.114C5.823,9.073 7.511,9.073 8.553,10.114"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M19.219,4.781C20.26,5.823 20.26,7.511 19.219,8.553C18.177,9.594 16.489,9.594 15.447,8.553C14.406,7.511 14.406,5.823 15.447,4.781C16.489,3.74 18.177,3.74 19.219,4.781"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M19.219,15.447C20.26,16.489 20.26,18.177 19.219,19.219C18.177,20.26 16.489,20.26 15.447,19.219C14.406,18.177 14.406,16.489 15.447,15.447C16.489,14.406 18.177,14.406 19.219,15.447"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M9.04,10.81L14.96,7.85"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M9.04,13.19L14.96,16.15"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+</vector>

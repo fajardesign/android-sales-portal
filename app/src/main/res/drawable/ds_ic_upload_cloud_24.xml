@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "upload_cloud" 1019:1703 (24x24; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M12,19V12"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M9.833,14L12,11.833L14.167,14"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M16,19H18.56C20.488,19 22.06,17.428 22.06,15.5C22.06,13.572 20.488,12 18.56,12H18.125V11C18.125,7.69 15.435,5 12.125,5C9.148,5 6.68,7.178 6.212,10.023C3.835,10.144 1.94,12.093 1.94,14.5C1.94,16.985 3.955,19 6.44,19H8"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+</vector>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "photo" 3372:516 (24x24; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M18,21H6C4.343,21 3,19.657 3,18V6C3,4.343 4.343,3 6,3H18C19.657,3 21,4.343 21,6V18C21,19.657 19.657,21 18,21Z"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:fillType="evenOdd"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M9.987,7.513C10.671,8.196 10.671,9.304 9.987,9.987C9.304,10.671 8.196,10.671 7.513,9.987C6.829,9.304 6.829,8.196 7.513,7.513C8.196,6.829 9.304,6.829 9.987,7.513"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M21,10.109C20.55,10.045 20.093,10 19.625,10C14.309,10 10,14.309 10,19.625C10,20.093 10.045,20.55 10.109,21"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+</vector>

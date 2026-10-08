@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: illustration "decorative_check" 1107:2478 (32x32). Full colour (not tinted). Converted with Svg2Vector; 10 Figma layers recomposed. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+  <path
+      android:pathData="M16,16m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
+      android:fillColor="#EBECEE"/>
+  <path
+      android:pathData="M5.501,30L5.501,2L19.5,2L26.499,9L26.499,30L5.501,30Z"
+      android:fillColor="#CFD8DC"/>
+  <path
+      android:pathData="M5.501,30L5.501,2L19.5,2L26.499,9L26.499,30L5.501,30Z"
+      android:fillColor="#C9CEE2"/>
+  <path
+      android:pathData="M7.251,28.25L7.251,3.75L21.249,3.75L24.749,7.25L24.749,28.25L7.251,28.25Z"
+      android:fillColor="#ffffff"/>
+  <path
+      android:pathData="M19.501,8.998L19.501,2L26.499,8.998L19.501,8.998Z"
+      android:fillColor="#C9CEE2"/>
+  <path
+      android:pathData="M19.501,8.998L26.499,11.626L26.499,8.998L19.501,8.998Z"
+      android:fillColor="#9EA9C9"/>
+  <path
+      android:pathData="M9.875,13.376L22.125,13.376L22.125,15.126L9.875,15.126L9.875,13.376Z"
+      android:fillColor="#2A3039"/>
+  <path
+      android:pathData="M9.875,16.874L22.125,16.874L22.125,18.624L9.875,18.624L9.875,16.874Z"
+      android:fillColor="#2A3039"/>
+  <path
+      android:pathData="M9.875,20.374L22.125,20.374L22.125,22.125L9.875,22.125L9.875,20.374Z"
+      android:fillColor="#2A3039"/>
+  <path
+      android:pathData="M25.487,24.794L26.79,23.49L31.997,28.697L30.693,30L25.487,24.794Z"
+      android:fillColor="#4C5C75"/>
+  <path
+      android:pathData="M21.712,26.422C25.418,26.422 28.422,23.417 28.422,19.712C28.422,16.006 25.418,13.002 21.712,13.002C18.006,13.002 15.002,16.006 15.002,19.712C15.002,23.417 18.006,26.422 21.712,26.422Z"
+      android:fillColor="#4C5C75"/>
+  <path
+      android:pathData="M21.712,24.581C24.401,24.581 26.582,22.401 26.582,19.712C26.582,17.022 24.401,14.842 21.712,14.842C19.022,14.842 16.842,17.022 16.842,19.712C16.842,22.401 19.022,24.581 21.712,24.581Z"
+      android:fillColor="#B6E8FF"/>
+</vector>

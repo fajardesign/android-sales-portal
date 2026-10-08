@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "todo_line" 3163:3865 (24x24; Figma colour #98a2ae = Icon/Disabled). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M17,3H20C20.265,3 20.52,3.105 20.707,3.293C20.895,3.48 21,3.735 21,4V22C21,22.265 20.895,22.52 20.707,22.707C20.52,22.895 20.265,23 20,23H4C3.735,23 3.48,22.895 3.293,22.707C3.105,22.52 3,22.265 3,22V4C3,3.735 3.105,3.48 3.293,3.293C3.48,3.105 3.735,3 4,3H7V2C7,1.448 7.448,1 8,1C8.552,1 9,1.448 9,2V3H15V2C15,1.448 15.448,1 16,1C16.552,1 17,1.448 17,2V3ZM17,5V6C17,6.552 16.552,7 16,7C15.448,7 15,6.552 15,6V5H9V6C9,6.552 8.552,7 8,7C7.448,7 7,6.552 7,6V5H5V21H19V5H17ZM7,10C7,9.448 7.448,9 8,9H16C16.552,9 17,9.448 17,10C17,10.552 16.552,11 16,11H8C7.448,11 7,10.552 7,10ZM7,14C7,13.448 7.448,13 8,13H16C16.552,13 17,13.448 17,14C17,14.552 16.552,15 16,15H8C7.448,15 7,14.552 7,14Z"
+      android:fillColor="#FF000000"/>
+</vector>

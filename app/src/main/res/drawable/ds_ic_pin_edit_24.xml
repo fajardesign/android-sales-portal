@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "pin_edit" 1178:257 (24x24; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M7.849,11.735C7.995,11.881 7.995,12.119 7.849,12.265C7.703,12.411 7.465,12.411 7.319,12.265C7.173,12.119 7.173,11.881 7.319,11.735C7.465,11.588 7.702,11.588 7.849,11.735"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M12.265,11.735C12.411,11.881 12.411,12.119 12.265,12.265C12.119,12.411 11.881,12.411 11.735,12.265C11.589,12.119 11.589,11.881 11.735,11.735C11.881,11.588 12.119,11.588 12.265,11.735"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M16,20V4"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M13,17H5C3.895,17 3,16.105 3,15V9C3,7.895 3.895,7 5,7H13"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M16,17H19C20.105,17 21,16.105 21,15V9C21,7.895 20.105,7 19,7H16"
+      android:strokeLineJoin="round"
+      android:strokeWidth="2"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+</vector>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "notification (Active=False)" 954:1742 (24x24; group exported separately, placed at 4.75,3). Tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:translateX="4.75"
+        android:translateY="3">
+        <path
+            android:pathData="M4.95801 16.344V16.709C4.95801 17.974 5.98401 19 7.25001 19V19C8.51601 19 9.54201 17.974 9.54201 16.708V16.343"
+            android:fillColor="#FF000000"
+            android:fillType="evenOdd" />
+        <path
+            android:pathData="M9.083 2.751V1.833C9.083 0.821 8.263 0 7.25 0V0C6.237 0 5.417 0.821 5.417 1.833V2.751"
+            android:fillColor="#FF000000"
+            android:fillType="evenOdd" />
+        <path
+            android:pathData="M1.813 7.188V7.188C1.813 4.685 3.842 2.657 6.344 2.657H8.157C10.66 2.657 12.688 4.686 12.688 7.188V7.188V9.985C12.688 10.515 12.899 11.024 13.274 11.399L13.915 12.04C14.29 12.415 14.501 12.924 14.501 13.454V13.454C14.501 14.498 13.655 15.344 12.611 15.344H1.89C0.846 15.344 0 14.498 0 13.454V13.454C0 12.924 0.211 12.415 0.586 12.04L1.227 11.399C1.602 11.024 1.813 10.515 1.813 9.985V7.188Z"
+            android:fillColor="#FF000000"
+            android:fillType="evenOdd" />
+    </group>
+</vector>

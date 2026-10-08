@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "camera" 492:462 (24x24; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+      android:pathData="M3,9.206C3,8.892 3,8.736 3.013,8.604C3.14,7.331 4.153,6.323 5.434,6.197C5.567,6.184 5.733,6.184 6.065,6.184C6.193,6.184 6.257,6.184 6.311,6.181C7.006,6.139 7.613,5.704 7.873,5.062C7.893,5.012 7.912,4.955 7.95,4.842C7.988,4.729 8.007,4.672 8.027,4.622C8.287,3.981 8.894,3.545 9.589,3.503C9.643,3.5 9.703,3.5 9.823,3.5H14.177C14.297,3.5 14.357,3.5 14.411,3.503C15.106,3.545 15.713,3.981 15.973,4.622C15.993,4.672 16.012,4.729 16.05,4.842C16.088,4.955 16.107,5.012 16.127,5.062C16.387,5.704 16.994,6.139 17.689,6.181C17.743,6.184 17.807,6.184 17.935,6.184C18.267,6.184 18.433,6.184 18.566,6.197C19.847,6.323 20.86,7.331 20.987,8.604C21,8.736 21,8.892 21,9.206V16.205C21,17.709 21,18.46 20.706,19.034C20.447,19.539 20.034,19.95 19.526,20.207C18.948,20.5 18.192,20.5 16.68,20.5H7.32C5.808,20.5 5.052,20.5 4.474,20.207C3.966,19.95 3.553,19.539 3.294,19.034C3,18.46 3,17.709 3,16.205V9.206Z"
+      android:strokeLineJoin="round"
+      android:strokeWidth="1.8"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+  <path
+      android:pathData="M12,16.474C13.988,16.474 15.6,14.871 15.6,12.895C15.6,10.918 13.988,9.316 12,9.316C10.012,9.316 8.4,10.918 8.4,12.895C8.4,14.871 10.012,16.474 12,16.474Z"
+      android:strokeLineJoin="round"
+      android:strokeWidth="1.8"
+      android:fillColor="#00000000"
+      android:strokeColor="#FF000000"
+      android:strokeLineCap="round"/>
+</vector>

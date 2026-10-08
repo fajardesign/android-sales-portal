@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sales app (TL, SR, SA): splash (MLG-00), login (MLG-01) and the bottom navigation tabs per role (PRD v3). -->
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nav_main"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:startDestination="@id/splash">
+
+    <fragment android:id="@+id/splash" android:name="com.example.and_sales_portal.ui.auth.SplashFragment" />
+    <fragment android:id="@+id/login" android:name="com.example.and_sales_portal.ui.auth.LoginFragment" />
+
+    <fragment android:id="@+id/tl_home" android:name="com.example.and_sales_portal.ui.dashboard.TlHomeFragment" />
+    <fragment android:id="@+id/sales_home" android:name="com.example.and_sales_portal.ui.dashboard.SalesHomeFragment" />
+    <fragment android:id="@+id/partner_tab" android:name="com.example.and_sales_portal.ui.partner.PartnerTabFragment" />
+    <fragment android:id="@+id/team_tab" android:name="com.example.and_sales_portal.ui.team.TeamTabFragment" />
+    <fragment android:id="@+id/activity_tab" android:name="com.example.and_sales_portal.ui.shell.ActivityTabFragment" />
+    <fragment android:id="@+id/visits_tab" android:name="com.example.and_sales_portal.ui.visits.VisitsTabFragment" />
+    <fragment android:id="@+id/performance_tab" android:name="com.example.and_sales_portal.ui.dashboard.PerformanceTabFragment" />
+    <fragment android:id="@+id/account_tab" android:name="com.example.and_sales_portal.ui.shell.AccountFragment" />
+
+    <!-- Absensi & Kunjungan (ATT-01 … ATT-05, PRD v3 D2, D3, C8). -->
+    <fragment android:id="@+id/attendance" android:name="com.example.and_sales_portal.ui.attendance.AttendanceFragment" />
+    <fragment android:id="@+id/capture" android:name="com.example.and_sales_portal.ui.attendance.CaptureFragment" />
+    <fragment android:id="@+id/my_visits" android:name="com.example.and_sales_portal.ui.visits.MyVisitsFragment" />
+    <fragment android:id="@+id/visit_detail" android:name="com.example.and_sales_portal.ui.visits.VisitDetailFragment" />
+    <fragment android:id="@+id/visit_checkout" android:name="com.example.and_sales_portal.ui.visits.VisitCheckOutFragment" />
+
+    <!-- Partner (REG-01, REG-10, REG-11, PRT-01, PRT-02; PRD v3 C2-C4, D4) and the registration flow. -->
+    <include app:graph="@navigation/nav_partner_registration" />
+    <fragment android:id="@+id/submission_detail" android:name="com.example.and_sales_portal.ui.partner.SubmissionDetailFragment" />
+    <fragment android:id="@+id/revision" android:name="com.example.and_sales_portal.ui.partner.RevisionFragment" />
+    <fragment android:id="@+id/partner_detail" android:name="com.example.and_sales_portal.ui.partner.PartnerDetailFragment" />
+    <fragment android:id="@+id/add_store" android:name="com.example.and_sales_portal.ui.partner.AddStoreFragment" />
+
+    <!-- Tim, Assign SA/SR, Jadwal Kunjungan (TL-01 … TL-05; PRD v3 C5-C7). -->
+    <fragment android:id="@+id/team_detail" android:name="com.example.and_sales_portal.ui.team.MemberDetailFragment" />
+    <fragment android:id="@+id/assign" android:name="com.example.and_sales_portal.ui.team.AssignFragment" />
+    <fragment android:id="@+id/schedule" android:name="com.example.and_sales_portal.ui.team.ScheduleFragment" />
+    <fragment android:id="@+id/visit_plan_form" android:name="com.example.and_sales_portal.ui.team.VisitPlanFormFragment" />
+
+    <!-- Laporan TL (TL-07 … TL-10; PRD v3 C9). -->
+    <fragment android:id="@+id/team_productivity" android:name="com.example.and_sales_portal.ui.dashboard.TeamProductivityFragment" />
+    <fragment android:id="@+id/evidence" android:name="com.example.and_sales_portal.ui.dashboard.EvidenceFragment" />
+    <fragment android:id="@+id/team_sales" android:name="com.example.and_sales_portal.ui.dashboard.TeamSalesFragment" />
+    <fragment android:id="@+id/team_loans" android:name="com.example.and_sales_portal.ui.dashboard.TeamLoansFragment" />
+    <fragment android:id="@+id/team_incentive" android:name="com.example.and_sales_portal.ui.dashboard.TeamIncentiveFragment" />
+
+    <!-- Debug simulation panel. -->
+    <fragment android:id="@+id/simulation" android:name="com.example.and_sales_portal.ui.simulation.SimulationFragment" />
+</navigation>

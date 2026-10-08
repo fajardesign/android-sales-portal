@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "menu / home (Filled)" 3371:211 (24x24), layer 0 of 2 (brand). Tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:translateX="1"
+        android:translateY="2">
+        <path
+            android:pathData="M3.00009 6.6V19H19.0001V6.6"
+            android:fillColor="#FF000000"
+            android:fillType="evenOdd"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M1.00009 8L11.0001 1L21.0001 8"
+            android:fillColor="#FF000000"
+            android:fillType="evenOdd" />
+        <path
+            android:pathData="M1.00009 8L11.0001 1L21.0001 8"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

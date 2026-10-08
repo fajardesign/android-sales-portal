@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "filter_16" 3078:6719 (16x16; Figma colour #111827 = Icon/Primary). Converted with Svg2Vector; tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+      android:pathData="M12.283,2.83L8.873,7.63L8.853,7.66C8.513,8.13 8.323,8.7 8.323,9.28V12.8L7.653,13.06V9.28C7.653,8.69 7.463,8.11 7.123,7.65L3.693,2.83H12.283ZM14.073,1.33H1.903C1.693,1.33 1.493,1.45 1.393,1.64C1.293,1.83 1.313,2.07 1.443,2.24L5.903,8.52C5.903,8.52 5.903,8.52 5.903,8.53C6.063,8.75 6.153,9.01 6.153,9.29V14.41C6.153,14.56 6.213,14.71 6.323,14.81C6.433,14.92 6.573,14.98 6.723,14.98C6.803,14.98 6.873,14.96 6.943,14.93L9.443,13.98C9.663,13.91 9.813,13.7 9.813,13.44V9.28C9.813,9.01 9.903,8.74 10.063,8.52C10.063,8.52 10.063,8.52 10.063,8.51L14.523,2.23C14.653,2.05 14.663,1.82 14.573,1.63C14.483,1.45 14.283,1.33 14.073,1.33Z"
+      android:fillColor="#FF000000"/>
+</vector>

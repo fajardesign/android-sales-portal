@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Photos taken with the system camera: REG-06 documents, ATT selfies (clock in, visit check-in). -->
+<paths>
+    <cache-path name="reg_captures" path="reg_captures/" />
+    <files-path name="selfies" path="demo/selfies/" />
+    <files-path name="documents" path="demo/documents/" />
+</paths>

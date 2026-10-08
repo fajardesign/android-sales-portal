@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma DS Lib Android: icon "Search" 1004:1835 (24x24). Tinted at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M14.1931 5.58187C16.5249 7.91369 16.5249 11.6943 14.1931 14.0261C11.8613 16.358 8.08065 16.358 5.74883 14.0261C3.41701 11.6943 3.41701 7.91369 5.74883 5.58187C8.08065 3.25005 11.8613 3.25005 14.1931 5.58187"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M14.15 14.06L20 19.99"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
