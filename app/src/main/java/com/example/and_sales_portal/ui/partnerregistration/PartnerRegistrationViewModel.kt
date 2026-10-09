@@ -103,7 +103,7 @@ class PartnerRegistrationViewModel(
 
     // region Draft
 
-    private fun loadDraft(): RegDraft? = store.loadDraft(user.id)?.let { runCatching { json.decodeFromString(RegDraft.serializer(), it) }.getOrNull() }
+    private fun loadDraft(): RegDraft? = store.loadDraft(user.id, partners.now())?.let { runCatching { json.decodeFromString(RegDraft.serializer(), it) }.getOrNull() }
 
     /** "Lanjutkan": restores the saved steps. */
     fun acceptDraft() {
@@ -128,6 +128,8 @@ class PartnerRegistrationViewModel(
         viewModelScope.launch { loadRegionsFor(_state.value.partner) }
     }
 
+    fun setConsent(value: Boolean) = _state.update { it.copy(consent = value) }
+
     /** "Mulai Baru". */
     fun discardDraft() {
         store.deleteDraft(user.id)
@@ -138,7 +140,7 @@ class PartnerRegistrationViewModel(
         if (mode != RegMode.New) return
         val s = _state.value
         val d = RegDraft(s.partner, s.business, s.pic, s.bank, s.choices.mapKeys { it.key.name }, s.documents.filterValues { it.status == UploadStatus.Uploaded }.mapKeys { it.key.name })
-        store.saveDraft(user.id, json.encodeToString(RegDraft.serializer(), d))
+        store.saveDraft(user.id, json.encodeToString(RegDraft.serializer(), d), partners.now())
     }
 
     // endregion
@@ -149,7 +151,10 @@ class PartnerRegistrationViewModel(
     fun setAddress(value: String) = updatePartner { it.copy(address = value.take(255)) }
     fun setRt(value: String) = updatePartner { it.copy(rt = value.filter(Char::isDigit).take(3)) }
     fun setRw(value: String) = updatePartner { it.copy(rw = value.filter(Char::isDigit).take(3)) }
-    fun setReferralCode(value: String) = updatePartner { it.copy(referralCode = value) }
+    fun setReferralCode(value: String) {
+        _state.update { it.copy(taken = it.taken - RegField.ReferralCode) }
+        updatePartner { it.copy(referralCode = value) }
+    }
 
     /** Choosing a parent region clears its children and loads the next list (children stay disabled until then). */
     fun selectProvince(region: Region) {
@@ -188,7 +193,10 @@ class PartnerRegistrationViewModel(
 
     /** Email undangan PKS follows Email PIC until it is edited (PRD C2 "defaults to Email PIC"). */
     fun setPicEmail(value: String) = updatePic { it.copy(email = value.trim(), pksEmail = if (it.pksEmailEdited) it.pksEmail else value.trim()) }
-    fun setPicPhone(value: String) = updatePic { it.copy(phone = value) }
+    fun setPicPhone(value: String) {
+        _state.update { it.copy(taken = it.taken - RegField.PicPhone) }
+        updatePic { it.copy(phone = value) }
+    }
     fun setPrivyId(value: String) = updatePic { it.copy(privyId = value.trim()) }
     fun setPksEmail(value: String) = updatePic { it.copy(pksEmail = value.trim(), pksEmailEdited = true) }
 
@@ -201,7 +209,15 @@ class PartnerRegistrationViewModel(
 
     /** CTA of a form step: `true` when the step is valid (and the draft is saved), otherwise its errors are shown. */
     fun submitStep(step: RegStep): Boolean {
-        val ok = stepValid(step, _state.value)
+        val s = _state.value
+        val except = (mode as? RegMode.Revision)?.partnerId
+        val taken = when (step) {
+            RegStep.PartnerInfo -> setOfNotNull(RegField.ReferralCode.takeIf { partners.referralTaken(s.partner.referralCode, except) })
+            RegStep.Pic -> setOfNotNull(RegField.PicPhone.takeIf { partners.picPhoneTaken(s.pic.phone, except) })
+            else -> emptySet()
+        }
+        val ok = stepValid(step, s) && taken.isEmpty()
+        _state.update { it.copy(taken = it.taken + taken) }
         if (!ok) _state.update { it.copy(showErrors = it.showErrors + step) } else saveDraft()
         return ok
     }

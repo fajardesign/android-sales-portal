@@ -20,6 +20,7 @@
     <!-- Absensi & Kunjungan (ATT-01 … ATT-05, PRD v3 D2, D3, C8). -->
     <fragment android:id="@+id/attendance" android:name="com.example.and_sales_portal.ui.attendance.AttendanceFragment" />
     <fragment android:id="@+id/capture" android:name="com.example.and_sales_portal.ui.attendance.CaptureFragment" />
+    <fragment android:id="@+id/notifications" android:name="com.example.and_sales_portal.ui.notifications.NotificationsFragment" />
     <fragment android:id="@+id/my_visits" android:name="com.example.and_sales_portal.ui.visits.MyVisitsFragment" />
     <fragment android:id="@+id/visit_detail" android:name="com.example.and_sales_portal.ui.visits.VisitDetailFragment" />
     <fragment android:id="@+id/visit_checkout" android:name="com.example.and_sales_portal.ui.visits.VisitCheckOutFragment" />

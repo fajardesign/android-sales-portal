@@ -169,11 +169,15 @@ data class PartnerRegistrationState(
     val fileErrors: Map<DocType, FileError> = emptyMap(),
     /** Steps whose CTA was pressed with errors: their fields show the error. */
     val showErrors: Set<RegStep> = emptySet(),
+    /** Kode Referral / No. Handphone already used by another partner (checked on the step's CTA, review 2026-10-09). */
+    val taken: Set<RegField> = emptySet(),
     /** REG-08 location (PRD C2 step 6). */
     val location: LocationResult.Found? = null,
     /** Name of a saved draft offered when the flow opens; `null` when there is none or it was answered. */
     val draftOffer: String? = null,
     val submitting: Boolean = false,
+    /** REG-07 consent checkbox (FR-PA-007), when its flag is on. */
+    val consent: Boolean = false,
     val submitted: Submitted? = null,
 ) {
     val entityType: String? get() = choices[RegChoice.EntityType]

@@ -18,7 +18,11 @@ import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.AttendanceStatus
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoDirectory
+import com.example.and_sales_portal.data.partner.AssignmentAction
+import com.example.and_sales_portal.data.partner.AssignmentEvent
 import com.example.and_sales_portal.data.partner.Partner
+import com.example.and_sales_portal.data.partner.PartnerRepository
+import com.example.and_sales_portal.ui.notifications.eventTime
 import com.example.and_sales_portal.data.partner.Store
 import com.example.and_sales_portal.data.team.Productivity
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
@@ -135,12 +139,9 @@ fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Uni
                 InfoRow(stringResource(R.string.team_late), stringResource(R.string.team_days_value, pr.late))
                 InfoRow(stringResource(R.string.team_absent), stringResource(R.string.team_days_value, pr.absent))
                 InfoRow(stringResource(R.string.team_days_off), stringResource(R.string.team_days_value, pr.daysOff))
-                InfoRow(stringResource(R.string.team_visit_days), stringResource(R.string.team_days_value, pr.visitDays))
-                pr.weeks.lastOrNull()?.let { w ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.team_week_visits), Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm)
-                        VisitWeekBadge(w)
-                    }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.team_week_visits), Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm)
+                    VisitWeekBadge(pr.thisWeek)
                 }
             }
         }
@@ -177,6 +178,7 @@ fun AssignScreen(
     onBack: () -> Unit,
     onAssign: (Pair<Partner, Store>) -> Unit,
     onUnassign: (Pair<Partner, Store>) -> Unit,
+    history: List<AssignmentEvent> = emptyList(),
 ) {
     ScreenScaffold(stringResource(R.string.act_assign), onBack) {
         PersonPicker(people, selected, onSelect)
@@ -187,24 +189,35 @@ fun AssignScreen(
         AmarInfoBox(stringResource(if (selected.role == "SA") R.string.asg_rule_sa else R.string.asg_rule_sr), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
         SectionTitle(stringResource(R.string.asg_assigned, assigned.size))
         if (assigned.isEmpty()) Text(stringResource(R.string.asg_none), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
-        assigned.forEach { StoreRow(it, selected.id, stringResource(R.string.asg_unassign), AmarButtonType.Secondary) { onUnassign(it) } }
+        assigned.forEach { StoreRow(it, stringResource(R.string.asg_unassign), AmarButtonType.Secondary) { onUnassign(it) } }
         SectionTitle(stringResource(R.string.asg_available))
         if (available.isEmpty()) Text(stringResource(R.string.asg_no_stores), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
-        available.forEach { StoreRow(it, selected.id, stringResource(R.string.asg_assign), AmarButtonType.Primary) { onAssign(it) } }
+        available.forEach { StoreRow(it, stringResource(R.string.asg_assign), AmarButtonType.Primary) { onAssign(it) } }
+        // FR-MP-007 (PRD alignment 2026-10-09): every Tugaskan and Lepas of this SA/SR, newest first.
+        SectionTitle(stringResource(R.string.asg_history))
+        if (history.isEmpty()) Text(stringResource(R.string.asg_history_empty), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
+        history.forEach { e ->
+            Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
+                Text(
+                    stringResource(if (e.action == AssignmentAction.ASSIGN) R.string.asg_history_assign else R.string.asg_history_release, e.storeName, e.partnerName),
+                    color = AmarTheme.colors.content.primary, style = AmarTheme.typography.labelMdMedium,
+                )
+                val by = if (e.by == AssignmentEvent.SYSTEM) stringResource(R.string.asg_by_system) else PartnerRepository.actorName(e.by)
+                Text(stringResource(R.string.asg_history_meta, by, eventTime(e)), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.bodySm)
+            }
+        }
     }
 }
 
 @Composable
-private fun StoreRow(item: Pair<Partner, Store>, personId: Long, action: String, type: AmarButtonType, onClick: () -> Unit) {
+private fun StoreRow(item: Pair<Partner, Store>, action: String, type: AmarButtonType, onClick: () -> Unit) {
     val c = AmarTheme.colors
     val (p, s) = item
-    val others = s.assigned.filter { it != personId }.mapNotNull { DemoDirectory.person(it)?.fullName }
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                 Text(s.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                 Text(stringResource(R.string.asg_store_row, p.name, s.code ?: p.id), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-                if (others.isNotEmpty()) Text(stringResource(R.string.asg_store_others, others.joinToString()), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
             }
             AmarButton(action, onClick, type = type, size = AmarButtonSize.Small)
         }
@@ -265,7 +278,7 @@ fun ScheduleScreen(
                 d.visits.forEach { v ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
                         Text(
-                            stringResource(R.string.sch_visit_row, v.visit.checkIn?.let { Fmt.timeLabel(it.at) } ?: "-", v.store.name),
+                            stringResource(R.string.sch_visit_row, v.visit.checkIn?.let { Fmt.timeLabel(it, v.visit.employeeId) } ?: "-", v.store.name),
                             Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm, maxLines = 1,
                         )
                         VisitStatusBadge(v.status)

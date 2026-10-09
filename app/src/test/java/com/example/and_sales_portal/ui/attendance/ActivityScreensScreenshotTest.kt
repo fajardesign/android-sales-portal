@@ -97,10 +97,10 @@ class ActivityScreensScreenshotTest {
         val monday = ActivityRules.weekStart(today)
         val state = VisitListUiState(
             date = "Rabu, 7 Oktober 2026",
-            week = VisitWeek(monday, 2, 6),
+            week = VisitWeek(monday, 1, 3),
             visitedToday = true,
             dayOff = false,
-            stores = stores.map { partnerOf(it.id) to it },
+            groups = com.example.and_sales_portal.data.activity.ActivityRules.weekPartners(stores.map { partnerOf(it.id) to it }, setOf(stores[0].id)),
             visits = listOf(item(done), item(ongoing)),
             online = true,
             block = VisitCheckInBlock.Ongoing,
@@ -108,8 +108,8 @@ class ActivityScreensScreenshotTest {
         capture("03_list") { VisitListScreen("Kunjungan", state, null, {}, {}, {}) }
         capture("03_before_start") { VisitListScreen("Kunjungan", state.copy(visits = emptyList(), visitedToday = false, block = VisitCheckInBlock.BeforeStart), null, {}, {}, {}) }
         capture("03_need_work_check_in") { VisitListScreen("Kunjungan", state.copy(visits = emptyList(), visitedToday = false, block = VisitCheckInBlock.NotWorkCheckedIn), null, {}, {}, {}) }
-        capture("03_complete") { VisitListScreen("Kunjungan", state.copy(week = VisitWeek(monday, 6, 6), visits = listOf(item(done)), block = null), null, {}, {}, {}) }
-        capture("03_empty_offline") { VisitListScreen("Kunjungan Saya", state.copy(stores = emptyList(), visits = emptyList(), visitedToday = false, online = false, block = null), {}, {}, {}, {}) }
+        capture("03_complete") { VisitListScreen("Kunjungan", state.copy(week = VisitWeek(monday, 3, 3), visits = listOf(item(done)), block = null), null, {}, {}, {}) }
+        capture("03_empty_offline") { VisitListScreen("Kunjungan Saya", state.copy(groups = emptyList(), visits = emptyList(), visitedToday = false, online = false, block = null), {}, {}, {}, {}) }
         capture("04_ongoing") { VisitDetailScreen(item(ongoing), { at("14:50") }, {}, { _, _ -> }, {}) }
         capture("04_done") { VisitDetailScreen(item(done), { at("15:00") }, {}, { _, _ -> }, {}) }
         capture("05_check_out_offline") { VisitCheckOutScreen(item(ongoing), "", online = false, now = at("14:50"), {}, {}, {}) }

@@ -90,6 +90,48 @@ class PartnerRepositoryTest {
     }
 
     @Test
+    fun referralCodeAndPicPhoneAreUniquePerPartner() {
+        // Review 2026-10-09: Kode Referral identifies the partner; No. Handphone PIC signs in to the Partner account.
+        assertTrue(repo.referralTaken("amr6148"))
+        assertFalse(repo.referralTaken("AMR6148", exceptId = "REG2026-0148"))
+        assertFalse(repo.referralTaken("BARU01"))
+        val phone = repo.get("REG2026-0148")!!.picPhone
+        assertTrue(repo.picPhoneTaken("0$phone"))
+        assertTrue(repo.picPhoneTaken("+62 $phone"))
+        assertFalse(repo.picPhoneTaken(phone, exceptId = "REG2026-0148"))
+        // Rejected and Cancelled partners do not block a new registration.
+        assertFalse(repo.referralTaken(repo.get("REG2026-0135")!!.referralCode!!))
+        assertEquals("81200047514", PartnerRepository.normalizePhone("+62 812-0004-7514"))
+    }
+
+    @Test
+    fun assignmentHistoryAndNotifications() {
+        // FR-MP-007: every Tugaskan and Lepas logged with actor, time, toko, partner and SA/SR.
+        assertNull(repo.assign(6, 11, "REG2026-0139-1"))
+        repo.unassign(11, "REG2026-0139-1", 6)
+        val history = repo.historyOf(11)
+        assertEquals(listOf(AssignmentAction.RELEASE, AssignmentAction.ASSIGN), history.map { it.action })
+        assertEquals("REG2026-0139-1", history.first().storeId)
+        assertEquals("Jaya Abadi Cellular", history.first().partnerName)
+        assertEquals("6", history.first().by)
+        // Lepas of a toko that is not assigned does nothing.
+        repo.unassign(11, "REG2026-0139-1", 6)
+        assertEquals(2, repo.historyOf(11).size)
+        // FR-MP-004: the SA/SR gets an in-app notification per event; opening the inbox marks them read.
+        assertEquals(2, repo.notificationsOf(11).count { !it.read })
+        assertTrue(repo.notificationsOf(15).isEmpty())
+        repo.markNotificationsRead(11)
+        assertTrue(repo.notificationsOf(11).all { it.read })
+        // Partner Inactive releases its SA/SR, logged as the system.
+        repo.adminDeactivate("REG2026-0132")
+        assertTrue(repo.get("REG2026-0132")!!.stores.all { it.assigned.isEmpty() })
+        val system = repo.historyOf(16).first()
+        assertEquals(AssignmentEvent.SYSTEM, system.by)
+        assertEquals(AssignmentAction.RELEASE, system.action)
+        assertEquals(1, repo.notificationsOf(16).count { !it.read })
+    }
+
+    @Test
     fun assignmentRules() {
         // Per toko (revision 2026-10-08). Eko (SA) has 1 toko, Siti (SR) 3 toko: Siti is below the SR minimum of 4.
         assertEquals(1, repo.assignedStores(15).size)
@@ -115,7 +157,7 @@ class PartnerRepositoryTest {
         assertEquals(AssignError.NotLeader, repo.assignmentError(7, 11, "REG2026-0139-1"))
         assertEquals(AssignError.NotOwner, repo.assignmentError(6, 16, "REG2026-0138-1"))
         // Unassign one toko only.
-        repo.unassign(15, "REG2026-0132-2")
+        repo.unassign(15, "REG2026-0132-2", 6)
         assertEquals(2, repo.assignedStores(15).size)
     }
 }

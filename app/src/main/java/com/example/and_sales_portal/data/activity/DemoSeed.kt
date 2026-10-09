@@ -13,7 +13,8 @@ import java.time.LocalTime
 /**
  * Initial sample data, mirroring the web portal sample (`admin-sales-portal/src/api/db.js`): attendance (Monday–Saturday,
  * check in kerja 09:25–09:59 on time, 10:01–10:59 late, local time of the area, at the area office or a toko) and visit
- * check-ins (revision 2026-10-08: no hourly plan; about 4 of 5 present days, 12:00–16:59 local, near one of their toko).
+ * check-ins (no hourly plan; each toko once a week, 12:00–16:59 local, near the toko; PRD alignment 2026-10-09). The
+ * random order is Android's own; only the rules match the portal.
  */
 object DemoSeed {
 
@@ -57,10 +58,10 @@ object DemoSeed {
         val attendance = mutableListOf<Attendance>()
         val visits = mutableListOf<Visit>()
         val days = (HISTORY_DAYS downTo 1).map { today.minusDays(it) }.filter(ActivityRules::isWorkday)
-        days.forEachIndexed { i, d ->
+        days.forEach { d ->
             val rnd = seededRandom(userId * 1_000_003 + d.toEpochDay())
             val r = rnd.nextDouble()
-            if (r < 0.05) return@forEachIndexed // absent: no attendance, no visit
+            if (r < 0.05) return@forEach // absent: no attendance, no visit
             val late = r < 0.2
             val inAt = d.atTime(if (late) LocalTime.of(10, 1 + rnd.nextInt(59)) else LocalTime.of(9, 25 + rnd.nextInt(35)))
             val outAt = d.atTime(LocalTime.of(18 + rnd.nextInt(2), rnd.nextInt(60)))
@@ -72,22 +73,24 @@ object DemoSeed {
             attendance += Attendance(
                 employeeId = userId,
                 date = d.toString(),
-                clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance),
-                clockOut = Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance),
+                clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
+                clockOut = Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
             )
-            // Like the portal: about 4 of 5 present days have one visit, 12:00–16:59 local, at one of their toko.
-            if (stores.isEmpty() || rnd.nextDouble() > 0.82) return@forEachIndexed
-            val s = stores[i % stores.size]
-            val vIn = d.atTime(LocalTime.of(12 + rnd.nextInt(5), rnd.nextInt(60))).atZone(zone).toInstant().toEpochMilli()
-            val vOut = vIn + (25 + rnd.nextInt(86)) * 60_000L
-            val vLat = round6(s.lat + (rnd.nextDouble() - 0.5) * 0.004)
-            val vLng = round6(s.lng + (rnd.nextDouble() - 0.5) * 0.004)
-            val vDistance = ActivityRules.distanceMeters(vLat, vLng, s.lat, s.lng)
-            visits += Visit(
-                id = "V-$userId-$d-${s.id}", employeeId = userId, storeId = s.id, date = d.toString(), state = VisitState.DONE,
-                checkIn = Punch(vIn, vLat, vLng, s.address, place = s.name, distance = vDistance),
-                checkOut = Punch(vOut, vLat, vLng, s.address, place = s.name, distance = vDistance),
-            )
+            // PRD alignment 2026-10-09: each toko once a week, on its own weekday (a toko is missed about 1 week in 7),
+            // 12:00–16:59 local, near the toko.
+            stores.filterIndexed { j, _ -> (j + userId.toInt()) % 6 == d.dayOfWeek.value - 1 }.forEach { s ->
+                if (rnd.nextDouble() > 0.86) return@forEach
+                val vIn = d.atTime(LocalTime.of(12 + rnd.nextInt(5), rnd.nextInt(60))).atZone(zone).toInstant().toEpochMilli()
+                val vOut = vIn + (25 + rnd.nextInt(86)) * 60_000L
+                val vLat = round6(s.lat + (rnd.nextDouble() - 0.5) * 0.004)
+                val vLng = round6(s.lng + (rnd.nextDouble() - 0.5) * 0.004)
+                val vDistance = ActivityRules.distanceMeters(vLat, vLng, s.lat, s.lng)
+                visits += Visit(
+                    id = "V-$userId-$d-${s.id}", employeeId = userId, storeId = s.id, date = d.toString(), state = VisitState.DONE,
+                    checkIn = Punch(vIn, vLat, vLng, s.address, place = s.name, distance = vDistance, zone = zone.id),
+                    checkOut = Punch(vOut, vLat, vLng, s.address, place = s.name, distance = vDistance, zone = zone.id),
+                )
+            }
         }
         return OpsData(attendance = attendance, visits = visits)
     }

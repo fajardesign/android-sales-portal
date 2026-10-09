@@ -7,11 +7,13 @@ import com.example.and_sales_portal.data.activity.VisitWeek
 import com.example.and_sales_portal.data.demo.DemoDirectory
 import com.example.and_sales_portal.data.partner.AssignError
 import com.example.and_sales_portal.data.partner.PartnerRepository
+import java.time.Instant
 import java.time.LocalDate
+import kotlin.math.roundToInt
 
 /**
  * Attendance and visit results of one person in a period (PRD C5 person detail, C9 Produktivitas; stakeholder revision
- * 2026-10-08: visits against a weekly target instead of planned visits).
+ * 2026-10-08: visits only as weekly target fulfilment, the same on every platform, review 2026-10-09).
  */
 data class Productivity(
     val workdays: Int,
@@ -20,10 +22,12 @@ data class Productivity(
     val late: Int,
     val absent: Int,
     val daysOff: Int,
-    /** Days with at least one visit (one counts per day). */
-    val visitDays: Int,
-    /** Weeks (Monday–Saturday) overlapping the period. */
+    /** Weeks of the period: Monday in the period, up to today (same as the web portal). */
     val weeks: List<VisitWeek>,
+    /** The current week (Monday–Saturday), always shown ("Kunjungan minggu ini"). */
+    val thisWeek: VisitWeek,
+    /** Average check in kerja time of the present days, "09:42 WITA" (TL-07, PRD alignment 2026-10-09); `null` with none. */
+    val avgClockIn: String? = null,
 )
 
 /**
@@ -36,7 +40,7 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
 
     fun assign(tlId: Long, employeeId: Long, storeId: String): AssignError? = partners.assign(tlId, employeeId, storeId)
 
-    fun unassign(employeeId: Long, storeId: String) = partners.unassign(employeeId, storeId)
+    fun unassign(employeeId: Long, storeId: String, by: Long) = partners.unassign(employeeId, storeId, by)
 
     /** From the 1st of this month to today (Monday–Saturday). */
     fun productivity(employeeId: Long): Productivity = productivity(employeeId, ops.today().withDayOfMonth(1)..ops.today())
@@ -47,6 +51,12 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
         val end = minOf(range.endInclusive, today)
         val days = generateSequence(range.start) { it.plusDays(1) }.takeWhile { !it.isAfter(end) }.filter(ActivityRules::isWorkday).toList()
         val statuses = days.map { ops.attendanceStatus(employeeId, it) }
+        // Like the web APL report: each check in read in its own saved zone, labelled with the first one's zone.
+        val punches = days.mapNotNull { ops.attendanceOf(employeeId, it)?.clockIn }
+        val minutes = punches.map { p -> Instant.ofEpochMilli(p.at).atZone(ActivityRules.zoneOf(p, employeeId)).toLocalTime().let { it.hour * 60 + it.minute } }
+        val avgClockIn = if (minutes.isEmpty()) null else (minutes.sum().toDouble() / minutes.size).roundToInt().let { m ->
+            "%02d:%02d %s".format(m / 60, m % 60, ActivityRules.label(ActivityRules.zoneOf(punches.first(), employeeId)))
+        }
         return Productivity(
             workdays = days.count { !ops.isDayOff(employeeId, it) },
             present = statuses.count { it == AttendanceStatus.ON_TIME || it == AttendanceStatus.LATE },
@@ -54,8 +64,9 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
             late = statuses.count { it == AttendanceStatus.LATE },
             absent = statuses.count { it == AttendanceStatus.ABSENT },
             daysOff = statuses.count { it == AttendanceStatus.DAY_OFF },
-            visitDays = ops.visitsBetween(employeeId, range.start, end).map { it.date }.toSet().count { !ops.isDayOff(employeeId, LocalDate.parse(it)) },
             weeks = ops.visitWeeks(employeeId, range.start..range.endInclusive),
+            thisWeek = ops.visitWeek(employeeId, ActivityRules.weekStart(today)),
+            avgClockIn = avgClockIn,
         )
     }
 

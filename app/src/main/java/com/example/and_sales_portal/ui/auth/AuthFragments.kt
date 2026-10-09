@@ -61,7 +61,11 @@ class LoginFragment : ComposeFragment() {
             form = form.copy(loading = true, invalid = false)
             scope.launch {
                 when (val result = container.auth.login(form.identifier, form.password)) {
-                    is LoginResult.Success -> ShellNavigator(this@LoginFragment).toHome(result.session.role)
+                    is LoginResult.Success -> {
+                        // FR-PA-009: a registration draft of another account on this device is deleted.
+                        container.demo.deleteDraftsExcept(result.session.user.id)
+                        ShellNavigator(this@LoginFragment).toHome(result.session.role)
+                    }
                     is LoginResult.Failure -> {
                         form = form.copy(loading = false, invalid = result.error == LoginError.Invalid)
                         if (result.error != LoginError.Invalid) error = result.error

@@ -56,6 +56,7 @@ fun SimulationScreen(sim: Simulation, onBack: () -> Unit, onChange: ((Simulation
             }
             Switch(R.string.sim_mock, sim.mockLocation) { v -> onChange { it.copy(mockLocation = v) } }
             Switch(R.string.sim_offline, sim.offline) { v -> onChange { it.copy(offline = v) } }
+            Switch(R.string.sim_reg_consent, sim.regConsent) { v -> onChange { it.copy(regConsent = v) } }
         }
     }
 }

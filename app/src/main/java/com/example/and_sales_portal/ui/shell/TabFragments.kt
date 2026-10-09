@@ -59,6 +59,7 @@ class AccountFragment : ComposeFragment() {
                 onConfirm = {
                     confirmLogout = false
                     scope.launch {
+                        container.demo.deleteDraft(current.user.id) // FR-PA-009: draft deleted on logout
                         container.auth.logout()
                         ShellNavigator(this@AccountFragment).toLogin(expired = false)
                     }

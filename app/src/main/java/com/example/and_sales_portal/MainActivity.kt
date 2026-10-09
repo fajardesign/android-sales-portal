@@ -65,6 +65,7 @@ class MainActivity : AppCompatActivity() {
             appContainer.supabase.auth.sessionStatus.collect { status ->
                 val onTab = SalesTab.of(nav.currentDestination?.id ?: 0) != null
                 if (status is SessionStatus.NotAuthenticated && !status.isSignOut && onTab && appContainer.auth.session.value != null) {
+                    appContainer.auth.session.value?.let { appContainer.demo.deleteDraft(it.user.id) }
                     appContainer.auth.logout()
                     ShellNavigator(nav).toLogin(expired = true)
                 }

@@ -23,6 +23,10 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     private val _partners = MutableStateFlow(saved ?: PartnerSeed.partners())
     val partners: StateFlow<List<Partner>> = _partners.asStateFlow()
 
+    private val _assignments = MutableStateFlow(store.loadAssignments() ?: AssignmentData())
+    /** Assignment history and notifications (TL-03, PRD Scope 1 FR-MP-004, FR-MP-007). */
+    val assignments: StateFlow<AssignmentData> = _assignments.asStateFlow()
+
     init {
         if (saved == null) store.savePartners(_partners.value)
     }
@@ -86,6 +90,24 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         return s
     }
 
+    // region Unique per partner (review 2026-10-09)
+
+    /** Partners a new registration must not clash with: every partner except Rejected / Cancelled ones and [exceptId]. */
+    private fun registered(exceptId: String?) =
+        _partners.value.filter { it.id != exceptId && it.status != PartnerStatus.REJECTED && it.status != PartnerStatus.CANCELLED }
+
+    /** Kode Referral identifies the partner (loans from the partner carry it), so it is unique, ignoring case. */
+    fun referralTaken(code: String, exceptId: String? = null): Boolean =
+        code.isNotBlank() && registered(exceptId).any { it.referralCode.equals(code.trim(), ignoreCase = true) }
+
+    /** No. Handphone PIC is used to sign in to the Partner account, so it is unique per partner (`8…`, 0/62 removed). */
+    fun picPhoneTaken(phone: String, exceptId: String? = null): Boolean {
+        val n = normalizePhone(phone)
+        return n.isNotEmpty() && registered(exceptId).any { normalizePhone(it.picPhone) == n }
+    }
+
+    // endregion
+
     // region Assign SA/SR (TL-03; PRD C6, stakeholder revision 2026-10-08: per toko)
 
     /** Active partners with a toko assigned to [employeeId]. */
@@ -120,15 +142,47 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         }
     }
 
-    /** Assigns one toko (revision 2026-10-08: assignment per toko, not per partner). */
+    /** Assigns one toko (revision 2026-10-08: assignment per toko, not per partner); logged and notified. */
     fun assign(tlId: Long, employeeId: Long, storeId: String): AssignError? {
         assignmentError(tlId, employeeId, storeId)?.let { return it }
         changeStore(storeId) { if (employeeId in it.assigned) it else it.copy(assigned = it.assigned + employeeId) }
+        log(AssignmentAction.ASSIGN, employeeId, storeId, tlId.toString())
         return null
     }
 
-    /** Removes [employeeId] from toko [storeId]. */
-    fun unassign(employeeId: Long, storeId: String) = changeStore(storeId) { it.copy(assigned = it.assigned - employeeId) }
+    /** Removes [employeeId] from toko [storeId] (Lepas by [by]); logged and notified. */
+    fun unassign(employeeId: Long, storeId: String, by: Long) {
+        val assigned = _partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId }?.assigned.orEmpty()
+        if (employeeId !in assigned) return
+        changeStore(storeId) { it.copy(assigned = it.assigned - employeeId) }
+        log(AssignmentAction.RELEASE, employeeId, storeId, by.toString())
+    }
+
+    /** Tugaskan / Lepas of [employeeId], newest first (the later one first at the same time). */
+    fun historyOf(employeeId: Long): List<AssignmentEvent> = _assignments.value.events.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.at }
+
+    /** Notifications of [employeeId], newest first. */
+    fun notificationsOf(employeeId: Long): List<AppNotification> =
+        _assignments.value.notifications.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.event.at }
+
+    fun markNotificationsRead(employeeId: Long) = changeAssignments { d ->
+        d.copy(notifications = d.notifications.map { if (it.employeeId == employeeId) it.copy(read = true) else it })
+    }
+
+    /** Logs a Tugaskan / Lepas and notifies the SA/SR (FR-MP-007, FR-MP-004). */
+    private fun log(action: AssignmentAction, employeeId: Long, storeId: String, by: String) {
+        val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return
+        val s = p.stores.first { it.id == storeId }
+        val e = AssignmentEvent(now(), action, employeeId, storeId, s.name, p.id, p.name, by)
+        changeAssignments { d ->
+            d.copy(events = d.events + e, notifications = d.notifications + AppNotification("N-${e.at}-$employeeId-$storeId-${action.name}", employeeId, e))
+        }
+    }
+
+    private fun changeAssignments(f: (AssignmentData) -> AssignmentData) {
+        _assignments.update(f)
+        store.saveAssignments(_assignments.value)
+    }
 
     private fun changeStore(storeId: String, f: (Store) -> Store) {
         val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return
@@ -167,7 +221,13 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     fun adminActivate(id: String) = adminMove(id, PartnerStatus.ACTIVE, "PKS ditandatangani (dicek di Privy web); partner diaktifkan") { it }
     fun adminReject(id: String) = adminMove(id, PartnerStatus.REJECTED, "Usaha tidak sesuai kriteria partner") { it }
     fun adminCancel(id: String) = adminMove(id, PartnerStatus.CANCELLED, "Dibatalkan atas permintaan partner") { it }
-    fun adminDeactivate(id: String) = adminMove(id, PartnerStatus.INACTIVE, "Partner berhenti bekerja sama") { it }
+    /** Inactive releases every SA/SR from the partner's toko; each release is logged as the system (FR-MP-007). */
+    fun adminDeactivate(id: String) {
+        val p = get(id) ?: return
+        val released = p.stores.flatMap { s -> s.assigned.map { it to s.id } }
+        adminMove(id, PartnerStatus.INACTIVE, "Partner berhenti bekerja sama") { it.copy(stores = it.stores.map { s -> s.copy(assigned = emptyList()) }) }
+        released.forEach { (employeeId, storeId) -> log(AssignmentAction.RELEASE, employeeId, storeId, AssignmentEvent.SYSTEM) }
+    }
 
     private fun adminMove(id: String, to: PartnerStatus, reason: String?, prepare: (Partner) -> Partner) {
         val p = get(id) ?: return
@@ -180,6 +240,8 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     fun reset() {
         _partners.value = PartnerSeed.partners()
         store.savePartners(_partners.value)
+        _assignments.value = AssignmentData()
+        store.saveAssignments(_assignments.value)
     }
 
     fun replace(p: Partner) = change { list -> list.map { if (it.id == p.id) p else it } }
@@ -197,6 +259,16 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         val SR_STORES = 4..6
 
         fun storeLimits(role: String): IntRange = if (role == "SA") SA_STORES else SR_STORES
+
+        /** Phone digits as stored (`8…`): `08…`, `62…`, `+62…` and `8…` are the same number. */
+        fun normalizePhone(phone: String): String {
+            val d = phone.filter(Char::isDigit)
+            return when {
+                d.startsWith("62") -> d.removePrefix("62")
+                d.startsWith("0") -> d.removePrefix("0")
+                else -> d
+            }
+        }
 
         /** Name of the person who moved a status (user id or Admin name). */
         fun actorName(by: String): String = by.toLongOrNull()?.let { DemoDirectory.person(it)?.fullName } ?: by

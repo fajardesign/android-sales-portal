@@ -76,6 +76,7 @@ private fun appBarColors(type: AmarAppBarType, state: AmarAppBarState): AppBarCo
  * @param navigationIcon Figma `Change Navigation`.
  * @param actionIcon Figma `Right Icon` + `Change Icon`; defaults: notification (Primary), help (Secondary),
  * search in a round button (Primary + Transparent Inverse). Shown when [onActionClick] is set.
+ * @param actionContentDescription What the action does, read by screen readers (no visual change).
  * @param slot Figma `Stepper=True` + `Slot`: content below the header (e.g. a stepper). Figma only defines it for
  * Secondary; the Primary + Stepper variant is identical to Stepper=False.
  */
@@ -90,6 +91,7 @@ fun AmarAppBar(
     navigationIcon: Painter = painterResource(R.drawable.ds_ic_arrow_left_24),
     onActionClick: (() -> Unit)? = null,
     actionIcon: Painter? = null,
+    actionContentDescription: String? = null,
     windowInsets: WindowInsets = WindowInsets.statusBars,
     slot: (@Composable () -> Unit)? = null,
 ) {
@@ -119,9 +121,9 @@ fun AmarAppBar(
                     .background(AmarTheme.colors.background.subtle, AmarTheme.shapes.full) // Icon/Close Sheet/Background
                     .clickable(role = Role.Button, onClick = click)
                     .padding(AmarAppBarTokens.RoundButtonPadding),
-            ) { Icon(action, null, Modifier.size(iconSize), tint = AmarTheme.colors.icon.primary) }
+            ) { Icon(action, actionContentDescription, Modifier.size(iconSize), tint = AmarTheme.colors.icon.primary) }
         } else {
-            Icon(action, null, Modifier.size(iconSize).clickable(role = Role.Button, onClick = click), tint = colors.icon)
+            Icon(action, actionContentDescription, Modifier.size(iconSize).clickable(role = Role.Button, onClick = click), tint = colors.icon)
         }
     }
 

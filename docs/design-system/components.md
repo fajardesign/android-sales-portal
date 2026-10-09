@@ -380,6 +380,7 @@ Ketebalan stroke ikon berbeda per instance di Figma: close 20 di Alert stroke 2,
   - `Title` + `Change Label` → `title`; subjudul (Primary + Transparent Inverse) → `subtitle`.
   - `Show Navigation` + `Change Navigation` → `onNavigationClick` + `navigationIcon`.
   - `Right Icon` + `Change Icon` → `onActionClick` + `actionIcon`.
+  - Tanpa padanan Figma, hanya aksesibilitas (2026-10-09): `actionContentDescription` = label ikon aksi untuk screen reader (dipakai lonceng "Notifikasi" di Beranda SA/SR); tidak mengubah tampilan.
   - `Stepper=True` + `Slot` → `slot`.
 - **Status bar**: frame Figma memuat status bar mock (24, gaya iOS). Di Android bar digambar di belakang status bar sistem lewat `windowInsets` (default `WindowInsets.statusBars`), dan yang di-layout hanya header 56.
 - **Warna (sesuai render Figma dan layar produk)**:
