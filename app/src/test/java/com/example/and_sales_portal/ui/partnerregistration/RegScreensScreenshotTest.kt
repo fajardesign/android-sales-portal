@@ -3,6 +3,7 @@ package com.example.and_sales_portal.ui.partnerregistration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
+import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.device.LocationResult
 import com.example.and_sales_portal.data.partner.DocType
 import com.example.and_sales_portal.data.partner.Keys
@@ -52,6 +53,9 @@ class RegScreensScreenshotTest {
         capture("04_error") { RegPicScreen(errors, DetailsActions()) }
         val pic = PartnerRegistrationState(pic = PicForm("Budi Santoso", "budi@gmail.com", "81234567890", "", "budi@gmail.com"), choices = mapOf(RegChoice.PicStatus to Keys.PIC_OWNER))
         capture("04_filled") { RegPicScreen(pic, DetailsActions()) }
+        // Review 2026-10-09: unique per partner.
+        capture("04_phone_taken") { RegPicScreen(pic.copy(showErrors = setOf(RegStep.Pic), taken = setOf(RegField.PicPhone)), DetailsActions()) }
+        capture("02_referral_taken") { RegTextField("AMR6148", {}, R.string.reg_referral, R.string.reg_referral_placeholder, FieldError(R.string.reg_err_referral_taken)) }
         capture("05_error") { RegBankAccountScreen(errors, BankAccountActions()) }
         val bank = PartnerRegistrationState(bank = BankForm(Bank("BCA", "BCA"), "KCP Makassar Panakkukang", "1234567890", "Budi Santoso"))
         capture("05_filled") { RegBankAccountScreen(bank, BankAccountActions()) }

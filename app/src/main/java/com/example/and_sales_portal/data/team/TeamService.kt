@@ -11,7 +11,7 @@ import java.time.LocalDate
 
 /**
  * Attendance and visit results of one person in a period (PRD C5 person detail, C9 Produktivitas; stakeholder revision
- * 2026-10-08: visits against a weekly target instead of planned visits).
+ * 2026-10-08: visits only as weekly target fulfilment, the same on every platform, review 2026-10-09).
  */
 data class Productivity(
     val workdays: Int,
@@ -20,8 +20,6 @@ data class Productivity(
     val late: Int,
     val absent: Int,
     val daysOff: Int,
-    /** Days with at least one visit (one counts per day). */
-    val visitDays: Int,
     /** Weeks (Monday–Saturday) overlapping the period. */
     val weeks: List<VisitWeek>,
 )
@@ -54,7 +52,6 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
             late = statuses.count { it == AttendanceStatus.LATE },
             absent = statuses.count { it == AttendanceStatus.ABSENT },
             daysOff = statuses.count { it == AttendanceStatus.DAY_OFF },
-            visitDays = ops.visitsBetween(employeeId, range.start, end).map { it.date }.toSet().count { !ops.isDayOff(employeeId, LocalDate.parse(it)) },
             weeks = ops.visitWeeks(employeeId, range.start..range.endInclusive),
         )
     }

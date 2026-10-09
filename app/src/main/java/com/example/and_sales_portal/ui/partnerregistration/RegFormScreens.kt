@@ -50,7 +50,8 @@ fun RegPartnerInfoScreen(state: PartnerRegistrationState, actions: PartnerInfoAc
         val errors = if (RegStep.PartnerInfo in state.showErrors) PartnerRegistrationValidator.partnerInfo(state.partner) else emptyMap()
         RegTextField(state.partner.name, actions.onName, R.string.reg_partner_name, R.string.reg_partner_name_placeholder, errors[RegField.PartnerName])
         AddressFields(state.partner, state.regions, actions, errors)
-        RegTextField(state.partner.referralCode, actions.onReferral, R.string.reg_referral, R.string.reg_referral_placeholder, errors[RegField.ReferralCode])
+        val referralError = errors[RegField.ReferralCode] ?: FieldError(R.string.reg_err_referral_taken).takeIf { RegField.ReferralCode in state.taken }
+        RegTextField(state.partner.referralCode, actions.onReferral, R.string.reg_referral, R.string.reg_referral_placeholder, referralError)
     }
 }
 
@@ -130,7 +131,8 @@ fun RegPicScreen(state: PartnerRegistrationState, actions: DetailsActions) {
     ) {
         RegTextField(form.name, actions.onPicName, R.string.reg_pic_name, R.string.reg_pic_name_placeholder, errors[RegField.PicName])
         RegTextField(form.email, actions.onPicEmail, R.string.reg_pic_email, R.string.reg_pic_email_placeholder, errors[RegField.PicEmail], keyboardType = KeyboardType.Email, hint = R.string.reg_pic_email_hint)
-        RegTextField(form.phone, actions.onPicPhone, R.string.reg_phone, R.string.reg_phone_placeholder, errors[RegField.PicPhone], type = AmarTextFieldType.Phone)
+        val phoneError = errors[RegField.PicPhone] ?: FieldError(R.string.reg_err_phone_taken).takeIf { RegField.PicPhone in state.taken }
+        RegTextField(form.phone, actions.onPicPhone, R.string.reg_phone, R.string.reg_phone_placeholder, phoneError, type = AmarTextFieldType.Phone)
         RegChoiceField(RegChoice.PicStatus, state.choices[RegChoice.PicStatus], { actions.onChoose(RegChoice.PicStatus, it) }, showErrors && state.choices[RegChoice.PicStatus] == null)
         RegTextField(form.privyId, actions.onPrivyId, R.string.reg_privy_id, R.string.reg_privy_id_placeholder, null, required = false, hint = R.string.reg_privy_id_hint)
         RegTextField(form.pksEmail, actions.onPksEmail, R.string.reg_pks_email, R.string.reg_pks_email_placeholder, errors[RegField.PksEmail], keyboardType = KeyboardType.Email, hint = R.string.reg_pks_email_hint)

@@ -135,7 +135,6 @@ fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Uni
                 InfoRow(stringResource(R.string.team_late), stringResource(R.string.team_days_value, pr.late))
                 InfoRow(stringResource(R.string.team_absent), stringResource(R.string.team_days_value, pr.absent))
                 InfoRow(stringResource(R.string.team_days_off), stringResource(R.string.team_days_value, pr.daysOff))
-                InfoRow(stringResource(R.string.team_visit_days), stringResource(R.string.team_days_value, pr.visitDays))
                 pr.weeks.lastOrNull()?.let { w ->
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.team_week_visits), Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm)
@@ -187,24 +186,22 @@ fun AssignScreen(
         AmarInfoBox(stringResource(if (selected.role == "SA") R.string.asg_rule_sa else R.string.asg_rule_sr), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
         SectionTitle(stringResource(R.string.asg_assigned, assigned.size))
         if (assigned.isEmpty()) Text(stringResource(R.string.asg_none), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
-        assigned.forEach { StoreRow(it, selected.id, stringResource(R.string.asg_unassign), AmarButtonType.Secondary) { onUnassign(it) } }
+        assigned.forEach { StoreRow(it, stringResource(R.string.asg_unassign), AmarButtonType.Secondary) { onUnassign(it) } }
         SectionTitle(stringResource(R.string.asg_available))
         if (available.isEmpty()) Text(stringResource(R.string.asg_no_stores), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
-        available.forEach { StoreRow(it, selected.id, stringResource(R.string.asg_assign), AmarButtonType.Primary) { onAssign(it) } }
+        available.forEach { StoreRow(it, stringResource(R.string.asg_assign), AmarButtonType.Primary) { onAssign(it) } }
     }
 }
 
 @Composable
-private fun StoreRow(item: Pair<Partner, Store>, personId: Long, action: String, type: AmarButtonType, onClick: () -> Unit) {
+private fun StoreRow(item: Pair<Partner, Store>, action: String, type: AmarButtonType, onClick: () -> Unit) {
     val c = AmarTheme.colors
     val (p, s) = item
-    val others = s.assigned.filter { it != personId }.mapNotNull { DemoDirectory.person(it)?.fullName }
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                 Text(s.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                 Text(stringResource(R.string.asg_store_row, p.name, s.code ?: p.id), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-                if (others.isNotEmpty()) Text(stringResource(R.string.asg_store_others, others.joinToString()), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
             }
             AmarButton(action, onClick, type = type, size = AmarButtonSize.Small)
         }

@@ -214,7 +214,7 @@
     <string name="cap_title_check_in">Check-In Kunjungan</string>
     <string name="cap_location_title">Periksa lokasi Anda</string>
     <string name="cap_location_desc_attendance">Lokasi dicatat bersama waktu check in kerja Anda.</string>
-    <string name="cap_location_desc_visit">Anda harus berada dalam radius 3 km dari toko.</string>
+    <string name="cap_location_desc_visit">Anda harus berada dalam radius 3 km dari titik lokasi toko yang terdaftar.</string>
     <string name="cap_locating">Mencari lokasi…</string>
     <string name="cap_map">Peta lokasi</string>
     <string name="cap_coordinates">Koordinat</string>
@@ -224,7 +224,7 @@
     <string name="cap_distance">Jarak ke toko</string>
     <string name="cap_nearest">Lokasi terdekat</string>
     <string name="cap_distance_nearest">Jarak</string>
-    <string name="cap_radius_info">Anda harus berada dalam radius 3 km dari kantor atau toko partner.</string>
+    <string name="cap_radius_info">Anda harus berada dalam radius 3 km dari titik lokasi kantor atau toko partner yang terdaftar.</string>
     <string name="cap_distance_value">%1$d m</string>
     <string name="cap_distance_km">%1$s km</string>
     <string name="cap_in_radius">Dalam radius</string>
@@ -252,8 +252,8 @@
     <string name="cap_err_mock">Matikan aplikasi lokasi palsu (mock location) di perangkat Anda. Absensi dan kunjungan hanya bisa memakai lokasi asli.</string>
     <string name="cap_err_radius_title">Di luar radius toko</string>
     <string name="cap_err_radius_attendance_title">Di luar radius</string>
-    <string name="cap_err_radius_attendance">Lokasi Anda lebih dari 3 km dari kantor atau toko partner. Pindah ke lokasi yang terdaftar, lalu coba lagi.</string>
-    <string name="cap_err_radius">Lokasi Anda lebih dari 3 km dari toko. Pindah ke toko, lalu coba lagi.</string>
+    <string name="cap_err_radius_attendance">Lokasi Anda lebih dari 3 km dari titik lokasi kantor atau toko partner yang terdaftar. Pindah ke lokasi tersebut, lalu coba lagi.</string>
+    <string name="cap_err_radius">Lokasi Anda lebih dari 3 km dari titik lokasi toko yang terdaftar. Pindah ke toko, lalu coba lagi.</string>
 
     <!-- Kunjungan (ATT-03 … ATT-05; PRD v3 D3, C8). -->
     <string name="vis_title">Kunjungan</string>
@@ -337,6 +337,8 @@
     <string name="reg_err_email">Format email tidak valid</string>
     <string name="reg_err_digits3">Isi 3 digit angka, contoh 003</string>
     <string name="reg_err_format">Format tidak valid</string>
+    <string name="reg_err_referral_taken">Kode referral sudah dipakai partner lain</string>
+    <string name="reg_err_phone_taken">Nomor telepon sudah terdaftar</string>
     <string name="reg_err_revenue">Omzet harus lebih dari Rp 0</string>
     <string name="reg_err_outlet">Minimal 1 tempat usaha</string>
     <string name="reg_err_file_size">Ukuran file melebihi %1$s</string>
@@ -489,7 +491,6 @@
     <string name="team_today_attendance">Absensi hari ini</string>
     <string name="team_month">Produktivitas bulan ini</string>
     <string name="team_week_visits">Kunjungan minggu ini</string>
-    <string name="team_visit_days">Hari dengan kunjungan</string>
     <string name="team_present">Hadir</string>
     <string name="team_present_value">%1$d dari %2$d hari kerja</string>
     <string name="team_on_time">Tepat waktu</string>
@@ -529,7 +530,6 @@
     <string name="asg_done_assign">%1$s ditugaskan ke %2$s.</string>
     <string name="asg_done_unassign">%1$s dilepas dari %2$s.</string>
     <string name="asg_store_row">%1$s · %2$s</string>
-    <string name="asg_store_others">Juga ditugaskan: %1$s</string>
 
     <!-- Jadwal Kunjungan (TL-04: weekly view and days off; PRD v3 C7, revision 2026-10-08). -->
     <string name="sch_prev_week">Minggu sebelumnya</string>

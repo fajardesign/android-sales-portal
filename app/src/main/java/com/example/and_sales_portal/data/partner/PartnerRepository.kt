@@ -86,6 +86,24 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         return s
     }
 
+    // region Unique per partner (review 2026-10-09)
+
+    /** Partners a new registration must not clash with: every partner except Rejected / Cancelled ones and [exceptId]. */
+    private fun registered(exceptId: String?) =
+        _partners.value.filter { it.id != exceptId && it.status != PartnerStatus.REJECTED && it.status != PartnerStatus.CANCELLED }
+
+    /** Kode Referral identifies the partner (loans from the partner carry it), so it is unique, ignoring case. */
+    fun referralTaken(code: String, exceptId: String? = null): Boolean =
+        code.isNotBlank() && registered(exceptId).any { it.referralCode.equals(code.trim(), ignoreCase = true) }
+
+    /** No. Handphone PIC is used to sign in to the Partner account, so it is unique per partner (`8…`, 0/62 removed). */
+    fun picPhoneTaken(phone: String, exceptId: String? = null): Boolean {
+        val n = normalizePhone(phone)
+        return n.isNotEmpty() && registered(exceptId).any { normalizePhone(it.picPhone) == n }
+    }
+
+    // endregion
+
     // region Assign SA/SR (TL-03; PRD C6, stakeholder revision 2026-10-08: per toko)
 
     /** Active partners with a toko assigned to [employeeId]. */
@@ -197,6 +215,16 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         val SR_STORES = 4..6
 
         fun storeLimits(role: String): IntRange = if (role == "SA") SA_STORES else SR_STORES
+
+        /** Phone digits as stored (`8…`): `08…`, `62…`, `+62…` and `8…` are the same number. */
+        fun normalizePhone(phone: String): String {
+            val d = phone.filter(Char::isDigit)
+            return when {
+                d.startsWith("62") -> d.removePrefix("62")
+                d.startsWith("0") -> d.removePrefix("0")
+                else -> d
+            }
+        }
 
         /** Name of the person who moved a status (user id or Admin name). */
         fun actorName(by: String): String = by.toLongOrNull()?.let { DemoDirectory.person(it)?.fullName } ?: by
