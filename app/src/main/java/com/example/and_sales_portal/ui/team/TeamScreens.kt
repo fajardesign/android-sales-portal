@@ -135,11 +135,9 @@ fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Uni
                 InfoRow(stringResource(R.string.team_late), stringResource(R.string.team_days_value, pr.late))
                 InfoRow(stringResource(R.string.team_absent), stringResource(R.string.team_days_value, pr.absent))
                 InfoRow(stringResource(R.string.team_days_off), stringResource(R.string.team_days_value, pr.daysOff))
-                pr.weeks.lastOrNull()?.let { w ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.team_week_visits), Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm)
-                        VisitWeekBadge(w)
-                    }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.team_week_visits), Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm)
+                    VisitWeekBadge(pr.thisWeek)
                 }
             }
         }

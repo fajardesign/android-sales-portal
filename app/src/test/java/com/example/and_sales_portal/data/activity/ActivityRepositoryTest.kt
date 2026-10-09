@@ -107,6 +107,17 @@ class ActivityRepositoryTest {
     }
 
     @Test
+    fun weeksOfAPeriodFollowTheWebPortal() {
+        // Review 2026-10-09: a week belongs to the period when its Monday is in it, up to today (Wednesday 7 Oct).
+        val october = LocalDate.of(2026, 10, 1)..wednesday
+        assertEquals(listOf(LocalDate.of(2026, 10, 5)), ops.visitWeeks(11, october).map { it.start })
+        assertEquals(listOf(LocalDate.of(2026, 9, 21), LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 5)), ops.visitWeeks(11, LocalDate.of(2026, 9, 21)..wednesday.plusDays(10)).map { it.start })
+        // "Hari ini" on a Wednesday has no week of its own; the current week is shown separately.
+        assertTrue(ops.visitWeeks(11, wednesday..wednesday).isEmpty())
+        assertEquals(6, ops.visitWeek(11, wednesday.minusDays(2)).target)
+    }
+
+    @Test
     fun weeklyTargetAndDaysOff() {
         val monday = wednesday.minusDays(2)
         val week = ops.visitWeek(11, monday)

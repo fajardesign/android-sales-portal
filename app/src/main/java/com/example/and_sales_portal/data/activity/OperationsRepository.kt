@@ -60,9 +60,16 @@ class OperationsRepository(
         return ActivityRules.visitWeek(weekStart, dates) { isDayOff(employeeId, it) }
     }
 
-    /** Weeks (Monday–Saturday) overlapping [range]. */
-    fun visitWeeks(employeeId: Long, range: ClosedRange<LocalDate>): List<VisitWeek> =
-        generateSequence(ActivityRules.weekStart(range.start)) { it.plusWeeks(1) }.takeWhile { !it.isAfter(range.endInclusive) }.map { visitWeek(employeeId, it) }.toList()
+    /**
+     * Weeks of [range] like the web portal `visitWeeks` (review 2026-10-09): a week belongs to the period when its Monday
+     * is in it, up to today. "Hari ini" on a day other than Monday has none; screens show the current week separately.
+     */
+    fun visitWeeks(employeeId: Long, range: ClosedRange<LocalDate>): List<VisitWeek> {
+        val monday = ActivityRules.weekStart(range.start)
+        val first = if (monday.isBefore(range.start)) monday.plusWeeks(1) else monday
+        val last = minOf(range.endInclusive, today())
+        return generateSequence(first) { it.plusWeeks(1) }.takeWhile { !it.isAfter(last) }.map { visitWeek(employeeId, it) }.toList()
+    }
 
     // region Attendance and visit execution (ATT)
 

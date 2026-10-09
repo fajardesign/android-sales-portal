@@ -81,10 +81,11 @@ fun ProductivityCard(title: String, p: Productivity, modifier: Modifier = Modifi
     AmarCard(modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = onClick) {
         Text(title, color = c.content.primary, style = AmarTheme.typography.headingSm)
         Text(stringResource(R.string.prod_attendance, p.present, p.workdays, p.onTime, p.late), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        p.weeks.forEach { w ->
+        // Like the web portal: the current week, then the other weeks whose Monday is in the period.
+        (listOf(p.thisWeek) + p.weeks.filter { it.start != p.thisWeek.start }.sortedByDescending { it.start }).forEach { w ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    if (p.weeks.size == 1) stringResource(R.string.vis_week) else stringResource(R.string.prod_week_label, Fmt.shortDate(w.start)),
+                    if (w.start == p.thisWeek.start) stringResource(R.string.vis_week) else stringResource(R.string.prod_week_label, Fmt.shortDate(w.start)),
                     Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm,
                 )
                 VisitWeekBadge(w)

@@ -20,8 +20,10 @@ data class Productivity(
     val late: Int,
     val absent: Int,
     val daysOff: Int,
-    /** Weeks (Monday–Saturday) overlapping the period. */
+    /** Weeks of the period: Monday in the period, up to today (same as the web portal). */
     val weeks: List<VisitWeek>,
+    /** The current week (Monday–Saturday), always shown ("Kunjungan minggu ini"). */
+    val thisWeek: VisitWeek,
 )
 
 /**
@@ -53,6 +55,7 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
             absent = statuses.count { it == AttendanceStatus.ABSENT },
             daysOff = statuses.count { it == AttendanceStatus.DAY_OFF },
             weeks = ops.visitWeeks(employeeId, range.start..range.endInclusive),
+            thisWeek = ops.visitWeek(employeeId, ActivityRules.weekStart(today)),
         )
     }
 
