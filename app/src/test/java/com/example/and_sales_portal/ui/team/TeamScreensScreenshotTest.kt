@@ -56,7 +56,16 @@ class TeamScreensScreenshotTest {
     fun assign() {
         val sa = person(15)
         val owned = partners.filter { it.ownerTlId == 6L && it.status.name == "ACTIVE" }.flatMap { p -> p.stores.map { p to it } }
-        capture("03_assign_sa") { AssignScreen(listOf(person(11), sa), sa, {}, assigned(15), owned - assigned(15).toSet(), {}, {}, {}) }
+        val history = listOf(
+            com.example.and_sales_portal.data.partner.AssignmentEvent(1_791_520_200_000L, com.example.and_sales_portal.data.partner.AssignmentAction.ASSIGN, 15, "REG2026-0132-1", "PT Bintang Gadget Store", "REG2026-0132", "PT Bintang Gadget Store", "6"),
+            com.example.and_sales_portal.data.partner.AssignmentEvent(1_791_430_200_000L, com.example.and_sales_portal.data.partner.AssignmentAction.RELEASE, 15, "REG2026-0139-2", "Jaya Abadi Cellular Mall Panakkukang", "REG2026-0139", "Jaya Abadi Cellular", "SYSTEM"),
+        )
+        capture("03_assign_sa") { AssignScreen(listOf(person(11), sa), sa, {}, assigned(15), owned - assigned(15).toSet(), {}, {}, {}, history) }
+        capture("03_notifications") {
+            com.example.and_sales_portal.ui.notifications.NotificationsScreen(
+                history.mapIndexed { i, e -> com.example.and_sales_portal.data.partner.AppNotification("n$i", 15, e, read = i > 0) }, {},
+            )
+        }
         capture("03_assign_empty") { AssignScreen(listOf(person(11), sa), null, {}, emptyList(), emptyList(), {}, {}, {}) }
     }
 

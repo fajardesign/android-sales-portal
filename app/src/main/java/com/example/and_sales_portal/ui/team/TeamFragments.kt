@@ -89,6 +89,7 @@ class AssignFragment : ComposeFragment() {
         val tl = session ?: return
         val tlId = tl.user.id
         val partners by container.partners.partners.collectAsState()
+        val log by container.partners.assignments.collectAsState()
         val people = remember { container.activeTeam(tlId) }
         var selectedId by rememberSaveable { mutableLongStateOf(arguments?.getLong(ARG_EMPLOYEE, NONE) ?: NONE) }
         var pending by remember { mutableStateOf<Pending?>(null) }
@@ -108,6 +109,7 @@ class AssignFragment : ComposeFragment() {
                     pending = if (error == null) Pending.Assign(item) else Pending.Error(error)
                 },
                 onUnassign = { pending = Pending.Unassign(it) },
+                history = remember(log, selectedId) { container.partners.historyOf(selectedId) },
             )
         }
         val name = person?.fullName ?: return
@@ -124,7 +126,7 @@ class AssignFragment : ComposeFragment() {
                 stringResource(R.string.asg_confirm_unassign_title), stringResource(R.string.asg_confirm_unassign, name, p.item.second.name), stringResource(R.string.asg_unassign),
                 onConfirm = {
                     pending = null
-                    container.team.unassign(selectedId, p.item.second.id)
+                    container.team.unassign(selectedId, p.item.second.id, tlId)
                     toast = getString(R.string.asg_done_unassign, name, p.item.second.name)
                 },
                 onDismiss = { pending = null },

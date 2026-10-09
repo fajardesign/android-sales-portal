@@ -18,7 +18,11 @@ import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.AttendanceStatus
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoDirectory
+import com.example.and_sales_portal.data.partner.AssignmentAction
+import com.example.and_sales_portal.data.partner.AssignmentEvent
 import com.example.and_sales_portal.data.partner.Partner
+import com.example.and_sales_portal.data.partner.PartnerRepository
+import com.example.and_sales_portal.ui.notifications.eventTime
 import com.example.and_sales_portal.data.partner.Store
 import com.example.and_sales_portal.data.team.Productivity
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
@@ -174,6 +178,7 @@ fun AssignScreen(
     onBack: () -> Unit,
     onAssign: (Pair<Partner, Store>) -> Unit,
     onUnassign: (Pair<Partner, Store>) -> Unit,
+    history: List<AssignmentEvent> = emptyList(),
 ) {
     ScreenScaffold(stringResource(R.string.act_assign), onBack) {
         PersonPicker(people, selected, onSelect)
@@ -188,6 +193,19 @@ fun AssignScreen(
         SectionTitle(stringResource(R.string.asg_available))
         if (available.isEmpty()) Text(stringResource(R.string.asg_no_stores), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
         available.forEach { StoreRow(it, stringResource(R.string.asg_assign), AmarButtonType.Primary) { onAssign(it) } }
+        // FR-MP-007 (PRD alignment 2026-10-09): every Tugaskan and Lepas of this SA/SR, newest first.
+        SectionTitle(stringResource(R.string.asg_history))
+        if (history.isEmpty()) Text(stringResource(R.string.asg_history_empty), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
+        history.forEach { e ->
+            Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
+                Text(
+                    stringResource(if (e.action == AssignmentAction.ASSIGN) R.string.asg_history_assign else R.string.asg_history_release, e.storeName, e.partnerName),
+                    color = AmarTheme.colors.content.primary, style = AmarTheme.typography.labelMdMedium,
+                )
+                val by = if (e.by == AssignmentEvent.SYSTEM) stringResource(R.string.asg_by_system) else PartnerRepository.actorName(e.by)
+                Text(stringResource(R.string.asg_history_meta, by, eventTime(e)), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.bodySm)
+            }
+        }
     }
 }
 
@@ -260,7 +278,7 @@ fun ScheduleScreen(
                 d.visits.forEach { v ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
                         Text(
-                            stringResource(R.string.sch_visit_row, v.visit.checkIn?.let { Fmt.timeLabel(it.at) } ?: "-", v.store.name),
+                            stringResource(R.string.sch_visit_row, v.visit.checkIn?.let { Fmt.timeLabel(it, v.visit.employeeId) } ?: "-", v.store.name),
                             Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm, maxLines = 1,
                         )
                         VisitStatusBadge(v.status)

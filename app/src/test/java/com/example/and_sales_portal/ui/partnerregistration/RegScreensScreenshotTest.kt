@@ -80,6 +80,12 @@ class RegScreensScreenshotTest {
     fun reviewLocationSuccess() {
         val p = partners.first { it.id == "REG2026-0148" }
         capture("07_review") { RegReviewScreen(p, {}, {}, {}) }
+        // FR-PA-007 consent (flag on): the checkbox sits under the sections; the CTA stays disabled until it is ticked.
+        capture("07_consent") {
+            com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionControl(
+                false, {}, androidx.compose.ui.Modifier, label = androidx.compose.ui.res.stringResource(R.string.reg_consent),
+            )
+        }
         capture("08_locating") { RegLocationScreen(LocationCaptureState(locating = true), false, {}, CaptureActions(), {}) }
         val found = LocationResult.Found(-5.1478, 119.4326, "Panakkukang, Kota Makassar, Sulawesi Selatan", false)
         capture("08_found") { RegLocationScreen(LocationCaptureState(found = found), false, {}, CaptureActions(), {}) }

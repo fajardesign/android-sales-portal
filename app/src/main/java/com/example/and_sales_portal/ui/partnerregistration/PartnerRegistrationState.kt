@@ -176,6 +176,8 @@ data class PartnerRegistrationState(
     /** Name of a saved draft offered when the flow opens; `null` when there is none or it was answered. */
     val draftOffer: String? = null,
     val submitting: Boolean = false,
+    /** REG-07 consent checkbox (FR-PA-007), when its flag is on. */
+    val consent: Boolean = false,
     val submitted: Submitted? = null,
 ) {
     val entityType: String? get() = choices[RegChoice.EntityType]

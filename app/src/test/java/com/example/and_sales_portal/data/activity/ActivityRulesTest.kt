@@ -53,21 +53,54 @@ class ActivityRulesTest {
     }
 
     @Test
+    fun deviceZoneIsSavedAndDecides() {
+        val original = ActivityRules.systemZone
+        try {
+            // PRD alignment 2026-10-09: WIB, WITA, WIT from the device; another zone falls back to the area (Makassar WITA).
+            ActivityRules.systemZone = { java.time.ZoneId.of("Asia/Jayapura") }
+            assertEquals("Asia/Jayapura", ActivityRules.deviceZone(11).id)
+            assertEquals("WIT", ActivityRules.label(ActivityRules.deviceZone(11)))
+            ActivityRules.systemZone = { java.time.ZoneId.of("UTC") }
+            assertEquals("Asia/Makassar", ActivityRules.deviceZone(11).id)
+            // The zone saved with the check in decides on time: 09:30 WIB (10:30 WITA) is on time when checked in on WIB.
+            val wib = java.time.ZoneId.of("Asia/Jakarta")
+            val at = today.atTime(LocalTime.of(9, 30)).atZone(wib).toInstant().toEpochMilli()
+            assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, 0.0, 0.0, zone = "Asia/Jakarta")), today, today))
+            // Saved before zones existed: the area zone (WITA) decides, 10:30 WITA is late.
+            assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, 0.0, 0.0)), today, today))
+            // Visit check-in opens at 12:00 on the device zone: 11:30 WIB is 12:30 WITA but 11:30 on a WIB device.
+            ActivityRules.systemZone = { wib }
+            val noonWib = today.atTime(LocalTime.of(11, 30)).atZone(wib).toInstant()
+            assertTrue(!ActivityRules.visitOpen(noonWib, 11))
+        } finally {
+            ActivityRules.systemZone = original
+        }
+    }
+
+    @Test
     fun visitRules() {
         // Check-in opens at 12:00 local time (Makassar WITA for employee 11).
+        val original = ActivityRules.systemZone
+        ActivityRules.systemZone = { java.time.ZoneId.of("UTC") } // not WIB/WITA/WIT: the area zone (WITA) is used
         assertTrue(!ActivityRules.visitOpen(java.time.Instant.ofEpochMilli(at("11:59")), 11))
         assertTrue(ActivityRules.visitOpen(java.time.Instant.ofEpochMilli(at("12:00")), 11))
+        ActivityRules.systemZone = original
         assertEquals(3_000, ActivityRules.VISIT_RADIUS_METERS)
-        // Weekly target: Monday–Saturday minus days off; one visit counts per day.
+        // PRD alignment 2026-10-09: every toko to visit once a week, grouped by partner (like the web visitWeekStores).
         val monday = LocalDate.of(2026, 10, 5)
         assertEquals(monday, ActivityRules.weekStart(today))
-        val two = ActivityRules.visitWeek(monday, setOf(monday, monday.plusDays(1))) { false }
-        assertEquals(VisitWeek(monday, 2, 6), two)
-        assertTrue(!two.complete)
-        val all = (0L..5L).map { monday.plusDays(it) }.toSet()
-        assertTrue(ActivityRules.visitWeek(monday, all) { false }.complete)
-        // Sunday visits do not count; a day off leaves the target.
-        assertEquals(VisitWeek(monday, 5, 5), ActivityRules.visitWeek(monday, all - monday.plusDays(5) + monday.plusDays(6)) { it == monday.plusDays(5) })
+        val partners = PartnerSeed.partners()
+        val targets = DemoSeed.storesOf(partners, 11, SalesRole.SR).map { s -> partners.first { p -> p.stores.any { it.id == s.id } } to s }
+        val groups = ActivityRules.weekPartners(targets, setOf("REG2026-0139-2", "REG2026-0139-3"))
+        assertEquals(listOf("REG2026-0139", "REG2026-0132"), groups.map { it.partner.id })
+        assertTrue(groups[0].visited)
+        assertTrue(!groups[1].visited)
+        val week = ActivityRules.visitWeek(monday, groups)
+        assertEquals(VisitWeek(monday, 2, 3), week)
+        assertTrue(!week.complete)
+        assertTrue(ActivityRules.visitWeek(monday, ActivityRules.weekPartners(targets, targets.map { it.second.id }.toSet())).complete)
+        // No toko to visit: never complete.
+        assertTrue(!VisitWeek(monday, 0, 0).complete)
     }
 
     @Test

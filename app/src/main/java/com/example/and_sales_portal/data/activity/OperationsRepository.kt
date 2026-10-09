@@ -35,8 +35,8 @@ class OperationsRepository(
     fun now(): Instant = clock()
     fun today(): LocalDate = clock().atZone(ActivityRules.ZONE).toLocalDate()
 
-    /** Today in the local time of [employeeId]'s area. */
-    fun todayOf(employeeId: Long): LocalDate = clock().atZone(ActivityRules.zoneOf(employeeId)).toLocalDate()
+    /** Today for [employeeId] on this device (device zone, else the area's). */
+    fun todayOf(employeeId: Long): LocalDate = clock().atZone(ActivityRules.deviceZone(employeeId)).toLocalDate()
 
     fun attendanceOf(employeeId: Long, date: LocalDate): Attendance? =
         _data.value.attendance.firstOrNull { it.employeeId == employeeId && it.date == date.toString() }
@@ -54,11 +54,17 @@ class OperationsRepository(
     fun visitsBetween(employeeId: Long, from: LocalDate, to: LocalDate): List<Visit> =
         _data.value.visits.filter { it.employeeId == employeeId && LocalDate.parse(it.date) in from..to }
 
-    /** Week of [weekStart] (Monday): days with a visit over workdays minus days off. */
-    fun visitWeek(employeeId: Long, weekStart: LocalDate): VisitWeek {
-        val dates = visitsBetween(employeeId, weekStart, weekStart.plusDays(5)).map { LocalDate.parse(it.date) }.toSet()
-        return ActivityRules.visitWeek(weekStart, dates) { isDayOff(employeeId, it) }
+    /** Toko of [employeeId] to visit in the week of [weekStart], by partner, with whether each was visited. */
+    fun weekPartners(employeeId: Long, weekStart: LocalDate): List<WeekPartner> {
+        val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
+        val list = partners.partners.value
+        val targets = DemoSeed.storesOf(list, employeeId, role).mapNotNull { s -> list.firstOrNull { p -> p.stores.any { it.id == s.id } }?.let { it to s } }
+        val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
+        return ActivityRules.weekPartners(targets, seen)
     }
+
+    /** Week of [weekStart] (Monday): toko visited over toko to visit (PRD alignment 2026-10-09; days off do not count). */
+    fun visitWeek(employeeId: Long, weekStart: LocalDate): VisitWeek = ActivityRules.visitWeek(weekStart, weekPartners(employeeId, weekStart))
 
     /**
      * Weeks of [range] like the web portal `visitWeeks` (review 2026-10-09): a week belongs to the period when its Monday
@@ -127,7 +133,7 @@ class OperationsRepository(
 
     // endregion
 
-    /** Marks or clears a day off (TL-04, today or later); the day leaves the weekly visit target. */
+    /** Marks or clears a day off (TL-04, today or later): attendance shows Libur and visit check-in is closed that day. */
     fun setDayOff(employeeId: Long, date: LocalDate, off: Boolean) {
         if (date.isBefore(todayOf(employeeId))) return
         val key = OpsData.key(employeeId, date)

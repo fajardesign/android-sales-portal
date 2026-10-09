@@ -76,11 +76,13 @@ fun TabbedScaffold(title: String, onBack: (() -> Unit)?, tabs: List<Int>, select
 
 /** Productivity lines of a person: attendance, and visits per week against the target (revision 2026-10-08). */
 @Composable
-fun ProductivityCard(title: String, p: Productivity, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+fun ProductivityCard(title: String, p: Productivity, modifier: Modifier = Modifier, team: Boolean = false, onClick: (() -> Unit)? = null) {
     val c = AmarTheme.colors
     AmarCard(modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = onClick) {
         Text(title, color = c.content.primary, style = AmarTheme.typography.headingSm)
         Text(stringResource(R.string.prod_attendance, p.present, p.workdays, p.onTime, p.late), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        // TL-07 (PRD alignment 2026-10-09, same as the APL report): Absen and the average check in time.
+        if (team) Text(stringResource(R.string.prod_absent_avg, p.absent, p.avgClockIn ?: "-"), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         // Like the web portal: the current week, then the other weeks whose Monday is in the period.
         (listOf(p.thisWeek) + p.weeks.filter { it.start != p.thisWeek.start }.sortedByDescending { it.start }).forEach { w ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -190,7 +192,7 @@ fun TeamProductivityScreen(period: Period, onPeriod: (Period) -> Unit, rows: Lis
     ScreenScaffold(stringResource(R.string.prod_title), onBack) {
         PeriodChips(listOf(Period.TODAY, Period.WEEK, Period.MONTH), period, onPeriod)
         if (rows.isEmpty()) AmarInfoBox(stringResource(R.string.team_empty), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
-        rows.forEach { (p, pr) -> ProductivityCard(p.fullName, pr) { onOpen(p) } }
+        rows.forEach { (p, pr) -> ProductivityCard(p.fullName, pr, team = true) { onOpen(p) } }
     }
 }
 
@@ -213,7 +215,7 @@ fun EvidenceScreen(name: String, period: Period, onPeriod: (Period) -> Unit, day
                 }
                 val inPunch = d.attendance?.clockIn
                 PresenceBadge(d.attendance)
-                Text(inPunch?.let { stringResource(R.string.prod_clock_in, Fmt.timeLabel(it.at)) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+                Text(inPunch?.let { stringResource(R.string.prod_clock_in, Fmt.timeLabel(it, d.attendance!!.employeeId)) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
                 if (inPunch != null) {
                     inPunch.place?.let { place -> Text(inPunch.distance?.let { stringResource(R.string.prod_place, place, distanceLabel(it)) } ?: place, color = c.content.secondary, style = AmarTheme.typography.bodySm) }
                     Text(if (inPunch.selfie != null) stringResource(R.string.prod_selfie) else stringResource(R.string.prod_selfie_missing), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
@@ -221,7 +223,7 @@ fun EvidenceScreen(name: String, period: Period, onPeriod: (Period) -> Unit, day
                 }
                 d.visits.forEach { v ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                        Text(v.visit.checkIn?.let { Fmt.time(it.at) } ?: "-", color = c.content.primary, style = AmarTheme.typography.bodySm)
+                        Text(v.visit.checkIn?.let { Fmt.time(it, v.visit.employeeId) } ?: "-", color = c.content.primary, style = AmarTheme.typography.bodySm)
                         Text(v.store.name, Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm, maxLines = 1)
                         VisitStatusBadge(v.status)
                     }

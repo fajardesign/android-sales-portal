@@ -39,6 +39,7 @@ class ActivityRepository(
     fun visit(id: String): Visit? = ops.visit(id)
     fun visitsOn(date: LocalDate): List<Visit> = ops.visitsOf(userId, date)
     fun visitWeek(date: LocalDate): VisitWeek = ops.visitWeek(userId, ActivityRules.weekStart(date))
+    fun weekPartners(date: LocalDate): List<WeekPartner> = ops.weekPartners(userId, ActivityRules.weekStart(date))
     fun ongoingVisit(): Visit? = ops.ongoingVisit(userId)
     fun checkInBlock(storeId: String): VisitCheckInBlock? = ops.checkInBlock(userId, storeId)
 

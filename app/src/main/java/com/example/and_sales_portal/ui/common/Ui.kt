@@ -55,6 +55,8 @@ fun ScreenScaffold(
     modifier: Modifier = Modifier,
     background: Color = AmarTheme.colors.background.canvas,
     action: (@Composable () -> Unit)? = null,
+    /** Shows the notification icon of the Primary app bar (SA/SR Beranda). */
+    onNotifications: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier.fillMaxSize().background(background)) {
@@ -62,6 +64,8 @@ fun ScreenScaffold(
             title = title,
             type = if (onBack == null) AmarAppBarType.Primary else AmarAppBarType.Secondary,
             onNavigationClick = onBack,
+            onActionClick = onNotifications,
+            actionContentDescription = onNotifications?.let { stringResource(R.string.notif_title) },
         )
         Column(
             Modifier

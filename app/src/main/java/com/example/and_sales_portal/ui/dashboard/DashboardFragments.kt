@@ -67,10 +67,11 @@ class SalesHomeFragment : HomeBase() {
         val s = session ?: return
         val ops by container.operations.data.collectAsState()
         val partners by container.partners.partners.collectAsState()
+        val notes by container.partners.assignments.collectAsState()
         val online by container.connectivity.online.collectAsState()
         val (toast, clearToast) = incomingToast()
         val repo = activityRepo
-        val state = remember(ops, partners, online) {
+        val state = remember(ops, partners, notes, online) {
             val today = repo.today()
             SalesHomeState(
                 firstName = s.user.firstName,
@@ -81,7 +82,8 @@ class SalesHomeFragment : HomeBase() {
                 week = repo.visitWeek(today),
                 visitedToday = repo.visitsOn(today).isNotEmpty(),
                 dayOff = repo.isDayOff(today),
-                stores = repo.stores(),
+                groups = repo.weekPartners(today),
+                unread = container.partners.notificationsOf(s.user.id).filter { !it.read },
                 partners = container.partners.myPartners(s.user.id, s.role),
                 month = summary(container.sales.loansOfSales(s.user.id), Period.MONTH.range(today)),
                 incentive = container.sales.salesIncentive(s.user.id, s.role),
@@ -91,6 +93,7 @@ class SalesHomeFragment : HomeBase() {
             SalesHomeScreen(
                 state, attendanceActions(),
                 onVisits = { toTab(SalesTab.Visits) },
+                onNotifications = { navigate(R.id.notifications) },
                 onPartners = { toTab(SalesTab.Partner) },
                 onIncentive = { toTab(SalesTab.Performance) },
             )

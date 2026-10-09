@@ -60,7 +60,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 
 ## Simulasi (debug)
 
-**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline. Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk menjalankan aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Aktifkan, Tolak, Batalkan, Nonaktifkan).
+**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline, flag consent pendaftaran (REG-07, default mati). Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk menjalankan aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Aktifkan, Tolak, Batalkan, Nonaktifkan).
 
 ## Batasan prototype
 

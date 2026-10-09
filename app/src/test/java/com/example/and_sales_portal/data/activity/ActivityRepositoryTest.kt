@@ -31,8 +31,17 @@ class ActivityRepositoryTest {
     private fun at(date: LocalDate, time: String) = date.atTime(LocalTime.parse(time)).atZone(ActivityRules.ZONE).toInstant()
     private fun siti() = ActivityRepository(ops, partners, 11, SalesRole.SR)
 
+    private val machineZone = ActivityRules.systemZone
+
+    /** The device zone of the test machine would decide (PRD alignment 2026-10-09); use the area zones instead. */
+    @org.junit.After
+    fun restoreZone() {
+        ActivityRules.systemZone = machineZone
+    }
+
     @Before
     fun clean() {
+        ActivityRules.systemZone = { java.time.ZoneId.of("UTC") }
         partners = PartnerRepository(store) { now }
         partners.reset()
         ops = OperationsRepository(store, partners) { now }
@@ -99,11 +108,16 @@ class ActivityRepositoryTest {
         val first = requireNotNull(r.checkIn(store, Punch(now.toEpochMilli(), 0.0, 0.0)))
         assertEquals(VisitCheckInBlock.Ongoing, r.checkInBlock("REG2026-0139-3"))
         r.checkOut(first.id, Punch(now.plusSeconds(1800).toEpochMilli(), 0.0, 0.0), null)
-        // A second visit the same day is allowed but counts once in the weekly target.
+        // Several toko a day are allowed; each toko counts once a week (a second visit to it adds nothing).
         val before = r.visitWeek(wednesday).visited
-        assertNotNull(r.checkIn("REG2026-0139-3", Punch(now.plusSeconds(3600).toEpochMilli(), 0.0, 0.0)))
+        val second = requireNotNull(r.checkIn("REG2026-0139-3", Punch(now.plusSeconds(3600).toEpochMilli(), 0.0, 0.0)))
+        r.checkOut(second.id, Punch(now.plusSeconds(5400).toEpochMilli(), 0.0, 0.0), null)
         assertEquals(2, r.visitsOn(wednesday).size)
-        assertEquals(before, r.visitWeek(wednesday).visited)
+        val after = r.visitWeek(wednesday).visited
+        assertNotNull(r.checkIn("REG2026-0139-3", Punch(now.plusSeconds(7200).toEpochMilli(), 0.0, 0.0)))
+        assertEquals(after, r.visitWeek(wednesday).visited)
+        assertTrue(after >= before)
+        assertTrue(r.weekPartners(wednesday).first { it.partner.id == "REG2026-0139" }.visited)
     }
 
     @Test
@@ -114,25 +128,41 @@ class ActivityRepositoryTest {
         assertEquals(listOf(LocalDate.of(2026, 9, 21), LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 5)), ops.visitWeeks(11, LocalDate.of(2026, 9, 21)..wednesday.plusDays(10)).map { it.start })
         // "Hari ini" on a Wednesday has no week of its own; the current week is shown separately.
         assertTrue(ops.visitWeeks(11, wednesday..wednesday).isEmpty())
-        assertEquals(6, ops.visitWeek(11, wednesday.minusDays(2)).target)
+        // Target = Siti's 3 toko.
+        assertEquals(3, ops.visitWeek(11, wednesday.minusDays(2)).target)
     }
 
     @Test
     fun weeklyTargetAndDaysOff() {
         val monday = wednesday.minusDays(2)
         val week = ops.visitWeek(11, monday)
-        assertEquals(6, week.target)
-        val visitedBefore = ops.visitsBetween(11, monday, wednesday.minusDays(1)).map { it.date }.toSet().size
+        assertEquals(3, week.target)
+        val visitedBefore = ops.visitsBetween(11, monday, wednesday.minusDays(1)).map { it.storeId }.toSet().size
         assertEquals(visitedBefore, week.visited)
-        // A day off leaves the target; past days cannot be changed.
+        // Days off no longer change the target (it counts toko); past days cannot be changed.
         ops.setDayOff(11, wednesday.plusDays(2), true)
-        assertEquals(5, ops.visitWeek(11, monday).target)
+        assertEquals(3, ops.visitWeek(11, monday).target)
         ops.setDayOff(11, monday, true)
-        assertEquals(5, ops.visitWeek(11, monday).target)
+        assertTrue(!ops.isDayOff(11, monday))
         ops.setDayOff(11, wednesday, true)
         assertEquals(AttendanceStatus.DAY_OFF, ops.attendanceStatus(11, wednesday))
         assertEquals(VisitCheckInBlock.DayOff, siti().checkInBlock("REG2026-0139-2"))
         ops.setDayOff(11, wednesday, false)
         assertEquals(AttendanceStatus.NOT_YET, ops.attendanceStatus(11, wednesday))
+    }
+
+    @Test
+    fun teamProductivityHasAbsentAndAverageCheckIn() {
+        // TL-07 (PRD alignment 2026-10-09): Absen and the average check in, each read in its saved zone (Makassar WITA).
+        val team = com.example.and_sales_portal.data.team.TeamService(partners, ops)
+        val range = LocalDate.of(2026, 10, 1)..wednesday.minusDays(1)
+        val p = team.productivity(11, range)
+        val punches = (0L..5L).map { range.start.plusDays(it) }.filter(ActivityRules::isWorkday).mapNotNull { ops.attendanceOf(11, it)?.clockIn }
+        val minutes = punches.map { java.time.Instant.ofEpochMilli(it.at).atZone(java.time.ZoneId.of("Asia/Makassar")).toLocalTime().let { t -> t.hour * 60 + t.minute } }
+        val avg = Math.round(minutes.sum().toDouble() / minutes.size).toInt()
+        assertEquals("%02d:%02d WITA".format(avg / 60, avg % 60), p.avgClockIn)
+        assertEquals(p.workdays - p.present - p.daysOff, p.absent)
+        // No check in in the period: no average.
+        assertNull(team.productivity(11, wednesday..wednesday).avgClockIn)
     }
 }

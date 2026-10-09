@@ -37,7 +37,10 @@ import com.example.and_sales_portal.ui.common.ScreenScaffold
 import com.example.and_sales_portal.ui.partner.PartnerStatusBadge
 import com.example.and_sales_portal.ui.visits.VisitWeekBadge
 import com.example.and_sales_portal.data.activity.VisitWeek
-import com.example.and_sales_portal.data.partner.Store
+import com.example.and_sales_portal.data.activity.WeekPartner
+import com.example.and_sales_portal.data.partner.AppNotification
+import com.example.and_sales_portal.ui.notifications.notificationText
+import com.example.and_sales_portal.ui.visits.VisitedBadge
 import java.time.LocalDate
 
 class AttendanceActions(val onClockIn: () -> Unit, val onClockOut: () -> Unit, val onHistory: () -> Unit)
@@ -61,10 +64,13 @@ data class SalesHomeState(
     val week: VisitWeek,
     val visitedToday: Boolean,
     val dayOff: Boolean,
-    val stores: List<Store>,
+    /** This week's toko by partner with "Sudah dikunjungi minggu ini" / "Belum dikunjungi" (PRD alignment 2026-10-09). */
+    val groups: List<WeekPartner>,
     val partners: List<Partner>,
     val month: SalesSummary,
     val incentive: Incentive,
+    /** Unread in-app notifications (FR-MP-004), newest first. */
+    val unread: List<AppNotification> = emptyList(),
 )
 
 /**
@@ -79,10 +85,17 @@ fun SalesHomeScreen(
     onVisits: () -> Unit,
     onPartners: () -> Unit,
     onIncentive: () -> Unit,
+    onNotifications: () -> Unit = {},
 ) {
     val c = AmarTheme.colors
-    ScreenScaffold(stringResource(R.string.home_greeting, s.firstName), onBack = null) {
+    ScreenScaffold(stringResource(R.string.home_greeting, s.firstName), onBack = null, onNotifications = onNotifications) {
         PriorityHeading(s.role, s.date)
+        s.unread.firstOrNull()?.let { n ->
+            AmarInfoBox(
+                stringResource(R.string.notif_new, s.unread.size, notificationText(n.event)), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info,
+                buttonLabel = stringResource(R.string.notif_see), onButtonClick = onNotifications,
+            )
+        }
         AttendanceCard(s.attendance, s.online, attendance.onClockIn, attendance.onClockOut, onHistory = attendance.onHistory)
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
             SectionHeader(stringResource(R.string.home_week_visits), stringResource(R.string.home_see_all), onVisits)
@@ -99,8 +112,13 @@ fun SalesHomeScreen(
                 style = AmarTheme.typography.bodyMd,
             )
             Text(stringResource(R.string.vis_stores), color = c.content.secondary, style = AmarTheme.typography.captionSm)
-            if (s.stores.isEmpty()) Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-            s.stores.forEach { Text(it.name, color = c.content.primary, style = AmarTheme.typography.labelMdMedium) }
+            if (s.groups.isEmpty()) Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            s.groups.forEach { g ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
+                    Text(stringResource(R.string.home_partner_stores, g.partner.name, g.stores.size), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdMedium)
+                    VisitedBadge(g.visited, partner = true)
+                }
+            }
         }
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
             SectionHeader(stringResource(R.string.home_partners), stringResource(R.string.home_see_all), onPartners)

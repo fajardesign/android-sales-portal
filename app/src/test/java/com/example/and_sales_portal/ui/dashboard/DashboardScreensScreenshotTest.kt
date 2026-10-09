@@ -59,8 +59,8 @@ class DashboardScreensScreenshotTest {
     @Test
     fun homes() {
         val week = ops.visitWeek(11, ActivityRules.weekStart(today))
-        val stores = DemoSeed.storesOf(partners.partners.value, 11, SalesRole.SR)
-        val sr = SalesHomeState("Siti", SalesRole.SR, today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, week, false, false, stores, partners.myPartners(11, SalesRole.SR), summary(11), sales.salesIncentive(11, SalesRole.SR))
+        val groups = ops.weekPartners(11, ActivityRules.weekStart(today))
+        val sr = SalesHomeState("Siti", SalesRole.SR, today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, week, false, false, groups, partners.myPartners(11, SalesRole.SR), summary(11), sales.salesIncentive(11, SalesRole.SR))
         capture("sls_01_home") { SalesHomeScreen(sr, noop, {}, {}, {}) }
         val tl = TlHomeState(
             "Andi", today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, ops.visitWeek(6, ActivityRules.weekStart(today)), 2, 1, 0, 1, 2, 0, 3,

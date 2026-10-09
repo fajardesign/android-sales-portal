@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.activity.Attendance
 import com.example.and_sales_portal.data.activity.AttendanceStatus
+import com.example.and_sales_portal.data.activity.Punch
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
@@ -75,8 +76,8 @@ fun AttendanceCard(
             }
             PresenceBadge(a)
             Row(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                TimeTile(stringResource(R.string.att_clock_in), a?.clockIn?.at, c.background.brandSubtle)
-                TimeTile(stringResource(R.string.att_clock_out), a?.clockOut?.at, c.background.canvas)
+                TimeTile(stringResource(R.string.att_clock_in), a?.clockIn, a?.employeeId, c.background.brandSubtle)
+                TimeTile(stringResource(R.string.att_clock_out), a?.clockOut, a?.employeeId, c.background.canvas)
             }
         }
         when {
@@ -91,7 +92,7 @@ fun AttendanceCard(
 }
 
 @Composable
-private fun RowScope.TimeTile(label: String, millis: Long?, background: Color) {
+private fun RowScope.TimeTile(label: String, punch: Punch?, employeeId: Long?, background: Color) {
     val c = AmarTheme.colors
     Column(
         Modifier
@@ -102,7 +103,7 @@ private fun RowScope.TimeTile(label: String, millis: Long?, background: Color) {
     ) {
         Text(label, color = c.content.secondary, style = AmarTheme.typography.captionSm)
         Text(
-            millis?.let { stringResource(R.string.att_time, Fmt.timeLabel(it)) } ?: stringResource(R.string.att_time_empty, ActivityRules.ZONE_LABEL),
+            punch?.let { stringResource(R.string.att_time, Fmt.timeLabel(it, employeeId ?: 0)) } ?: stringResource(R.string.att_time_empty, ActivityRules.ZONE_LABEL),
             color = c.content.primary,
             style = AmarTheme.typography.headingMd,
         )
@@ -157,7 +158,7 @@ private fun HistoryRow(day: AttendanceDay) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                 Text(Fmt.shortDate(day.date), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                 Text(
-                    stringResource(R.string.att_history_row, a?.clockIn?.at?.let(Fmt::time) ?: "--:--", a?.clockOut?.at?.let(Fmt::time) ?: "--:--"),
+                    stringResource(R.string.att_history_row, a?.clockIn?.let { Fmt.timeLabel(it, a.employeeId) } ?: "--:--", a?.clockOut?.let { Fmt.timeLabel(it, a.employeeId) } ?: "--:--"),
                     color = c.content.secondary,
                     style = AmarTheme.typography.bodySm,
                 )

@@ -2,6 +2,7 @@ package com.example.and_sales_portal.data.demo
 
 import android.content.Context
 import com.example.and_sales_portal.data.activity.OpsData
+import com.example.and_sales_portal.data.partner.AssignmentData
 import com.example.and_sales_portal.data.partner.Partner
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,7 +13,7 @@ import java.io.File
  * operations shared by every account on the device, plus each user's registration draft. Partners, toko, assignments, visits, attendance, loans and incentives live here because the
  * Supabase backend only holds `app_user`.
  */
-class DemoStore(context: Context) {
+class DemoStore(context: Context, private val draftCipher: DraftCipher = KeystoreDraftCipher(context)) {
     private val dir = File(context.filesDir, "demo").apply { mkdirs() }
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
@@ -33,12 +34,42 @@ class DemoStore(context: Context) {
 
     fun savePartners(partners: List<Partner>) = write(PARTNERS, json.encodeToString(PartnersFile.serializer(), PartnersFile(partners = partners)))
 
-    /** Registration draft of [userId] (PRD C2: "draft is saved locally between steps"). */
-    fun loadDraft(userId: Long): String? = File(dir, "draft_$userId.json").takeIf { it.exists() }?.readText()
-    fun saveDraft(userId: Long, text: String) = write("draft_$userId.json", text)
+    /** Assignment history and notifications (TL-03, FR-MP-004 and FR-MP-007), or `null` when there is none. */
+    fun loadAssignments(): AssignmentData? = runCatching {
+        json.decodeFromString(AssignmentData.serializer(), File(dir, ASSIGNMENTS).readText()).takeIf { it.version == AssignmentData.VERSION }
+    }.getOrNull()
+
+    fun saveAssignments(data: AssignmentData) = write(ASSIGNMENTS, json.encodeToString(AssignmentData.serializer(), data))
+
+    /**
+     * Registration draft of [userId] (PRD C2; Scope 1 FR-PA-009: encrypted at rest, gone after [DRAFT_TTL_MILLIS]).
+     * A draft older than 30 days at [now] is deleted and not returned.
+     */
+    fun loadDraft(userId: Long, now: Long = System.currentTimeMillis()): String? {
+        File(dir, "draft_$userId.json").delete() // plain-text draft of earlier versions
+        val file = draftFile(userId)
+        val envelope = draftCipher.read(file)?.let { runCatching { json.decodeFromString(DraftEnvelope.serializer(), it) }.getOrNull() } ?: return null
+        if (now - envelope.savedAt > DRAFT_TTL_MILLIS) {
+            file.delete()
+            return null
+        }
+        return envelope.text
+    }
+
+    fun saveDraft(userId: Long, text: String, now: Long = System.currentTimeMillis()) =
+        draftCipher.write(draftFile(userId), json.encodeToString(DraftEnvelope.serializer(), DraftEnvelope(now, text)))
+
     fun deleteDraft(userId: Long) {
+        draftFile(userId).delete()
         File(dir, "draft_$userId.json").delete()
     }
+
+    /** Account switch (FR-PA-009): drafts of other accounts on the device are deleted. */
+    fun deleteDraftsExcept(userId: Long) {
+        dir.listFiles { f -> f.name.startsWith("draft_") && f.name != draftFile(userId).name }?.forEach { it.delete() }
+    }
+
+    private fun draftFile(userId: Long) = File(dir, "draft_$userId.enc")
 
     /** Uploaded documents and photos (local copies). */
     val documentDir: File get() = File(dir, "documents").apply { mkdirs() }
@@ -57,8 +88,16 @@ class DemoStore(context: Context) {
     private companion object {
         const val PARTNERS = "partners.json"
         const val OPS = "operations.json"
+        const val ASSIGNMENTS = "assignments.json"
     }
+
+    /** A draft with the time it was saved. */
+    @Serializable
+    private data class DraftEnvelope(val savedAt: Long, val text: String)
 }
+
+/** FR-PA-009 (proposed in the PRD, OQ-PA-06): a draft expires 30 days after it was last saved. */
+const val DRAFT_TTL_MILLIS = 30L * 24 * 3_600_000
 
 @Serializable
 private data class PartnersFile(val version: Int = VERSION, val partners: List<Partner>) {

@@ -22,6 +22,7 @@ import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.Visit
 import com.example.and_sales_portal.data.activity.VisitCheckInBlock
 import com.example.and_sales_portal.data.activity.VisitWeek
+import com.example.and_sales_portal.data.activity.WeekPartner
 import com.example.and_sales_portal.data.activity.VisitStatus
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.Store
@@ -61,9 +62,11 @@ fun VisitStatusBadge(status: VisitStatus) {
     AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small, solid = solid)
 }
 
-/** "Lengkap n/n" (Success) or "Belum lengkap n/m" (Warning), revision 2026-10-08. */
+/** "Lengkap n/n" (Success) or "Belum lengkap n/m" (Warning): toko visited this week over toko to visit. */
 @Composable
-fun VisitWeekBadge(week: VisitWeek) = if (week.complete) {
+fun VisitWeekBadge(week: VisitWeek) = if (week.target == 0) {
+    AmarBadge(stringResource(R.string.vis_week_no_store), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
+} else if (week.complete) {
     AmarBadge(stringResource(R.string.vis_week_complete, week.visited, week.target), type = AmarBadgeType.Success, size = AmarBadgeSize.Small)
 } else {
     AmarBadge(stringResource(R.string.vis_week_incomplete, week.visited, week.target), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
@@ -84,8 +87,8 @@ data class VisitListUiState(
     val week: VisitWeek,
     val visitedToday: Boolean,
     val dayOff: Boolean,
-    /** Assigned toko (TL: toko of own partners) with their partner. */
-    val stores: List<Pair<Partner, Store>>,
+    /** Toko to visit this week (SA/SR: assigned; TL: own partners) by partner, with their status. */
+    val groups: List<WeekPartner>,
     val visits: List<VisitItem>,
     val online: Boolean,
     /** Why check-in is not possible right now, if so. */
@@ -93,9 +96,10 @@ data class VisitListUiState(
 )
 
 /**
- * Spec: ATT-03 Kunjungan (PRD v3 D3; stakeholder revision 2026-10-08): this week's progress against the weekly target,
- * today's visits, and the assigned toko with `Check-In` (from 12:00 local, after check in kerja). SA/SR: tab Kunjungan
- * (no back); TL: Aktivitas › Kunjungan Saya.
+ * Spec: ATT-03 Kunjungan (PRD v3 D3; PRD alignment 2026-10-09): this week's progress (each assigned toko once a week),
+ * today's visits, and the toko grouped by partner with "Sudah dikunjungi minggu ini" / "Belum dikunjungi" and
+ * `Check-In Sekarang` (from 12:00 local, after check in kerja). SA/SR: tab Kunjungan (no back); TL: Aktivitas › Kunjungan
+ * Saya.
  */
 @Composable
 fun VisitListScreen(
@@ -147,7 +151,7 @@ fun VisitListScreen(
         if (s.visits.isEmpty()) Text(stringResource(R.string.vis_empty), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         s.visits.forEach { item ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onOpen(item) }) {
-                item.visit.checkIn?.let { Text(stringResource(R.string.att_time, Fmt.timeLabel(it.at)), color = c.content.primary, style = AmarTheme.typography.headingSm) }
+                item.visit.checkIn?.let { Text(stringResource(R.string.att_time, Fmt.timeLabel(it, item.visit.employeeId)), color = c.content.primary, style = AmarTheme.typography.headingSm) }
                 Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                     Text(item.store.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                     Text(item.partner.name, color = c.content.secondary, style = AmarTheme.typography.bodySm)
@@ -156,20 +160,34 @@ fun VisitListScreen(
             }
         }
         SectionTitle(stringResource(R.string.vis_stores))
-        if (s.stores.isEmpty()) Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        s.stores.forEach { (p, store) ->
+        if (s.groups.isEmpty()) Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        s.groups.forEach { g ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
-                        Text(store.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
-                        Text(p.name, color = c.content.secondary, style = AmarTheme.typography.bodySm)
-                        Text(store.address, color = c.content.tertiary, style = AmarTheme.typography.bodySm, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
+                    Text(g.partner.name, Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
+                    VisitedBadge(g.visited, partner = true)
+                }
+                g.stores.forEach { ws ->
+                    Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
+                            Text(ws.store.name, Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
+                            VisitedBadge(ws.visited, partner = false)
+                        }
+                        Text(ws.store.address, color = c.content.tertiary, style = AmarTheme.typography.bodySm, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        AmarButton(stringResource(R.string.vis_check_in), { onCheckIn(ws.store) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = s.online && s.block == null)
                     }
-                    AmarButton(stringResource(R.string.vis_check_in), { onCheckIn(store) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = s.online && s.block == null)
                 }
             }
         }
     }
+}
+
+/** Partner: "Sudah dikunjungi minggu ini" / "Belum dikunjungi"; toko: "Sudah dikunjungi" / "Belum dikunjungi". */
+@Composable
+fun VisitedBadge(visited: Boolean, partner: Boolean) = if (visited) {
+    AmarBadge(stringResource(if (partner) R.string.vis_partner_visited else R.string.vis_store_visited), type = AmarBadgeType.Success, size = AmarBadgeSize.Small)
+} else {
+    AmarBadge(stringResource(R.string.vis_not_visited), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
 }
 
 /**
@@ -200,15 +218,15 @@ fun VisitDetailScreen(
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
                 Text(stringResource(R.string.vis_ongoing_duration), color = c.content.secondary, style = AmarTheme.typography.captionSm)
                 Text(Fmt.clock(elapsed), color = c.content.primary, style = AmarTheme.typography.headingLg)
-                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(checkIn.at)))
+                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(checkIn, v.employeeId)))
             }
         }
         val checkOut = v.checkOut
         if (item.status == VisitStatus.DONE && checkIn != null && checkOut != null) {
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
                 SectionTitle(stringResource(R.string.vis_summary))
-                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(checkIn.at)))
-                InfoRow(stringResource(R.string.vis_check_out_at), stringResource(R.string.att_time, Fmt.timeLabel(checkOut.at)))
+                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(checkIn, v.employeeId)))
+                InfoRow(stringResource(R.string.vis_check_out_at), stringResource(R.string.att_time, Fmt.timeLabel(checkOut, v.employeeId)))
                 InfoRow(stringResource(R.string.vis_duration), duration(checkOut.at - checkIn.at))
                 v.note?.let { InfoRow(stringResource(R.string.vis_note), it) }
             }
@@ -242,7 +260,7 @@ fun VisitCheckOutScreen(item: VisitItem, note: String, online: Boolean, now: Lon
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
             Text(item.store.name, color = c.content.primary, style = AmarTheme.typography.headingSm)
             item.visit.checkIn?.let {
-                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(it.at)))
+                InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(it, item.visit.employeeId)))
                 InfoRow(stringResource(R.string.vis_duration), duration(now - it.at))
             }
         }

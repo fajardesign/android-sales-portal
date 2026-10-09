@@ -58,4 +58,14 @@ class AuthRepositoryTest {
         val engine = MockEngine { respond(body, HttpStatusCode.OK, headersOf("Content-Type", "application/json")) }
         assertEquals(LoginError.ForbiddenPlatform, failureOf(engine))
     }
+
+    @Test
+    fun visitProductivityFeatureUsesTheNewName() {
+        // PRD alignment 2026-10-09: sp-mobile-login sends PRODUCTIVITY_PERFORMANCE_VISIT (no longer ..._VISIT_PLAN).
+        val access = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString(
+            AccessInfo.serializer(),
+            """{"realmRole":"SA","platform":"sales-app-access","features":["ATTENDANCE","PRODUCTIVITY_PERFORMANCE_VISIT"]}""",
+        )
+        assertEquals(true, access.has(Feature.PRODUCTIVITY_VISIT))
+    }
 }

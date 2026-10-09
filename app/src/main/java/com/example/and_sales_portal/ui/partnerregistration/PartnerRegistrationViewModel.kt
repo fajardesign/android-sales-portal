@@ -103,7 +103,7 @@ class PartnerRegistrationViewModel(
 
     // region Draft
 
-    private fun loadDraft(): RegDraft? = store.loadDraft(user.id)?.let { runCatching { json.decodeFromString(RegDraft.serializer(), it) }.getOrNull() }
+    private fun loadDraft(): RegDraft? = store.loadDraft(user.id, partners.now())?.let { runCatching { json.decodeFromString(RegDraft.serializer(), it) }.getOrNull() }
 
     /** "Lanjutkan": restores the saved steps. */
     fun acceptDraft() {
@@ -128,6 +128,8 @@ class PartnerRegistrationViewModel(
         viewModelScope.launch { loadRegionsFor(_state.value.partner) }
     }
 
+    fun setConsent(value: Boolean) = _state.update { it.copy(consent = value) }
+
     /** "Mulai Baru". */
     fun discardDraft() {
         store.deleteDraft(user.id)
@@ -138,7 +140,7 @@ class PartnerRegistrationViewModel(
         if (mode != RegMode.New) return
         val s = _state.value
         val d = RegDraft(s.partner, s.business, s.pic, s.bank, s.choices.mapKeys { it.key.name }, s.documents.filterValues { it.status == UploadStatus.Uploaded }.mapKeys { it.key.name })
-        store.saveDraft(user.id, json.encodeToString(RegDraft.serializer(), d))
+        store.saveDraft(user.id, json.encodeToString(RegDraft.serializer(), d), partners.now())
     }
 
     // endregion

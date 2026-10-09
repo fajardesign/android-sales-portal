@@ -119,7 +119,7 @@ class CaptureViewModel(
         val found = s.found ?: return
         if (!s.online || s.selfie == null || !s.locationOk || _finished.value != null) return
         val at = repo.now().toEpochMilli()
-        val punch = Punch(at, found.lat, found.lng, found.address ?: s.nearest?.address, s.selfie, place = s.nearest?.name, distance = s.distance)
+        val punch = Punch(at, found.lat, found.lng, found.address ?: s.nearest?.address, s.selfie, place = s.nearest?.name, distance = s.distance, zone = ActivityRules.deviceZone(repo.userId).id)
         when (s.mode) {
             CaptureMode.CLOCK_IN -> repo.clockIn(punch)
             CaptureMode.CLOCK_OUT -> repo.clockOut(punch)

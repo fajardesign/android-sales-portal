@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.os.bundleOf
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.activity.ActivityRepository
+import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.data.activity.Punch
 import com.example.and_sales_portal.ui.attendance.CaptureFragment
 import com.example.and_sales_portal.ui.attendance.CaptureMode
@@ -42,17 +43,17 @@ abstract class VisitListFragment(private val asTab: Boolean) : ComposeFragment()
         LaunchedEffect(syncedMessage) { if (syncedMessage != null) synced = syncedMessage }
         val today = repo.today()
         val state = remember(data, partners, online) {
-            val stores = repo.stores().mapNotNull { st -> repo.partnerOf(st.id)?.let { it to st } }
+            val groups = repo.weekPartners(today)
             val visits = repo.visitsOn(today).mapNotNull { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) }
             VisitListUiState(
                 date = Fmt.longDate(today),
                 week = repo.visitWeek(today),
                 visitedToday = visits.isNotEmpty(),
                 dayOff = repo.isDayOff(today),
-                stores = stores,
+                groups = groups,
                 visits = visits,
                 online = online,
-                block = stores.firstOrNull()?.let { repo.checkInBlock(it.second.id) },
+                block = groups.firstOrNull()?.stores?.firstOrNull()?.let { repo.checkInBlock(it.store.id) },
             )
         }
         WithToast(incoming ?: synced, { clearIncoming(); synced = null }) {
@@ -133,7 +134,7 @@ class VisitCheckOutFragment : ComposeFragment() {
                     confirm = false
                     val at = repo.now().toEpochMilli()
                     // PRD D3: the check-out location is not recorded; the visit keeps the check-in location.
-                    repo.checkOut(visitId, Punch(at, checkIn.lat, checkIn.lng, checkIn.address, synced = online), note)
+                    repo.checkOut(visitId, Punch(at, checkIn.lat, checkIn.lng, checkIn.address, synced = online, zone = ActivityRules.deviceZone(repo.userId).id), note)
                     val minutes = (at - checkIn.at) / 60_000
                     val d = getString(R.string.vis_duration_value, (minutes / 60).toInt(), (minutes % 60).toInt())
                     backWithToast(getString(R.string.vis_check_out_done, d))

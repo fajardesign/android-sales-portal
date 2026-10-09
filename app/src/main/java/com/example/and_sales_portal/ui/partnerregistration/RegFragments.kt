@@ -183,11 +183,15 @@ class RegReviewFragment : RegFragment() {
     @Composable
     override fun Content(state: PartnerRegistrationState) {
         val preview = remember(state) { viewModel.preview() }
+        val sim by container.simulation.state.collectAsState()
         RegReviewScreen(
             preview,
             onBack = ::back,
             onEdit = { step -> findNavController().popBackStack(destinationOf(step), false) },
-            onContinue = { navigate(R.id.action_reg07_to_reg08) },
+            onContinue = { if (!sim.regConsent || state.consent) navigate(R.id.action_reg07_to_reg08) },
+            consentRequired = sim.regConsent,
+            consent = state.consent,
+            onConsent = viewModel::setConsent,
         )
     }
 
