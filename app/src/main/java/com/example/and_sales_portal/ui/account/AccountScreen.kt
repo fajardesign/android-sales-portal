@@ -58,7 +58,7 @@ fun AccountScreen(session: SalesSession, onLogout: () -> Unit, onResetDemo: () -
                 InfoRow(R.string.account_email, user.email)
                 user.phone?.let { InfoRow(R.string.account_phone, "+62 $it") }
                 InfoRow(R.string.account_area, user.areaIds.mapNotNull { DemoDirectory.area(it)?.name }.joinToString().ifEmpty { "-" })
-                InfoRow(R.string.account_supervisor, DemoDirectory.person(user.supervisorId)?.fullName ?: "-")
+                InfoRow(R.string.account_supervisor, DemoDirectory.person(DemoDirectory.person(user.id)?.supervisorId ?: user.supervisorId)?.fullName ?: "-")
             }
             AmarButton(stringResource(R.string.account_logout), onLogout, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Large)
             AmarButton(stringResource(R.string.account_reset_demo), onResetDemo, Modifier.fillMaxWidth(), type = AmarButtonType.Naked, size = AmarButtonSize.Large)

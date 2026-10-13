@@ -109,10 +109,11 @@ class TlHomeFragment : HomeBase() {
         val tlId = s.user.id
         val ops by container.operations.data.collectAsState()
         val partners by container.partners.partners.collectAsState()
+        val notes by container.partners.assignments.collectAsState()
         val online by container.connectivity.online.collectAsState()
         val (toast, clearToast) = incomingToast()
         val repo = activityRepo
-        val state = remember(ops, partners, online) {
+        val state = remember(ops, partners, notes, online) {
             val today = repo.today()
             val o = container.operations
             val team = container.team.teamOf(tlId).filter { it.status == "ACTIVE" }
@@ -141,6 +142,7 @@ class TlHomeFragment : HomeBase() {
                     val paid = summary(container.sales.loansOfSales(p.id), month).paidOutAmount
                     p.fullName to if (teamPaid == 0L) 0.0 else Math.round(paid * 1000.0 / teamPaid) / 10.0
                 }.sortedByDescending { it.second },
+                unread = container.partners.notificationsOf(tlId).filter { !it.read },
             )
         }
         WithToast(toast, clearToast) {
@@ -154,6 +156,7 @@ class TlHomeFragment : HomeBase() {
                     onSchedule = { navigate(R.id.schedule) },
                     onAssign = { navigate(R.id.assign) },
                     onIncentive = { navigate(R.id.team_incentive) },
+                    onNotifications = { navigate(R.id.notifications) },
                 ),
             )
         }

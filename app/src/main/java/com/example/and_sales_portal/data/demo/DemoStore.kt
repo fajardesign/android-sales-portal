@@ -41,6 +41,13 @@ class DemoStore(context: Context, private val draftCipher: DraftCipher = Keystor
 
     fun saveAssignments(data: AssignmentData) = write(ASSIGNMENTS, json.encodeToString(AssignmentData.serializer(), data))
 
+    /** Accounts disabled and leaders replaced after the sample (web ACC-05). */
+    fun loadDirectory(): Map<Long, DemoDirectory.Change> = runCatching {
+        json.decodeFromString(DirectoryFile.serializer(), File(dir, DIRECTORY).readText()).changes
+    }.getOrDefault(emptyMap())
+
+    fun saveDirectory(changes: Map<Long, DemoDirectory.Change>) = write(DIRECTORY, json.encodeToString(DirectoryFile.serializer(), DirectoryFile(changes)))
+
     /**
      * Registration draft of [userId] (PRD C2; Scope 1 FR-PA-009: encrypted at rest, gone after [DRAFT_TTL_MILLIS]).
      * A draft older than 30 days at [now] is deleted and not returned.
@@ -89,6 +96,7 @@ class DemoStore(context: Context, private val draftCipher: DraftCipher = Keystor
         const val PARTNERS = "partners.json"
         const val OPS = "operations.json"
         const val ASSIGNMENTS = "assignments.json"
+        const val DIRECTORY = "directory.json"
     }
 
     /** A draft with the time it was saved. */
@@ -100,9 +108,12 @@ class DemoStore(context: Context, private val draftCipher: DraftCipher = Keystor
 const val DRAFT_TTL_MILLIS = 30L * 24 * 3_600_000
 
 @Serializable
+private data class DirectoryFile(val changes: Map<Long, DemoDirectory.Change> = emptyMap())
+
+@Serializable
 private data class PartnersFile(val version: Int = VERSION, val partners: List<Partner>) {
     companion object {
-        /** 2: Kode Referral (revision 2026-10-08). */
-        const val VERSION = 2
+        /** 3: owner saved per partner (DD review 2026-10-13). */
+        const val VERSION = 3
     }
 }

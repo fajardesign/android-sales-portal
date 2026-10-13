@@ -206,7 +206,8 @@ class SalesRepository(private val partners: PartnerRepository, private val ops: 
                             partnerId = p.id,
                             storeId = s.id,
                             salesId = s.assigned.firstOrNull(),
-                            tlId = p.ownerTlId,
+                            // The TL who owned the partner on that date: past sales stay with the old TL (DD review point 7).
+                            tlId = p.ownerAt(submittedAt),
                             customer = "${FIRST[rnd.nextInt(FIRST.size)]} ${LAST[rnd.nextInt(LAST.size)]}",
                             amount = (30 + rnd.nextInt(121)) * 100_000L,
                             units = if (rnd.nextDouble() < 0.2) 2 else 1,

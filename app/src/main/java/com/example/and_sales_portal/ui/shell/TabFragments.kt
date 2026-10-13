@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,13 +44,17 @@ class AccountFragment : ComposeFragment() {
         var toast by remember { mutableStateOf<String?>(null) }
         val resetDone = stringResource(R.string.account_reset_demo_done)
         val scope = rememberCoroutineScope()
+        val directory by container.directory.changes.collectAsState()
         WithToast(toast, { toast = null }) {
-            AccountScreen(
-                current,
-                onLogout = { confirmLogout = true },
-                onResetDemo = { confirmReset = true },
-                onSimulation = if (BuildConfig.DEBUG) ({ navigate(R.id.simulation) }) else null,
-            )
+            // Redrawn when an account change (Simulasi, Reset data demo) changes the leader shown.
+            key(directory) {
+                AccountScreen(
+                    current,
+                    onLogout = { confirmLogout = true },
+                    onResetDemo = { confirmReset = true },
+                    onSimulation = if (BuildConfig.DEBUG) ({ navigate(R.id.simulation) }) else null,
+                )
+            }
         }
         if (confirmLogout) {
             ConfirmDialog(
@@ -74,6 +79,7 @@ class AccountFragment : ComposeFragment() {
                 confirmLabel = stringResource(R.string.account_reset_demo),
                 onConfirm = {
                     confirmReset = false
+                    container.directory.reset()
                     container.partners.reset()
                     container.operations.reset()
                     container.demo.reset(current.user.id)

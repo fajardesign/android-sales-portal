@@ -12,7 +12,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.example.and_sales_portal.R
+import com.example.and_sales_portal.data.demo.DemoDirectory
+import com.example.and_sales_portal.designsystem.components.actions.AmarButton
+import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
+import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
+import com.example.and_sales_portal.ui.common.WithToast
 import com.example.and_sales_portal.data.device.LocationMode
 import com.example.and_sales_portal.data.device.Simulation
 import com.example.and_sales_portal.designsystem.components.actions.AmarChip
@@ -33,13 +41,39 @@ class SimulationFragment : ComposeFragment() {
     override fun ScreenContent() {
         val settings = container.simulation
         val sim by settings.state.collectAsState()
-        SimulationScreen(sim, ::back) { f -> settings.update(f) }
+        val partners by container.partners.partners.collectAsState()
+        var toast by remember { mutableStateOf<String?>(null) }
+        val admin = remember(partners, toast) {
+            AdminSimulation(
+                tlActive = DemoDirectory.person(TL_ANDI)?.status != "DISABLED",
+                saActive = DemoDirectory.person(SA_EKO)?.status != "DISABLED",
+                onDisableTl = {
+                    val n = container.directory.disableTl(TL_ANDI, TL_BAGUS)
+                    toast = getString(R.string.sim_admin_disable_tl_done, n)
+                },
+                onDisableSa = {
+                    val n = container.directory.disableSales(SA_EKO)
+                    toast = getString(R.string.sim_admin_disable_sa_done, n)
+                },
+            )
+        }
+        WithToast(toast, { toast = null }) { SimulationScreen(sim, ::back, admin) { f -> settings.update(f) } }
+    }
+
+    private companion object {
+        /** Same as the web presets disable-tl (Andi Pratama → Bagus Wicaksono) and disable-sa (Eko Saputra). */
+        const val TL_ANDI = 6L
+        const val TL_BAGUS = 22L
+        const val SA_EKO = 15L
     }
 }
 
+/** Web ACC-05 effects tried on the device (DD review points 5 and 7); no admin screen on Android. */
+class AdminSimulation(val tlActive: Boolean, val saActive: Boolean, val onDisableTl: () -> Unit, val onDisableSa: () -> Unit)
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SimulationScreen(sim: Simulation, onBack: () -> Unit, onChange: ((Simulation) -> Simulation) -> Unit) {
+fun SimulationScreen(sim: Simulation, onBack: () -> Unit, admin: AdminSimulation? = null, onChange: ((Simulation) -> Simulation) -> Unit) {
     val c = AmarTheme.colors
     ScreenScaffold(stringResource(R.string.sim_title), onBack) {
         Text(stringResource(R.string.sim_desc), color = c.content.secondary, style = AmarTheme.typography.bodySm)
@@ -57,6 +91,14 @@ fun SimulationScreen(sim: Simulation, onBack: () -> Unit, onChange: ((Simulation
             Switch(R.string.sim_mock, sim.mockLocation) { v -> onChange { it.copy(mockLocation = v) } }
             Switch(R.string.sim_offline, sim.offline) { v -> onChange { it.copy(offline = v) } }
             Switch(R.string.sim_reg_consent, sim.regConsent) { v -> onChange { it.copy(regConsent = v) } }
+        }
+        admin?.let { a ->
+            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+                Text(stringResource(R.string.sim_admin_accounts), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
+                Text(stringResource(R.string.sim_admin_accounts_desc), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+                AmarButton(stringResource(R.string.sim_admin_disable_tl), a.onDisableTl, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium, enabled = a.tlActive)
+                AmarButton(stringResource(R.string.sim_admin_disable_sa), a.onDisableSa, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium, enabled = a.saActive)
+            }
         }
     }
 }

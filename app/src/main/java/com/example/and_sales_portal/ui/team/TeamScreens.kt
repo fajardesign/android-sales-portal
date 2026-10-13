@@ -114,6 +114,8 @@ fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Uni
             InfoRow(stringResource(R.string.account_email), p.email)
             InfoRow(stringResource(R.string.account_phone), "+62 ${p.phone}")
             InfoRow(stringResource(R.string.account_area), DemoDirectory.area(p.areaId)?.name ?: "-")
+            // DD review point 7: a replaced leader shows here (the TL viewing it is the new leader).
+            InfoRow(stringResource(R.string.account_supervisor), DemoDirectory.person(p.supervisorId)?.fullName ?: "-")
             InfoRow(stringResource(R.string.team_registered_label), date(p.createdAt))
         }
         if (!m.active) {
@@ -202,7 +204,11 @@ fun AssignScreen(
                     stringResource(if (e.action == AssignmentAction.ASSIGN) R.string.asg_history_assign else R.string.asg_history_release, e.storeName, e.partnerName),
                     color = AmarTheme.colors.content.primary, style = AmarTheme.typography.labelMdMedium,
                 )
-                val by = if (e.by == AssignmentEvent.SYSTEM) stringResource(R.string.asg_by_system) else PartnerRepository.actorName(e.by)
+                val by = when {
+                    e.by != AssignmentEvent.SYSTEM -> PartnerRepository.actorName(e.by)
+                    e.reason == AssignmentEvent.ACCOUNT_DISABLED -> stringResource(R.string.asg_by_disabled)
+                    else -> stringResource(R.string.asg_by_system)
+                }
                 Text(stringResource(R.string.asg_history_meta, by, eventTime(e)), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.bodySm)
             }
         }
