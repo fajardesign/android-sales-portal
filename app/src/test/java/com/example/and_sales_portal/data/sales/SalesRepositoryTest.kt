@@ -24,10 +24,11 @@ class SalesRepositoryTest {
     private val store = DemoStore(ApplicationProvider.getApplicationContext())
     private val now = LocalDate.of(2026, 10, 7).atTime(LocalTime.of(10, 30)).atZone(ActivityRules.ZONE).toInstant()
     private lateinit var sales: SalesRepository
+    private lateinit var partners: PartnerRepository
 
     @Before
     fun setUp() {
-        val partners = PartnerRepository(store) { now }.also { it.reset() }
+        partners = PartnerRepository(store) { now }.also { it.reset() }
         val ops = OperationsRepository(store, partners) { now }.also { it.reset() }
         sales = SalesRepository(partners, ops) { now }
     }
@@ -80,5 +81,15 @@ class SalesRepositoryTest {
         val andi = sales.tlIncentive(6)
         assertEquals(SalesRepository.TL_SENIOR_DAILY_FEE, andi.components.first().unitAmount)
         assertTrue(andi.components.any { it.kind == ComponentKind.LEADER })
+    }
+
+    @Test
+    fun pastSalesStayWithTheOldOwnerAfterTheTlIsReplaced() {
+        // DD review point 7: partners of Andi (6) move to Bagus (22); loans before the move stay with Andi.
+        val before = sales.loansOfTl(6).map { it.id }.toSet()
+        assertTrue(before.isNotEmpty())
+        partners.transferOwnership(6, 22, "TL lama dinonaktifkan")
+        assertEquals(before, sales.loansOfTl(6).map { it.id }.toSet())
+        assertTrue(sales.loansOfTl(22).isEmpty())
     }
 }

@@ -11,7 +11,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 /** Why an assignment is refused (PRD v3 C6). */
-enum class AssignError { SaLimit, SrLimit, NotOwner, OtherArea, NotLeader }
+enum class AssignError { SaLimit, SrLimit, NotOwner, OtherArea, NotLeader, Taken }
 
 /**
  * Partners of the organisation on this device (shared by every account, so an SR's submission shows up for their TL),
@@ -68,6 +68,7 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
             id = nextRegistrationNumber(),
             status = PartnerStatus.UNDER_REVIEW,
             history = listOf(StatusEvent(partner.submittedAt, null, PartnerStatus.UNDER_REVIEW, partner.submittedBy.toString(), "Pengajuan dikirim dari aplikasi mobile")),
+            ownerTl = Partner.defaultOwner(partner.submittedBy),
         ).let { p -> p.copy(stores = p.stores.mapIndexed { i, s -> s.copy(id = "${p.id}-${i + 1}") }) }
         change { it + p }
         return p
@@ -137,6 +138,8 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
             person.supervisorId != tlId -> AssignError.NotLeader
             p.ownerTlId != tlId || p.status != PartnerStatus.ACTIVE || store.status != "ACTIVE" -> AssignError.NotOwner
             p.areaId != person.areaId -> AssignError.OtherArea
+            // DD review point 5 (decision PO 2026-10-12): one toko = one SA/SR.
+            store.assigned.any { it != employeeId } -> AssignError.Taken
             current >= storeLimits(person.role).last -> if (person.role == "SA") AssignError.SaLimit else AssignError.SrLimit
             else -> null
         }
@@ -158,22 +161,52 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         log(AssignmentAction.RELEASE, employeeId, storeId, by.toString())
     }
 
+    /** SA/SR holding toko [storeId], if any (one toko = one SA/SR). */
+    fun holderOf(storeId: String): Long? = _partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId }?.assigned?.firstOrNull()
+
+    /**
+     * The SA/SR account was disabled (web ACC-05, DD review point 5): every toko is released, logged as the system.
+     * Returns how many toko were released.
+     */
+    fun releaseAll(employeeId: Long): Int {
+        val ids = _partners.value.flatMap { it.stores }.filter { employeeId in it.assigned }.map { it.id }
+        ids.forEach { id ->
+            changeStore(id) { it.copy(assigned = it.assigned - employeeId) }
+            log(AssignmentAction.RELEASE, employeeId, id, AssignmentEvent.SYSTEM, AssignmentEvent.ACCOUNT_DISABLED)
+        }
+        return ids.size
+    }
+
+    /**
+     * The owning TL [fromTl] was disabled (web ACC-05, DD review point 7): every partner they own moves to [toTl]. Loans
+     * keep the TL who owned the partner on their date ([Partner.ownerAt]). Returns how many partners moved.
+     */
+    fun transferOwnership(fromTl: Long, toTl: Long, reason: String): Int {
+        val moved = _partners.value.filter { it.ownerTlId == fromTl }.map { it.id }.toSet()
+        if (moved.isEmpty()) return 0
+        val at = now()
+        change { list ->
+            list.map { p -> if (p.id in moved) p.copy(ownerTl = toTl, ownerHistory = p.ownerHistory + OwnerChange(at, fromTl, toTl, reason)) else p }
+        }
+        return moved.size
+    }
+
     /** Tugaskan / Lepas of [employeeId], newest first (the later one first at the same time). */
     fun historyOf(employeeId: Long): List<AssignmentEvent> = _assignments.value.events.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.at }
 
     /** Notifications of [employeeId], newest first. */
     fun notificationsOf(employeeId: Long): List<AppNotification> =
-        _assignments.value.notifications.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.event.at }
+        _assignments.value.notifications.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.at }
 
     fun markNotificationsRead(employeeId: Long) = changeAssignments { d ->
         d.copy(notifications = d.notifications.map { if (it.employeeId == employeeId) it.copy(read = true) else it })
     }
 
     /** Logs a Tugaskan / Lepas and notifies the SA/SR (FR-MP-007, FR-MP-004). */
-    private fun log(action: AssignmentAction, employeeId: Long, storeId: String, by: String) {
+    private fun log(action: AssignmentAction, employeeId: Long, storeId: String, by: String, reason: String? = null) {
         val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return
         val s = p.stores.first { it.id == storeId }
-        val e = AssignmentEvent(now(), action, employeeId, storeId, s.name, p.id, p.name, by)
+        val e = AssignmentEvent(now(), action, employeeId, storeId, s.name, p.id, p.name, by, reason)
         changeAssignments { d ->
             d.copy(events = d.events + e, notifications = d.notifications + AppNotification("N-${e.at}-$employeeId-$storeId-${action.name}", employeeId, e))
         }
@@ -206,7 +239,12 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
             documents = p.documents.map { if (it.key == doc.key) it.copy(verification = Verification.NEEDS_REVISION, note = items[0].note) else it },
         )
         replace(PartnerActions.move(withNotes, PartnerStatus.REVISION_REQUIRED, at, ADMIN, "${items.size} item diminta revisi: ${items.joinToString { it.label }}"))
+        // DD review point 2 (decision PO 2026-10-12): the submitter and the owning TL (when different) are notified.
+        val notice = RevisionNotice(at, p.id, p.name)
+        val to = listOfNotNull(p.submittedBy, p.ownerTlId).distinct()
+        changeAssignments { d -> d.copy(notifications = d.notifications + to.map { AppNotification("N-$at-$it-${p.id}-REVISION", it, revision = notice) }) }
     }
+
 
     fun adminVerify(id: String) = adminMove(id, PartnerStatus.VERIFIED, "Seluruh dokumen wajib dan data rekening valid") { p ->
         p.copy(documents = p.documents.map { it.copy(verification = Verification.VALID, note = null) })
@@ -226,7 +264,7 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         val p = get(id) ?: return
         val released = p.stores.flatMap { s -> s.assigned.map { it to s.id } }
         adminMove(id, PartnerStatus.INACTIVE, "Partner berhenti bekerja sama") { it.copy(stores = it.stores.map { s -> s.copy(assigned = emptyList()) }) }
-        released.forEach { (employeeId, storeId) -> log(AssignmentAction.RELEASE, employeeId, storeId, AssignmentEvent.SYSTEM) }
+        released.forEach { (employeeId, storeId) -> log(AssignmentAction.RELEASE, employeeId, storeId, AssignmentEvent.SYSTEM, AssignmentEvent.PARTNER_INACTIVE) }
     }
 
     private fun adminMove(id: String, to: PartnerStatus, reason: String?, prepare: (Partner) -> Partner) {

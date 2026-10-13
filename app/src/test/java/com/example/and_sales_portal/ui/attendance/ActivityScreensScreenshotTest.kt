@@ -117,6 +117,6 @@ class ActivityScreensScreenshotTest {
 
     @Test
     fun simulation() {
-        capture("sim") { SimulationScreen(Simulation(), {}, {}) }
+        capture("sim") { SimulationScreen(Simulation(), {}, com.example.and_sales_portal.ui.simulation.AdminSimulation(true, true, {}, {})) {} }
     }
 }

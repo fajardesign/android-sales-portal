@@ -529,6 +529,7 @@
     <string name="asg_err_owner">Partner bukan milik Anda atau belum aktif</string>
     <string name="asg_err_leader">Anda bukan atasan langsung SA/SR ini</string>
     <string name="asg_err_title">Tidak dapat ditugaskan</string>
+    <string name="asg_err_taken">Toko ini sudah ditugaskan ke %1$s. Lepas dulu sebelum menugaskan orang lain.</string>
     <string name="asg_history">Riwayat penugasan</string>
     <string name="asg_history_empty">Belum ada riwayat penugasan.</string>
     <string name="asg_history_assign">Ditugaskan ke %1$s (%2$s)</string>
@@ -543,6 +544,15 @@
     <string name="notif_assigned">Anda ditugaskan ke %1$s (%2$s) oleh %3$s.</string>
     <string name="notif_released">Anda dilepas dari %1$s (%2$s) oleh %3$s.</string>
     <string name="notif_released_system">Anda dilepas dari %1$s (%2$s) karena partner tidak aktif.</string>
+    <string name="notif_released_disabled">Anda dilepas dari %1$s (%2$s) karena akun dinonaktifkan.</string>
+    <string name="notif_revision">Pengajuan %1$s perlu diperbaiki. Buka pengajuan untuk melihat catatan Admin.</string>
+    <string name="asg_by_disabled">Sistem (akun dinonaktifkan)</string>
+    <string name="sim_admin_accounts">Simulasi Admin: akun</string>
+    <string name="sim_admin_accounts_desc">Meniru Nonaktifkan di Account Management web (ACC-05). Kembalikan lewat Reset data demo.</string>
+    <string name="sim_admin_disable_tl">Nonaktifkan TL Andi Pratama (pengganti Bagus Wicaksono)</string>
+    <string name="sim_admin_disable_sa">Nonaktifkan SA Eko Saputra</string>
+    <string name="sim_admin_disable_tl_done">Andi Pratama dinonaktifkan. %1$d partner pindah ke Bagus Wicaksono.</string>
+    <string name="sim_admin_disable_sa_done">Eko Saputra dinonaktifkan. %1$d toko dilepas dari penugasan.</string>
     <string name="asg_confirm_assign_title">Tugaskan ke toko?</string>
     <string name="asg_confirm_assign">%1$s ditugaskan ke %2$s (%3$s).</string>
     <string name="asg_confirm_unassign_title">Lepas dari toko?</string>

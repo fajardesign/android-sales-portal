@@ -81,7 +81,7 @@ class AssignFragment : ComposeFragment() {
     private sealed interface Pending {
         data class Assign(val item: Pair<Partner, Store>) : Pending
         data class Unassign(val item: Pair<Partner, Store>) : Pending
-        data class Error(val error: AssignError) : Pending
+        data class Error(val error: AssignError, val holder: Long? = null) : Pending
     }
 
     @Composable
@@ -106,7 +106,7 @@ class AssignFragment : ComposeFragment() {
                 people, person, { selectedId = it.id }, assigned, available, ::back,
                 onAssign = { item ->
                     val error = person?.let { container.partners.assignmentError(tlId, it.id, item.second.id) }
-                    pending = if (error == null) Pending.Assign(item) else Pending.Error(error)
+                    pending = if (error == null) Pending.Assign(item) else Pending.Error(error, container.partners.holderOf(item.second.id))
                 },
                 onUnassign = { pending = Pending.Unassign(it) },
                 history = remember(log, selectedId) { container.partners.historyOf(selectedId) },
@@ -134,7 +134,12 @@ class AssignFragment : ComposeFragment() {
             is Pending.Error -> AmarBottomSheet(
                 onDismissRequest = { pending = null },
                 title = stringResource(R.string.asg_err_title),
-                description = stringResource(errorText(p.error)),
+                // DD review point 5: one toko = one SA/SR; the message names who holds it.
+                description = if (p.error == AssignError.Taken) {
+                    stringResource(R.string.asg_err_taken, DemoDirectory.person(p.holder)?.fullName.orEmpty())
+                } else {
+                    stringResource(errorText(p.error))
+                },
                 primaryLabel = stringResource(R.string.auth_understood),
                 onPrimaryClick = { pending = null },
             )
@@ -148,6 +153,7 @@ class AssignFragment : ComposeFragment() {
         AssignError.OtherArea -> R.string.asg_err_area
         AssignError.NotOwner -> R.string.asg_err_owner
         AssignError.NotLeader -> R.string.asg_err_leader
+        AssignError.Taken -> R.string.asg_err_title
     }
 }
 

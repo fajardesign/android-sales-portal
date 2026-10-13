@@ -98,7 +98,8 @@ object PartnerSeed {
         set(p135.advance(30 to (PartnerStatus.REJECTED to "Usaha tidak sesuai kriteria partner (bukan toko gadget)")))
         set(p134.advance(50 to (PartnerStatus.CANCELLED to "Partner mengundurkan diri sebelum review selesai")))
         set(byId.getValue(p133.id).advance(24 * 150 to (PartnerStatus.INACTIVE to "Partner berhenti bekerja sama per Oktober 2026")))
-        return list.map { byId.getValue(it.id) }
+        // The owner is saved per partner (decision PO 2026-10-12): the TL submitter, or the TL of the SR submitter.
+        return list.map { byId.getValue(it.id) }.map { it.copy(ownerTl = Partner.defaultOwner(it.submittedBy) { id -> DemoDirectory.samplePerson(id) }) }
     }
 
     private const val VERIFIED_REASON = "Seluruh dokumen wajib dan data rekening valid"

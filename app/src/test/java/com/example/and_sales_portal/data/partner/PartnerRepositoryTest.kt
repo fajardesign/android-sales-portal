@@ -107,15 +107,16 @@ class PartnerRepositoryTest {
     @Test
     fun assignmentHistoryAndNotifications() {
         // FR-MP-007: every Tugaskan and Lepas logged with actor, time, toko, partner and SA/SR.
-        assertNull(repo.assign(6, 11, "REG2026-0139-1"))
-        repo.unassign(11, "REG2026-0139-1", 6)
+        val free = repo.addStore("REG2026-0139", repo.get("REG2026-0139")!!.stores.first().copy(name = "Cabang Baru", primary = false, assigned = emptyList()))
+        assertNull(repo.assign(6, 11, free.id))
+        repo.unassign(11, free.id, 6)
         val history = repo.historyOf(11)
         assertEquals(listOf(AssignmentAction.RELEASE, AssignmentAction.ASSIGN), history.map { it.action })
-        assertEquals("REG2026-0139-1", history.first().storeId)
+        assertEquals(free.id, history.first().storeId)
         assertEquals("Jaya Abadi Cellular", history.first().partnerName)
         assertEquals("6", history.first().by)
         // Lepas of a toko that is not assigned does nothing.
-        repo.unassign(11, "REG2026-0139-1", 6)
+        repo.unassign(11, free.id, 6)
         assertEquals(2, repo.historyOf(11).size)
         // FR-MP-004: the SA/SR gets an in-app notification per event; opening the inbox marks them read.
         assertEquals(2, repo.notificationsOf(11).count { !it.read })
@@ -138,26 +139,78 @@ class PartnerRepositoryTest {
         assertEquals(3, repo.assignedStores(11).size)
         assertFalse(repo.belowMinimum(15))
         assertTrue(repo.belowMinimum(11))
-        // A 4th toko for Siti reaches the minimum; a toko can be shared with an SA.
-        assertNull(repo.assign(6, 11, "REG2026-0139-1"))
-        assertFalse(repo.belowMinimum(11))
-        assertEquals(listOf(15L, 11L), repo.get("REG2026-0139")!!.stores.first().assigned)
-        // SA: up to 3 toko, the 4th is refused.
-        assertNull(repo.assign(6, 15, "REG2026-0132-1"))
-        assertNull(repo.assign(6, 15, "REG2026-0132-2"))
-        assertEquals(AssignError.SaLimit, repo.assignmentError(6, 15, "REG2026-0139-2"))
-        // SR: up to 6 toko, the 7th is refused.
-        assertNull(repo.assign(6, 11, "REG2026-0132-1"))
+        // DD review point 5: one toko = one SA/SR. Eko's toko cannot go to Siti; the holder is named in the message.
+        assertEquals(AssignError.Taken, repo.assignmentError(6, 11, "REG2026-0139-1"))
+        assertEquals(15L, repo.holderOf("REG2026-0139-1"))
+        assertEquals(AssignError.Taken, repo.assign(6, 11, "REG2026-0139-1"))
+        assertEquals(listOf(15L), repo.get("REG2026-0139")!!.stores.first().assigned)
+        // Every toko of Andi's partners is held, so new toko are added for the limits below.
         val p = repo.get("REG2026-0139")!!
-        val extra = (1..2).map { repo.addStore(p.id, p.stores.first().copy(name = "Cabang Baru $it", primary = false, assigned = emptyList())) }
+        val extra = (1..5).map { repo.addStore(p.id, p.stores.first().copy(name = "Cabang Baru $it", primary = false, assigned = emptyList())) }
+        // A 4th toko for Siti reaches the minimum.
         assertNull(repo.assign(6, 11, extra[0].id))
+        assertFalse(repo.belowMinimum(11))
+        // SA: up to 3 toko, the 4th is refused.
+        assertNull(repo.assign(6, 15, extra[1].id))
+        assertNull(repo.assign(6, 15, extra[2].id))
+        assertEquals(AssignError.SaLimit, repo.assignmentError(6, 15, extra[3].id))
+        // SR: up to 6 toko, the 7th is refused.
+        assertNull(repo.assign(6, 11, extra[3].id))
+        assertNull(repo.assign(6, 11, extra[4].id))
         assertEquals(6, repo.assignedStores(11).size)
-        assertEquals(AssignError.SrLimit, repo.assignmentError(6, 11, extra[1].id))
+        val seventh = repo.addStore(p.id, p.stores.first().copy(name = "Cabang Baru 6", primary = false, assigned = emptyList()))
+        assertEquals(AssignError.SrLimit, repo.assignmentError(6, 11, seventh.id))
         // Not the direct leader, not the TL's partner.
-        assertEquals(AssignError.NotLeader, repo.assignmentError(7, 11, "REG2026-0139-1"))
+        assertEquals(AssignError.NotLeader, repo.assignmentError(7, 11, extra[4].id))
         assertEquals(AssignError.NotOwner, repo.assignmentError(6, 16, "REG2026-0138-1"))
-        // Unassign one toko only.
-        repo.unassign(15, "REG2026-0132-2", 6)
+        // Lepas frees the toko for someone else.
+        repo.unassign(15, extra[2].id, 6)
         assertEquals(2, repo.assignedStores(15).size)
+        assertNull(repo.assignmentError(6, 16, extra[2].id))
+    }
+
+
+    @Test
+    fun ownerIsSavedPerPartnerAndMovesWithItsHistory() {
+        // DD review point 7: saved per partner; by default the TL submitter, or the TL of the SR submitter.
+        val p = repo.get("REG2026-0139")!!
+        assertEquals(6L, p.ownerTl)
+        val before = now.toEpochMilli() - 1
+        val owned = repo.partners.value.count { it.ownerTlId == 6L }
+        assertEquals(6, owned) // every status: Active, Under Review, Verified, Rejected, …
+        assertEquals(owned, repo.transferOwnership(6, 22, "Kepemilikan partner pindah dari Andi Pratama ke Bagus Wicaksono (TL lama dinonaktifkan)"))
+        assertEquals(0, repo.partners.value.count { it.ownerTlId == 6L })
+        val moved = repo.get("REG2026-0139")!!
+        assertEquals(22L, moved.ownerTlId)
+        // Loans keep the TL who owned the partner on their date.
+        assertEquals(6L, moved.ownerAt(before))
+        assertEquals(22L, moved.ownerAt(now.toEpochMilli()))
+        // The new TL sees it in Partner Saya and can assign its toko; the old TL no longer can.
+        assertTrue("REG2026-0139" in repo.myPartners(22, SalesRole.TL).map { it.id })
+        assertTrue(repo.myPartners(6, SalesRole.TL).isEmpty())
+        // A partner the old TL did not own stays as it was.
+        assertEquals(7L, repo.get("REG2026-0138")!!.ownerTlId)
+    }
+
+    @Test
+    fun revisionRequestNotifiesSubmitterAndOwner() {
+        // DD review point 2: REG2026-0145 was submitted by TL Maya (9), who also owns it: one notification.
+        repo.adminRequestRevision("REG2026-0145")
+        assertEquals(1, repo.notificationsOf(9).count { it.revision?.partnerId == "REG2026-0145" })
+        // REG2026-0146 was submitted by SR Siti (11), owned by TL Andi (6): both are notified.
+        repo.adminRequestRevision("REG2026-0146")
+        assertEquals(1, repo.notificationsOf(11).count { it.revision?.partnerId == "REG2026-0146" })
+        assertEquals(1, repo.notificationsOf(6).count { it.revision?.partnerId == "REG2026-0146" })
+    }
+
+    @Test
+    fun disabledSalesAccountReleasesItsToko() {
+        // DD review point 5: the SA/SR account disabled → every toko released, logged as the system.
+        assertEquals(3, repo.releaseAll(11))
+        assertTrue(repo.assignedStores(11).isEmpty())
+        val e = repo.historyOf(11).first()
+        assertEquals(AssignmentEvent.SYSTEM, e.by)
+        assertEquals(AssignmentEvent.ACCOUNT_DISABLED, e.reason)
+        assertEquals(3, repo.notificationsOf(11).count { !it.read })
     }
 }

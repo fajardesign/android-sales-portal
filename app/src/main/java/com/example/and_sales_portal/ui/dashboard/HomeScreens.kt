@@ -92,7 +92,7 @@ fun SalesHomeScreen(
         PriorityHeading(s.role, s.date)
         s.unread.firstOrNull()?.let { n ->
             AmarInfoBox(
-                stringResource(R.string.notif_new, s.unread.size, notificationText(n.event)), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info,
+                stringResource(R.string.notif_new, s.unread.size, notificationText(n)), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info,
                 buttonLabel = stringResource(R.string.notif_see), onButtonClick = onNotifications,
             )
         }
@@ -151,6 +151,8 @@ data class TlHomeState(
     val teamMonth: SalesSummary,
     val incentive: Incentive,
     val contribution: List<Pair<String, Double>>,
+    /** Unread notifications (DD review point 2: revision requests), newest first. */
+    val unread: List<AppNotification> = emptyList(),
 )
 
 class TlHomeActions(
@@ -161,6 +163,7 @@ class TlHomeActions(
     val onSchedule: () -> Unit,
     val onAssign: () -> Unit,
     val onIncentive: () -> Unit,
+    val onNotifications: () -> Unit = {},
 )
 
 /**
@@ -172,8 +175,14 @@ class TlHomeActions(
 @Composable
 fun TlHomeScreen(s: TlHomeState, attendance: AttendanceActions, a: TlHomeActions) {
     val c = AmarTheme.colors
-    ScreenScaffold(stringResource(R.string.home_greeting, s.firstName), onBack = null) {
+    ScreenScaffold(stringResource(R.string.home_greeting, s.firstName), onBack = null, onNotifications = a.onNotifications) {
         PriorityHeading(SalesRole.TL, s.date)
+        s.unread.firstOrNull()?.let { n ->
+            AmarInfoBox(
+                stringResource(R.string.notif_new, s.unread.size, notificationText(n)), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info,
+                buttonLabel = stringResource(R.string.notif_see), onButtonClick = a.onNotifications,
+            )
+        }
         MetricTilesCard(
             stringResource(R.string.home_team_attendance),
             listOf(
