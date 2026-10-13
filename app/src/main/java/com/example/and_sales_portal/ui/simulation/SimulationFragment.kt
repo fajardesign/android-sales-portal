@@ -15,6 +15,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.demo.DemoDirectory
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
@@ -57,7 +59,17 @@ class SimulationFragment : ComposeFragment() {
                 },
             )
         }
-        WithToast(toast, { toast = null }) { SimulationScreen(sim, ::back, admin) { f -> settings.update(f) } }
+        WithToast(toast, { toast = null }) { SimulationScreen(sim, ::back, admin, onCatalog = ::openCatalog) { f -> settings.update(f) } }
+    }
+
+    /** The design system catalog (debug builds only; no launcher icon since 2026-10-13). */
+    private fun openCatalog() {
+        val intent = Intent().setClassName(requireContext(), "com.example.and_sales_portal.designsystem.catalog.DesignSystemCatalogActivity")
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            // Not in this build.
+        }
     }
 
     private companion object {
@@ -73,7 +85,13 @@ class AdminSimulation(val tlActive: Boolean, val saActive: Boolean, val onDisabl
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SimulationScreen(sim: Simulation, onBack: () -> Unit, admin: AdminSimulation? = null, onChange: ((Simulation) -> Simulation) -> Unit) {
+fun SimulationScreen(
+    sim: Simulation,
+    onBack: () -> Unit,
+    admin: AdminSimulation? = null,
+    onCatalog: (() -> Unit)? = null,
+    onChange: ((Simulation) -> Simulation) -> Unit,
+) {
     val c = AmarTheme.colors
     ScreenScaffold(stringResource(R.string.sim_title), onBack) {
         Text(stringResource(R.string.sim_desc), color = c.content.secondary, style = AmarTheme.typography.bodySm)
@@ -100,6 +118,7 @@ fun SimulationScreen(sim: Simulation, onBack: () -> Unit, admin: AdminSimulation
                 AmarButton(stringResource(R.string.sim_admin_disable_sa), a.onDisableSa, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium, enabled = a.saActive)
             }
         }
+        onCatalog?.let { AmarButton(stringResource(R.string.sim_open_catalog), it, Modifier.fillMaxWidth(), type = AmarButtonType.Naked, size = AmarButtonSize.Medium) }
     }
 }
 

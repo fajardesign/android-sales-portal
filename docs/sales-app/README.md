@@ -13,6 +13,7 @@ Spesifikasi: knowledge bundle `okf_repository_design/products/sales_dashboard/fl
    ```
    Keduanya dibaca `app/build.gradle.kts` menjadi `BuildConfig.SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY`.
 2. `./gradlew assembleDebug` lalu pasang APK debug (menu **Simulasi (debug)** hanya ada di build debug).
+   APK untuk dibagikan: `app/build/outputs/apk/debug/app-debug.apk`; hanya satu ikon, **Tunaiku Sales Portal**. Katalog design system dibuka dari *Akun › Simulasi (debug) › Buka DS Catalog*.
 3. `./gradlew testDebugUnitTest` untuk unit test, aturan DS, dan screenshot (Roborazzi, output di `app/build/outputs/roborazzi/`).
 
 ## Akun demo (password `Demo1234`)

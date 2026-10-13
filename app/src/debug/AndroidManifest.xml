@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Debug-only additions: design system catalog with its own launcher icon. -->
+<!--
+  Debug-only additions: design system catalog. No launcher icon (decision 2026-10-13), so the APK shared with the team
+  opens the Sales app; the catalog opens from Akun › Simulasi (debug) › Buka DS Catalog.
+-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity
             android:name=".designsystem.catalog.DesignSystemCatalogActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/ds_catalog_label"
             android:taskAffinity=".designsystem.catalog"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 </manifest>

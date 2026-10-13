@@ -1,6 +1,6 @@
 # Komponen Design System — Figma → Kotlin
 
-**Katalog**: semua komponen di bawah dapat dilihat dan dicoba di `designsystem/catalog/DesignSystemCatalogScreen.kt`. Di build debug ada ikon launcher terpisah **"DS Catalog"** (`DesignSystemCatalogActivity`, hanya di `src/debug`, tidak ikut ke release). Aset: [assets.md](./assets.md).
+**Katalog**: semua komponen di bawah dapat dilihat dan dicoba di `designsystem/catalog/DesignSystemCatalogScreen.kt`. Di build debug katalog dibuka dari *Akun › Simulasi (debug) › Buka DS Catalog* (`DesignSystemCatalogActivity`, hanya di `src/debug`, tidak ikut ke release; tanpa ikon launcher sejak 2026-10-13). Aset: [assets.md](./assets.md).
 
 Satu baris per komponen Figma yang sudah diimplementasikan. Path Kotlin relatif terhadap
 `app/src/main/java/com/example/and_sales_portal/designsystem/`. Inventaris lengkap: [inventory.md](./inventory.md).
