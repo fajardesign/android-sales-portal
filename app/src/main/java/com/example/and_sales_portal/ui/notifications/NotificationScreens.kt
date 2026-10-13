@@ -26,31 +26,44 @@ import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.ui.common.ComposeFragment
 import com.example.and_sales_portal.ui.common.Fmt
 import com.example.and_sales_portal.ui.common.ScreenScaffold
+import com.example.and_sales_portal.ui.partner.SubmissionDetailFragment
 import java.time.Instant
 
-/** "Rab, 7 Okt 2026, 10:30 WIB" of an assignment event. */
-fun eventTime(e: AssignmentEvent): String =
-    "${Fmt.shortDate(Instant.ofEpochMilli(e.at).atZone(ActivityRules.ZONE).toLocalDate())}, ${Fmt.timeLabel(e.at)}"
+/** "Rab, 7 Okt 2026, 10:30 WIB". */
+fun eventTime(at: Long): String =
+    "${Fmt.shortDate(Instant.ofEpochMilli(at).atZone(ActivityRules.ZONE).toLocalDate())}, ${Fmt.timeLabel(at)}"
 
-/** "Anda ditugaskan ke <toko> (<partner>) oleh <TL>." and the other messages (FR-MP-004). */
+fun eventTime(e: AssignmentEvent): String = eventTime(e.at)
+
+/** "Anda ditugaskan ke <toko> (<partner>) oleh <TL>." and the other assignment messages (FR-MP-004). */
 @Composable
 fun notificationText(e: AssignmentEvent): String = when {
     e.action == AssignmentAction.ASSIGN -> stringResource(R.string.notif_assigned, e.storeName, e.partnerName, PartnerRepository.actorName(e.by))
+    e.by == AssignmentEvent.SYSTEM && e.reason == AssignmentEvent.ACCOUNT_DISABLED -> stringResource(R.string.notif_released_disabled, e.storeName, e.partnerName)
     e.by == AssignmentEvent.SYSTEM -> stringResource(R.string.notif_released_system, e.storeName, e.partnerName)
     else -> stringResource(R.string.notif_released, e.storeName, e.partnerName, PartnerRepository.actorName(e.by))
 }
 
-/** Spec: Notifikasi (FR-MP-004, decision 2026-10-09: in-app inbox of the SA/SR), newest first. */
+/** Assignment or revision message (DD review point 2: "Pengajuan <partner> perlu diperbaiki."). */
 @Composable
-fun NotificationsScreen(items: List<AppNotification>, onBack: () -> Unit) {
+fun notificationText(n: AppNotification): String =
+    n.event?.let { notificationText(it) } ?: n.revision?.let { stringResource(R.string.notif_revision, it.partnerName) }.orEmpty()
+
+/**
+ * Spec: Notifikasi (FR-MP-004, decision 2026-10-09: in-app inbox; DD review point 2: revision requests to the TL/SR),
+ * newest first. A revision notification opens the submission (REG-10).
+ */
+@Composable
+fun NotificationsScreen(items: List<AppNotification>, onBack: () -> Unit, onOpenSubmission: (String) -> Unit = {}) {
     val c = AmarTheme.colors
     ScreenScaffold(stringResource(R.string.notif_title), onBack) {
         if (items.isEmpty()) AmarInfoBox(stringResource(R.string.notif_empty), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
         items.forEach { n ->
-            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+            val open = n.revision?.let { r -> { onOpenSubmission(r.partnerId) } }
+            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = open) {
                 if (!n.read) AmarBadge(stringResource(R.string.notif_new_badge), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
-                Text(notificationText(n.event), color = c.content.primary, style = AmarTheme.typography.bodyMd)
-                Text(eventTime(n.event), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+                Text(notificationText(n), color = c.content.primary, style = AmarTheme.typography.bodyMd)
+                Text(eventTime(n.at), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
             }
         }
     }
@@ -64,6 +77,6 @@ class NotificationsFragment : ComposeFragment() {
         val data by container.partners.assignments.collectAsState()
         val items = remember { container.partners.notificationsOf(s.user.id) }
         LaunchedEffect(data) { if (container.partners.notificationsOf(s.user.id).any { !it.read }) container.partners.markNotificationsRead(s.user.id) }
-        NotificationsScreen(items, ::back)
+        NotificationsScreen(items, ::back) { id -> navigate(R.id.submission_detail, SubmissionDetailFragment.args(id)) }
     }
 }

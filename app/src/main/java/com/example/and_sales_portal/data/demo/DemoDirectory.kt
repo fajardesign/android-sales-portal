@@ -56,7 +56,7 @@ object DemoDirectory {
         Area(7, "PLG", "Palembang", "Sumatera Selatan", "Kota Palembang", "Ilir Timur I", "Sungai Pangeran", -2.9761, 104.7754),
     )
 
-    val people = listOf(
+    private val basePeople = listOf(
         Person(3, "Hasan Basri", "APL", 1, null, "ACTIVE", createdHoursAgo = 2160),
         Person(4, "Lestari Wulandari", "APL", 2, null, "ACTIVE", createdHoursAgo = 2112),
         Person(5, "Joko Susilo", "APL", 3, null, "ACTIVE", createdHoursAgo = 2040),
@@ -76,7 +76,21 @@ object DemoDirectory {
         Person(19, "Putri Ayuningtyas", "SA", 2, 7, "PENDING", createdHoursAgo = 5),
         Person(20, "Nanda Kurniawan", "SA", 3, 8, "PENDING", createdHoursAgo = 30),
         Person(21, "Rizky Ramadhan", "SA", 1, 6, "DISABLED", createdHoursAgo = 2400),
+        // Second TL of Area 1 (Makassar), same as the web portal sample, so a replacement leader exists (decision 2026-10-13).
+        Person(22, "Bagus Wicaksono", "TL", 1, 3, "ACTIVE", "JUNIOR", createdHoursAgo = 24 * 40),
     )
+
+    /** Status and leader changed after the sample (account disabled, leader replaced; web ACC-05). */
+    @kotlinx.serialization.Serializable
+    data class Change(val status: String? = null, val supervisorId: Long? = null)
+
+    /** Changes on top of [basePeople], set by [com.example.and_sales_portal.data.team.DirectoryRepository]. */
+    @Volatile
+    var changes: Map<Long, Change> = emptyMap()
+
+    /** The sample people with [changes] applied. */
+    val people: List<Person>
+        get() = basePeople.map { p -> changes[p.id]?.let { c -> p.copy(status = c.status ?: p.status, supervisorId = c.supervisorId ?: p.supervisorId) } ?: p }
 
     /** Registered office of an area (revision 2026-10-08: attendance within 3 km of an office or a toko). */
     data class Office(val areaId: Int, val name: String, val lat: Double, val lng: Double)
@@ -96,6 +110,9 @@ object DemoDirectory {
 
     fun area(id: Int): Area? = areas.firstOrNull { it.id == id }
     fun person(id: Long?): Person? = id?.let { pid -> people.firstOrNull { it.id == pid } }
+
+    /** A person as in the sample, before [changes] (sample partners keep their sample owner). */
+    fun samplePerson(id: Long?): Person? = id?.let { pid -> basePeople.firstOrNull { it.id == pid } }
 
     /** Active SA/SR led by [tlId] (PRD C5 "Tim"). */
     fun teamOf(tlId: Long): List<Person> = people.filter { it.supervisorId == tlId && it.role in setOf("SA", "SR") && it.status != "DISABLED" }

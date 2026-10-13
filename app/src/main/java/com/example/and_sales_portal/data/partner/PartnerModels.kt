@@ -111,6 +111,10 @@ data class Store(
     val addedAt: Long = 0,
 )
 
+/** The owning TL changed (web ACC-05: the TL was disabled and a replacement TL took over; decision PO 2026-10-12). */
+@Serializable
+data class OwnerChange(val at: Long, val fromTlId: Long?, val toTlId: Long, val reason: String)
+
 @Serializable
 data class Partner(
     val id: String,
@@ -154,13 +158,29 @@ data class Partner(
     val revision: RevisionRequest? = null,
     /** Reason of a Rejected, Cancelled or Inactive status. */
     val statusReason: String? = null,
+    /** Owning TL, saved per partner (decision PO 2026-10-12, OQ-C05); `null` in data saved before it. */
+    val ownerTl: Long? = null,
+    /** Every change of the owning TL, oldest first. */
+    val ownerHistory: List<OwnerChange> = emptyList(),
 ) {
     val registrationNumber: String get() = id
     val primaryStore: Store? get() = stores.firstOrNull { it.primary } ?: stores.firstOrNull()
 
-    /** TL that owns the partner: the TL who submitted it, or the TL of the SR who did (PRD v3 §C). */
+    /** TL that owns the partner: saved per partner; by default the TL who submitted it, or the TL of the SR who did. */
     val ownerTlId: Long?
-        get() = DemoDirectory.person(submittedBy)?.let { if (it.role == "TL") it.id else it.supervisorId }
+        get() = ownerTl ?: defaultOwner(submittedBy)
+
+    /** Owning TL at [at] (millis): loans keep the TL who owned the partner then, so past sales stay with the old TL. */
+    fun ownerAt(at: Long): Long? {
+        if (ownerHistory.isEmpty()) return ownerTlId
+        return ownerHistory.lastOrNull { it.at <= at }?.toTlId ?: ownerHistory.first().fromTlId
+    }
+
+    companion object {
+        /** TL submitter, or the current leader of the SR submitter. */
+        fun defaultOwner(submittedBy: Long, person: (Long) -> DemoDirectory.Person? = { DemoDirectory.person(it) }): Long? =
+            person(submittedBy)?.let { if (it.role == "TL") it.id else it.supervisorId }
+    }
 }
 
 /** Banks of the prototype (portal `BANKS`). */
