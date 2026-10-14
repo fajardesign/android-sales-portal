@@ -548,6 +548,7 @@
     <string name="notif_revision">Pengajuan %1$s perlu diperbaiki. Buka pengajuan untuk melihat catatan Admin.</string>
     <string name="asg_by_disabled">Sistem (akun dinonaktifkan)</string>
     <string name="sim_admin_accounts">Simulasi Admin: akun</string>
+    <string name="sim_open_catalog">Buka DS Catalog</string>
     <string name="sim_admin_accounts_desc">Meniru Nonaktifkan di Account Management web (ACC-05). Kembalikan lewat Reset data demo.</string>
     <string name="sim_admin_disable_tl">Nonaktifkan TL Andi Pratama (pengganti Bagus Wicaksono)</string>
     <string name="sim_admin_disable_sa">Nonaktifkan SA Eko Saputra</string>
