@@ -57,8 +57,10 @@ class OperationsRepository(
     /** Toko of [employeeId] to visit in the week of [weekStart], by partner, with whether each was visited. */
     fun weekPartners(employeeId: Long, weekStart: LocalDate): List<WeekPartner> {
         val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
-        val list = partners.partners.value
-        val targets = DemoSeed.storesOf(list, employeeId, role).mapNotNull { s -> list.firstOrNull { p -> p.stores.any { it.id == s.id } }?.let { it to s } }
+        // Toko of that week, not of today (decision 2026-10-14): held on Monday and still held at the end of the week.
+        val zone = ActivityRules.zoneOf(employeeId)
+        val endOf = { d: LocalDate -> d.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1 }
+        val targets = partners.weekStores(employeeId, role, endOf(weekStart), minOf(endOf(ActivityRules.weekEnd(weekStart)), clock().toEpochMilli()))
         val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
         return ActivityRules.weekPartners(targets, seen)
     }
