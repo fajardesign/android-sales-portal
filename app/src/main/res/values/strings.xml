@@ -267,6 +267,7 @@
     <string name="vis_partner_visited">Sudah dikunjungi minggu ini</string>
     <string name="vis_store_visited">Sudah dikunjungi</string>
     <string name="vis_not_visited">Belum dikunjungi</string>
+    <string name="vis_counted_next_week">Dihitung mulai minggu depan</string>
     <string name="vis_today_done">Hari ini: sudah ada kunjungan</string>
     <string name="vis_today_not_yet">Hari ini: belum ada kunjungan</string>
     <string name="vis_today_off">Hari ini: libur</string>

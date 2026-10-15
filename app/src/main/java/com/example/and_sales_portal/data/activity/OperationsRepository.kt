@@ -65,6 +65,21 @@ class OperationsRepository(
         return ActivityRules.weekPartners(targets, seen)
     }
 
+    /**
+     * Toko [employeeId] can visit now (ATT-03, Beranda SA/SR), by partner: the toko held **today** (SA/SR: assigned; TL:
+     * toko of the partners they own), marked whether they count in this week's target (decision 2026-10-14). A toko
+     * assigned mid-week shows with "Dihitung mulai minggu depan" instead of being hidden until Monday.
+     */
+    fun visitPartners(employeeId: Long, date: LocalDate): List<WeekPartner> {
+        val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
+        val weekStart = ActivityRules.weekStart(date)
+        val list = partners.partners.value
+        val current = DemoSeed.storesOf(list, employeeId, role).mapNotNull { s -> list.firstOrNull { p -> p.stores.any { it.id == s.id } }?.let { it to s } }
+        val counted = weekPartners(employeeId, weekStart).flatMap { g -> g.stores.map { it.store.id } }.toSet()
+        val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
+        return ActivityRules.weekPartners(current, seen, counted)
+    }
+
     /** Week of [weekStart] (Monday): toko visited over toko to visit (PRD alignment 2026-10-09; days off do not count). */
     fun visitWeek(employeeId: Long, weekStart: LocalDate): VisitWeek = ActivityRules.visitWeek(weekStart, weekPartners(employeeId, weekStart))
 

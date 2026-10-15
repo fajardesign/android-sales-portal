@@ -82,7 +82,7 @@ class SalesHomeFragment : HomeBase() {
                 week = repo.visitWeek(today),
                 visitedToday = repo.visitsOn(today).isNotEmpty(),
                 dayOff = repo.isDayOff(today),
-                groups = repo.weekPartners(today),
+                groups = repo.visitPartners(today),
                 unread = container.partners.notificationsOf(s.user.id).filter { !it.read },
                 partners = container.partners.myPartners(s.user.id, s.role),
                 month = summary(container.sales.loansOfSales(s.user.id), Period.MONTH.range(today)),
