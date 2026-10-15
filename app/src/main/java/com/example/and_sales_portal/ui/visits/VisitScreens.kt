@@ -173,6 +173,8 @@ fun VisitListScreen(
                             Text(ws.store.name, Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                             VisitedBadge(ws.visited, partner = false)
                         }
+                        // Assigned mid-week (decision 2026-10-14): can be visited now, counts from next week.
+                        if (!ws.counted) Text(stringResource(R.string.vis_counted_next_week), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
                         Text(ws.store.address, color = c.content.tertiary, style = AmarTheme.typography.bodySm, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         AmarButton(stringResource(R.string.vis_check_in), { onCheckIn(ws.store) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = s.online && s.block == null)
                     }

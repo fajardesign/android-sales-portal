@@ -43,7 +43,7 @@ abstract class VisitListFragment(private val asTab: Boolean) : ComposeFragment()
         LaunchedEffect(syncedMessage) { if (syncedMessage != null) synced = syncedMessage }
         val today = repo.today()
         val state = remember(data, partners, online) {
-            val groups = repo.weekPartners(today)
+            val groups = repo.visitPartners(today)
             val visits = repo.visitsOn(today).mapNotNull { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) }
             VisitListUiState(
                 date = Fmt.longDate(today),

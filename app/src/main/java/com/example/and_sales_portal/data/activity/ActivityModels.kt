@@ -105,11 +105,18 @@ data class VisitWeek(val start: LocalDate, val visited: Int, val target: Int) {
 }
 
 /** A toko of the week with whether it was visited. */
-data class WeekStore(val store: Store, val visited: Boolean)
+/**
+ * A toko of the week with whether it was visited. [counted] = false: held today but not part of this week's target
+ * (assigned mid-week, counted from next week; decision 2026-10-14). It can still be visited.
+ */
+data class WeekStore(val store: Store, val visited: Boolean, val counted: Boolean = true)
 
-/** A partner's toko of the week; the partner counts as visited when all its toko are ("Sudah dikunjungi minggu ini"). */
+/**
+ * A partner's toko of the week; the partner counts as visited when all its counted toko are ("Sudah dikunjungi minggu
+ * ini"), or all its toko when none counts yet.
+ */
 data class WeekPartner(val partner: Partner, val stores: List<WeekStore>) {
-    val visited: Boolean get() = stores.all { it.visited }
+    val visited: Boolean get() = stores.filter { it.counted }.ifEmpty { stores }.all { it.visited }
 }
 
 /**
@@ -206,11 +213,14 @@ object ActivityRules {
     fun weekEnd(weekStart: LocalDate): LocalDate = weekStart.plusDays(5)
 
     /** Toko of the week grouped by partner, from the toko to visit and the toko visited that week. */
-    fun weekPartners(targets: List<Pair<Partner, Store>>, visitedStoreIds: Set<String>): List<WeekPartner> =
-        targets.groupBy({ it.first.id }, { it }).values.map { list -> WeekPartner(list.first().first, list.map { (_, s) -> WeekStore(s, s.id in visitedStoreIds) }) }
+    /** [countedStoreIds] `null` = every toko counts (the target itself). */
+    fun weekPartners(targets: List<Pair<Partner, Store>>, visitedStoreIds: Set<String>, countedStoreIds: Set<String>? = null): List<WeekPartner> =
+        targets.groupBy({ it.first.id }, { it }).values.map { list ->
+            WeekPartner(list.first().first, list.map { (_, s) -> WeekStore(s, s.id in visitedStoreIds, countedStoreIds?.contains(s.id) ?: true) })
+        }
 
     fun visitWeek(weekStart: LocalDate, groups: List<WeekPartner>): VisitWeek {
-        val stores = groups.flatMap { it.stores }
+        val stores = groups.flatMap { it.stores }.filter { it.counted }
         return VisitWeek(weekStart, stores.count { it.visited }, stores.size)
     }
 }

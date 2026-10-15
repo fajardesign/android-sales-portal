@@ -87,4 +87,24 @@ class StoreHolderHistoryTest {
         assertEquals(andi, ops.visitWeek(6, lastWeek))
         assertEquals(bagus, ops.visitWeek(22, lastWeek))
     }
+
+    @Test
+    fun tokoAssignedMidWeekCanBeVisitedNowButCountsFromNextWeek() {
+        // Decision 2026-10-14: the target keeps the toko of the week; the check-in list shows the toko held today.
+        val toko = "REG2026-0139-1" // Eko (SA 15) since the sample
+        partners.unassign(15, toko, 6)
+        assertEquals(null, partners.assign(6, 16, toko)) // Nurul gets it on Wednesday
+        // Target of this week: only Nurul's Monday toko; the new one is not counted.
+        assertEquals(1, ops.visitWeek(16, thisWeek).target)
+        // Check-in list: both toko, the new one marked not counted, so Nurul can visit it now.
+        val list = ops.visitPartners(16, wednesday).flatMap { it.stores }
+        assertEquals(setOf("REG2026-0132-1", toko), list.map { it.store.id }.toSet())
+        assertEquals(false, list.first { it.store.id == toko }.counted)
+        assertTrue(list.first { it.store.id == "REG2026-0132-1" }.counted)
+        // Eko no longer sees it to visit, although his week target still had it on Monday until the Lepas.
+        assertTrue(ops.visitPartners(15, wednesday).none { g -> g.stores.any { it.store.id == toko } })
+        // An SA/SR whose only toko came mid-week sees it (no "Belum ada toko yang ditugaskan").
+        partners.unassign(16, "REG2026-0132-1", 6)
+        assertEquals(listOf(toko), ops.visitPartners(16, wednesday).flatMap { g -> g.stores.map { it.store.id } })
+    }
 }
