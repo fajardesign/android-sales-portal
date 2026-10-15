@@ -191,6 +191,42 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         return moved.size
     }
 
+    // region Holder by date (pending fix 2026-10-13): the past stays with the person of that date.
+
+    /** SA/SR holding toko [storeId] at [at] (millis): loans of that date are theirs (one toko = one SA/SR). */
+    fun holderAt(storeId: String, at: Long): Long? = heldAt(storeId, at).firstOrNull()
+
+    /** The current holders of [storeId] with every Tugaskan / Lepas after [at] undone, newest first. */
+    private fun heldAt(storeId: String, at: Long): Set<Long> {
+        val held = _partners.value.firstNotNullOfOrNull { p -> p.stores.firstOrNull { it.id == storeId } }?.assigned?.toMutableSet() ?: return emptySet()
+        _assignments.value.events.filter { it.storeId == storeId && it.at > at }.asReversed().forEach { e ->
+            if (e.action == AssignmentAction.ASSIGN) held -= e.employeeId else held += e.employeeId
+        }
+        return held
+    }
+
+    /**
+     * Toko [employeeId] visits in a week (decision 2026-10-14): held on its Monday ([monday], end of day) and still held
+     * at [until] (end of the week, or now). SA/SR: their toko; TL: the toko of the partners they own. A toko assigned
+     * mid-week counts from the next week; one released mid-week leaves that week; a closed week never changes.
+     */
+    fun weekStores(employeeId: Long, role: SalesRole, monday: Long, until: Long): List<Pair<Partner, Store>> =
+        _partners.value.flatMap { p ->
+            p.stores.filter { s ->
+                listOf(monday, until).all { at ->
+                    activeAt(p, s, at) && when (role) {
+                        SalesRole.TL -> p.ownerAt(at) == employeeId
+                        SalesRole.SA, SalesRole.SR -> employeeId in heldAt(s.id, at)
+                    }
+                }
+            }.map { p to it }
+        }
+
+    private fun activeAt(p: Partner, s: Store, at: Long): Boolean =
+        s.addedAt <= at && p.history.filter { it.at <= at }.maxByOrNull { it.at }?.to == PartnerStatus.ACTIVE
+
+    // endregion
+
     /** Tugaskan / Lepas of [employeeId], newest first (the later one first at the same time). */
     fun historyOf(employeeId: Long): List<AssignmentEvent> = _assignments.value.events.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.at }
 

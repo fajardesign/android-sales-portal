@@ -90,7 +90,7 @@ class SalesRepository(private val partners: PartnerRepository, private val ops: 
 
     /** Every loan of Active (and later Inactive) partners up to now. */
     fun loans(): List<Loan> {
-        val key = System.identityHashCode(partners.partners.value).toString() + today()
+        val key = System.identityHashCode(partners.partners.value).toString() + partners.assignments.value.events.size + today()
         cache?.takeIf { it.first == key }?.let { return it.second }
         val now = clock().toEpochMilli()
         val list = partners.partners.value.flatMap { generate(it, now) }
@@ -205,7 +205,8 @@ class SalesRepository(private val partners: PartnerRepository, private val ops: 
                             id = "APP" + (4_100_000 + seed("${s.id}:$d:$i") % 5_900_000),
                             partnerId = p.id,
                             storeId = s.id,
-                            salesId = s.assigned.firstOrNull(),
+                            // The SA/SR who held the toko on that date: past sales stay with them after a Lepas (fix 2026-10-14).
+                            salesId = partners.holderAt(s.id, submittedAt),
                             // The TL who owned the partner on that date: past sales stay with the old TL (DD review point 7).
                             tlId = p.ownerAt(submittedAt),
                             customer = "${FIRST[rnd.nextInt(FIRST.size)]} ${LAST[rnd.nextInt(LAST.size)]}",
