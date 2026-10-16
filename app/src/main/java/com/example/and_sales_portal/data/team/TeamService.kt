@@ -20,8 +20,8 @@ data class Productivity(
     val present: Int,
     val onTime: Int,
     val late: Int,
+    /** No check in, or check in without check out (PRD Scope 2 S13). */
     val absent: Int,
-    val daysOff: Int,
     /** Weeks of the period: Monday in the period, up to today (same as the web portal). */
     val weeks: List<VisitWeek>,
     /** The current week (Monday–Saturday), always shown ("Kunjungan minggu ini"). */
@@ -58,12 +58,12 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
             "%02d:%02d %s".format(m / 60, m % 60, ActivityRules.label(ActivityRules.zoneOf(punches.first(), employeeId)))
         }
         return Productivity(
-            workdays = days.count { !ops.isDayOff(employeeId, it) },
+            // S10: Monday–Saturday are workdays, public holidays and leave included.
+            workdays = days.size,
             present = statuses.count { it == AttendanceStatus.ON_TIME || it == AttendanceStatus.LATE },
             onTime = statuses.count { it == AttendanceStatus.ON_TIME },
             late = statuses.count { it == AttendanceStatus.LATE },
             absent = statuses.count { it == AttendanceStatus.ABSENT },
-            daysOff = statuses.count { it == AttendanceStatus.DAY_OFF },
             weeks = ops.visitWeeks(employeeId, range.start..range.endInclusive),
             thisWeek = ops.visitWeek(employeeId, ActivityRules.weekStart(today)),
             avgClockIn = avgClockIn,

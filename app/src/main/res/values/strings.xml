@@ -199,7 +199,7 @@
     <string name="att_status_absent">Absen</string>
     <string name="att_status_checked_in">Sudah Check In</string>
     <string name="att_status_checked_out">Sudah Check Out</string>
-    <string name="att_status_day_off">Libur</string>
+    <string name="att_status_not_workday">Bukan hari kerja</string>
     <string name="att_done">Absensi hari ini sudah lengkap.</string>
     <string name="att_see_history">Lihat riwayat</string>
     <string name="att_history">Riwayat absensi</string>
@@ -266,18 +266,17 @@
     <string name="vis_partner_visited">Sudah dikunjungi minggu ini</string>
     <string name="vis_store_visited">Sudah dikunjungi</string>
     <string name="vis_not_visited">Belum dikunjungi</string>
-    <string name="vis_counted_next_week">Dihitung mulai minggu depan</string>
     <string name="vis_today_done">Hari ini: sudah ada kunjungan</string>
     <string name="vis_today_not_yet">Hari ini: belum ada kunjungan</string>
-    <string name="vis_today_off">Hari ini: libur</string>
     <string name="vis_stores">Toko yang ditugaskan</string>
     <string name="vis_no_stores">Belum ada toko yang ditugaskan.</string>
     <string name="vis_check_in">Check-In Sekarang</string>
     <string name="vis_before_start">Check-in kunjungan dibuka pukul 12:00 %1$s.</string>
-    <string name="vis_day_off_info">Hari ini ditandai libur oleh Team Leader.</string>
-    <string name="vis_ongoing_info">Selesaikan kunjungan yang sedang berlangsung sebelum check-in di toko lain.</string>
     <string name="vis_empty">Belum ada kunjungan hari ini.</string>
     <string name="vis_status_ongoing">Berlangsung</string>
+    <string name="vis_next_monday">Sudah dikunjungi minggu ini. Check-in lagi mulai Senin.</string>
+    <string name="vis_no_check_out">Tanpa check-out</string>
+    <string name="vis_check_out_closed">Check-out hanya bisa di hari kunjungan sampai pukul 23:59.</string>
     <string name="vis_status_done">Selesai</string>
     <string name="vis_detail_title">Detail Kunjungan</string>
     <string name="vis_partner">Partner</string>
@@ -295,7 +294,7 @@
     <string name="vis_synced">%1$d check-out berhasil dikirim.</string>
     <string name="vis_check_in_done">Check-in kunjungan berhasil pukul %1$s.</string>
     <string name="vis_check_out_title">Check Out Kunjungan</string>
-    <string name="vis_check_out_desc">Waktu check-out dicatat saat Anda menekan tombol di bawah.</string>
+    <string name="vis_check_out_desc">Check-out tidak wajib. Waktu check-out dicatat saat Anda menekan tombol di bawah; catatan kunjungan boleh dikosongkan.</string>
     <string name="vis_note_label">Catatan kunjungan</string>
     <string name="vis_note_placeholder">Tulis hasil kunjungan</string>
     <string name="vis_check_out_confirm_title">Selesaikan kunjungan?</string>
@@ -312,7 +311,7 @@
     <string name="act_attendance_desc">Check in, check out kerja, dan riwayat absensi</string>
     <string name="act_visits_desc">Check-in kunjungan dan target minggu ini</string>
     <string name="act_schedule">Jadwal Kunjungan</string>
-    <string name="act_schedule_desc">Kunjungan SA/SR per minggu dan hari libur</string>
+    <string name="act_schedule_desc">Kunjungan SA/SR per minggu</string>
     <string name="act_assign">Assign SA/SR</string>
     <string name="act_assign_desc">Tugaskan SA/SR ke partner</string>
     <string name="act_productivity">Produktivitas Tim</string>
@@ -506,10 +505,9 @@
     <string name="team_on_time">Tepat waktu</string>
     <string name="team_late">Terlambat</string>
     <string name="team_absent">Absen</string>
-    <string name="team_days_off">Libur</string>
     <string name="team_days_value">%1$d hari</string>
     <string name="team_sales_wip">Kinerja penjualan anggota tim dibangun di tahap berikutnya.</string>
-    <string name="team_pending_info">Akun belum diaktivasi. Toko dan hari libur bisa diatur setelah anggota mengaktifkan akun.</string>
+    <string name="team_pending_info">Akun belum diaktivasi. Toko bisa diatur setelah anggota mengaktifkan akun.</string>
     <string name="team_schedule">Lihat Kunjungan</string>
     <string name="team_assign">Atur Toko</string>
     <string name="team_partners_title">Toko yang ditugaskan</string>
@@ -576,11 +574,6 @@
     <!-- Jadwal Kunjungan (TL-04: weekly view and days off; PRD v3 C7, revision 2026-10-08). -->
     <string name="sch_prev_week">Minggu sebelumnya</string>
     <string name="sch_next_week">Minggu berikutnya</string>
-    <string name="sch_mark_off">Tandai Libur</string>
-    <string name="sch_unmark_off">Batalkan Libur</string>
-    <string name="sch_off_confirm_title">Tandai hari libur?</string>
-    <string name="sch_off_confirm">%1$s libur pada %2$s. Absensi hari itu berstatus Libur dan check-in kunjungan ditutup.</string>
-    <string name="sch_day_off">Libur</string>
     <string name="sch_no_visit">Belum ada kunjungan</string>
     <string name="sch_visit_row">%1$s · %2$s</string>
     <string name="sch_no_store">Belum ada toko yang ditugaskan. Tugaskan toko lebih dulu di Assign SA/SR.</string>

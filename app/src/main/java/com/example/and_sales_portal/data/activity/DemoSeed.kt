@@ -58,6 +58,7 @@ object DemoSeed {
         val attendance = mutableListOf<Attendance>()
         val visits = mutableListOf<Visit>()
         val days = (HISTORY_DAYS downTo 1).map { today.minusDays(it) }.filter(ActivityRules::isWorkday)
+        var visitSeq = 0
         days.forEach { d ->
             val rnd = seededRandom(userId * 1_000_003 + d.toEpochDay())
             val r = rnd.nextDouble()
@@ -70,11 +71,13 @@ object DemoSeed {
             val lat = round6(ref.lat + (rnd.nextDouble() - 0.5) * 0.006)
             val lng = round6(ref.lng + (rnd.nextDouble() - 0.5) * 0.006)
             val distance = ActivityRules.distanceMeters(lat, lng, ref.lat, ref.lng)
+            // Like the web sample: now and then a forgotten check out, so the day is Absen (PRD Scope 2 S13).
+            val noOut = (userId * 7 + d.dayOfMonth) % 29 == 0L
             attendance += Attendance(
                 employeeId = userId,
                 date = d.toString(),
                 clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
-                clockOut = Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
+                clockOut = if (noOut) null else Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
             )
             // PRD alignment 2026-10-09: each toko once a week, on its own weekday (a toko is missed about 1 week in 7),
             // 12:00–16:59 local, near the toko.
@@ -85,10 +88,13 @@ object DemoSeed {
                 val vLat = round6(s.lat + (rnd.nextDouble() - 0.5) * 0.004)
                 val vLng = round6(s.lng + (rnd.nextDouble() - 0.5) * 0.004)
                 val vDistance = ActivityRules.distanceMeters(vLat, vLng, s.lat, s.lng)
+                // Check-out is optional (S13): some sample visits have none and still count.
+                val noCheckOut = visitSeq++ % 7 == 0
                 visits += Visit(
-                    id = "V-$userId-$d-${s.id}", employeeId = userId, storeId = s.id, date = d.toString(), state = VisitState.DONE,
+                    id = "V-$userId-$d-${s.id}", employeeId = userId, storeId = s.id, date = d.toString(),
+                    state = if (noCheckOut) VisitState.IN_PROGRESS else VisitState.DONE,
                     checkIn = Punch(vIn, vLat, vLng, s.address, place = s.name, distance = vDistance, zone = zone.id),
-                    checkOut = Punch(vOut, vLat, vLng, s.address, place = s.name, distance = vDistance, zone = zone.id),
+                    checkOut = if (noCheckOut) null else Punch(vOut, vLat, vLng, s.address, place = s.name, distance = vDistance, zone = zone.id),
                 )
             }
         }

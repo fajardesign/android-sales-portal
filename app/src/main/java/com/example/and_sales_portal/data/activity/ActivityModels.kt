@@ -22,18 +22,16 @@ import kotlin.math.sqrt
  * Operational data of one user in the prototype (PRD v3 data model: `attendance`, `visit_plan`), stored on the device
  * per account by [ActivityRepository]. Partners and toko are shared ([com.example.and_sales_portal.data.partner.PartnerRepository]).
  */
-/** Operations of every SA/SR/TL on the device (shared, like partners): attendance, visits and days off. */
+/** Operations of every SA/SR/TL on the device (shared, like partners): attendance and visits. */
 @Serializable
 data class OpsData(
     val version: Int = VERSION,
     val attendance: List<Attendance> = emptyList(),
     val visits: List<Visit> = emptyList(),
-    /** `employeeId:date` marked as day off by the TL (PRD C7 "mark days off"). */
-    val daysOff: Set<String> = emptySet(),
 ) {
     companion object {
-        /** 6: visits once per toko per week, zone on every punch (PRD alignment 2026-10-09). */
-        const val VERSION = 6
+        /** 7: area zone on every punch, no days off, Absen without check out (PRD Scope 2, 2.0). */
+        const val VERSION = 7
         fun key(employeeId: Long, date: LocalDate) = "$employeeId:$date"
     }
 }
@@ -53,8 +51,10 @@ data class Punch(
     val place: String? = null,
     /** Metres to [place]. */
     val distance: Int? = null,
-    /** Device time zone at the punch (`Asia/Makassar`, …), PRD alignment 2026-10-09; times are shown in it. */
+    /** Zone of the user's area at the punch (`Asia/Makassar`, …; PRD Scope 2 S8: server time in the area zone); times are shown in it. */
     val zone: String? = null,
+    /** Device zone at the punch, kept for audit only (S8: never decides a status). */
+    val deviceZone: String? = null,
 )
 
 @Serializable
@@ -87,54 +87,48 @@ data class Visit(
 )
 
 /**
- * Attendance status (revision 2026-10-08 labels): Belum Check In, Tepat Waktu (≤ 10:00 local), Terlambat, Absen (no
- * check in by 23:59 local), Libur. "Sudah Check In" / "Sudah Check Out" come from [Attendance] itself.
+ * Attendance status: Belum Check In, Tepat Waktu (≤ 10:00 area time), Terlambat, Absen (PRD Scope 2 S13: no check in, or
+ * check in without check out before 23:59 that day), Bukan hari kerja (Sunday). No Libur (S10: Monday–Saturday,
+ * public holidays and leave included, are workdays). "Sudah Check In" / "Sudah Check Out" come from [Attendance] itself.
  */
-enum class AttendanceStatus { NOT_YET, ON_TIME, LATE, ABSENT, DAY_OFF }
+enum class AttendanceStatus { NOT_YET, ON_TIME, LATE, ABSENT, NOT_WORKDAY }
 
-/** Visit status chip (PRD D3): Berlangsung, Selesai. */
+/** Visit status chip (PRD D3): Berlangsung (check-in today, not checked out), Selesai (checked out, or a past day without check-out). */
 enum class VisitStatus { ONGOING, DONE }
 
 /**
- * Visits of one week (Monday–Saturday), PRD alignment 2026-10-09 (Scope 2 §2.2, same as the web portal
- * `visitWeekStores`): every assigned toko (TL: toko of own partners) is visited once a week, any day, several toko a day
- * allowed. [visited] = toko visited that week, [target] = toko to visit. "Lengkap n/n" or "Belum lengkap n/m".
+ * Visits of one week (Monday–Saturday), PRD Scope 2 §2.2 (same as the web portal `visitWeekStores`): every toko of the
+ * user's kursi (SA/SR or TL) is visited once a week, any day, several toko a day allowed. [visited] = toko visited that
+ * week, [target] = toko to visit. "Lengkap n/n" or "Belum lengkap n/m".
  */
 data class VisitWeek(val start: LocalDate, val visited: Int, val target: Int) {
     val complete: Boolean get() = target > 0 && visited >= target
 }
 
-/** A toko of the week with whether it was visited. */
-/**
- * A toko of the week with whether it was visited. [counted] = false: held today but not part of this week's target
- * (assigned mid-week, counted from next week; decision 2026-10-14). It can still be visited.
- */
-data class WeekStore(val store: Store, val visited: Boolean, val counted: Boolean = true)
+/** A toko of the week with whether it was visited (one visit per toko per week, PRD Scope 2 S12). */
+data class WeekStore(val store: Store, val visited: Boolean)
 
-/**
- * A partner's toko of the week; the partner counts as visited when all its counted toko are ("Sudah dikunjungi minggu
- * ini"), or all its toko when none counts yet.
- */
+/** A partner's toko of the week; the partner counts as visited when all its toko are ("Sudah dikunjungi minggu ini"). */
 data class WeekPartner(val partner: Partner, val stores: List<WeekStore>) {
-    val visited: Boolean get() = stores.filter { it.counted }.ifEmpty { stores }.all { it.visited }
+    val visited: Boolean get() = stores.all { it.visited }
 }
 
 /**
- * Time and place rules. Check in kerja is on time up to 10:00 **local time** of the person's area (Makassar WITA,
- * Jabodetabek WIB, …; decision 2026-10-08). Stakeholder revision 2026-10-08: visit check-in from 12:00 local time within
- * 3 km of the toko, no hourly plan, weekly target of one visit per workday.
+ * Time and place rules. PRD Scope 2 S8: every status uses the server time (prototype: the app clock) in the **zone of the
+ * user's area** (Makassar WITA, Jakarta WIB, …), never the device zone, which is only kept for audit. Check in kerja on
+ * time up to 10:00; visit check-in from 12:00 within 3 km of the toko; one visit per toko per week.
  */
 object ActivityRules {
-    /** Indonesian zones and their labels (PRD alignment 2026-10-09: WIB, WITA, WIT). */
+    /** Indonesian zones and their labels (WIB, WITA, WIT). */
     val ZONE_LABELS: Map<String, String> = mapOf(
         "Asia/Jakarta" to "WIB", "Asia/Pontianak" to "WIB", "Asia/Makassar" to "WITA", "Asia/Jayapura" to "WIT",
     )
 
-    /** The device's zone (replaceable in tests). */
+    /** The device's zone, saved with each punch for audit only (replaceable in tests). */
     @Volatile
     var systemZone: () -> ZoneId = { ZoneId.systemDefault() }
 
-    /** Display zone: the device zone, or the signed-in user's area when the device is not on WIB/WITA/WIT. */
+    /** Display zone: the signed-in user's area. */
     @Volatile
     var ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
         private set
@@ -146,20 +140,14 @@ object ActivityRules {
 
     fun useArea(areaId: Int?) {
         val area = areaId?.let { DemoDirectory.area(it) } ?: return
-        ZONE = systemZone().takeIf { it.id in ZONE_LABELS } ?: area.zone
+        ZONE = area.zone
         ZONE_LABEL = label(ZONE)
     }
 
-    /** Local zone of a person's area. */
+    /** Zone of a person's area (S8: decides every status). */
     fun zoneOf(employeeId: Long): ZoneId = DemoDirectory.person(employeeId)?.let { DemoDirectory.area(it.areaId) }?.zone ?: ZONE
 
-    /**
-     * Zone of a check in made now on this device (PRD alignment 2026-10-09): the device zone when it is WIB, WITA or WIT,
-     * otherwise the person's area (decision 2026-10-09, e.g. an emulator on UTC).
-     */
-    fun deviceZone(employeeId: Long): ZoneId = systemZone().takeIf { it.id in ZONE_LABELS } ?: zoneOf(employeeId)
-
-    /** Zone saved with a punch; punches saved before it carry none and use the person's area. */
+    /** Zone saved with a punch (the area zone); punches saved before it carry none and use the person's area. */
     fun zoneOf(punch: Punch, employeeId: Long): ZoneId = punch.zone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: zoneOf(employeeId)
 
     /** "WIB" / "WITA" / "WIT"; another zone shows its offset ("UTC+08:00"). */
@@ -190,21 +178,27 @@ object ActivityRules {
     /** Monday to Saturday (same as the web portal sample). */
     fun isWorkday(date: LocalDate) = date.dayOfWeek != DayOfWeek.SUNDAY
 
-    fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate, dayOff: Boolean = false, zone: ZoneId = a?.let { zoneOf(it.employeeId) } ?: ZONE): AttendanceStatus {
+    /**
+     * Status of [date] in the area [zone] (S8). Absen (S13): no check in, or a check in without check out once the day
+     * is over; today without check out is still Tepat Waktu / Terlambat.
+     */
+    fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate, zone: ZoneId = a?.let { zoneOf(it.employeeId) } ?: ZONE): AttendanceStatus {
         val inAt = a?.clockIn?.at
         return when {
-            inAt == null && dayOff -> AttendanceStatus.DAY_OFF
-            // The zone saved with the check in decides (PRD alignment 2026-10-09), else the given zone.
-            inAt != null -> if (Instant.ofEpochMilli(inAt).atZone(a.clockIn.zone?.let { ZoneId.of(it) } ?: zone).toLocalTime().truncatedTo(ChronoUnit.MINUTES) <= CLOCK_IN_LIMIT) AttendanceStatus.ON_TIME else AttendanceStatus.LATE
+            inAt == null && !isWorkday(date) -> AttendanceStatus.NOT_WORKDAY
+            inAt != null && a.clockOut == null && date < today -> AttendanceStatus.ABSENT
+            inAt != null -> if (Instant.ofEpochMilli(inAt).atZone(zone).toLocalTime().truncatedTo(ChronoUnit.MINUTES) <= CLOCK_IN_LIMIT) AttendanceStatus.ON_TIME else AttendanceStatus.LATE
             date < today -> AttendanceStatus.ABSENT
             else -> AttendanceStatus.NOT_YET
         }
     }
 
-    /** Visit check-in is open from [VISIT_START] local time of the person's area. */
-    fun visitOpen(now: Instant, employeeId: Long): Boolean = !now.atZone(deviceZone(employeeId)).toLocalTime().isBefore(VISIT_START)
+    /** Visit check-in is open from [VISIT_START] in the zone of the person's area (S8). */
+    fun visitOpen(now: Instant, employeeId: Long): Boolean = !now.atZone(zoneOf(employeeId)).toLocalTime().isBefore(VISIT_START)
 
-    fun visitStatus(v: Visit): VisitStatus = if (v.state == VisitState.DONE) VisitStatus.DONE else VisitStatus.ONGOING
+    /** Check-out is optional (S13): a visit of an earlier day without check-out is Selesai ("Tanpa check-out"). */
+    fun visitStatus(v: Visit, today: LocalDate): VisitStatus =
+        if (v.state == VisitState.DONE || LocalDate.parse(v.date) < today) VisitStatus.DONE else VisitStatus.ONGOING
 
     /** Monday of [date]'s week. */
     fun weekStart(date: LocalDate): LocalDate = date.with(DayOfWeek.MONDAY)
@@ -213,14 +207,13 @@ object ActivityRules {
     fun weekEnd(weekStart: LocalDate): LocalDate = weekStart.plusDays(5)
 
     /** Toko of the week grouped by partner, from the toko to visit and the toko visited that week. */
-    /** [countedStoreIds] `null` = every toko counts (the target itself). */
-    fun weekPartners(targets: List<Pair<Partner, Store>>, visitedStoreIds: Set<String>, countedStoreIds: Set<String>? = null): List<WeekPartner> =
+    fun weekPartners(targets: List<Pair<Partner, Store>>, visitedStoreIds: Set<String>): List<WeekPartner> =
         targets.groupBy({ it.first.id }, { it }).values.map { list ->
-            WeekPartner(list.first().first, list.map { (_, s) -> WeekStore(s, s.id in visitedStoreIds, countedStoreIds?.contains(s.id) ?: true) })
+            WeekPartner(list.first().first, list.map { (_, s) -> WeekStore(s, s.id in visitedStoreIds) })
         }
 
     fun visitWeek(weekStart: LocalDate, groups: List<WeekPartner>): VisitWeek {
-        val stores = groups.flatMap { it.stores }.filter { it.counted }
+        val stores = groups.flatMap { it.stores }
         return VisitWeek(weekStart, stores.count { it.visited }, stores.size)
     }
 }

@@ -38,7 +38,7 @@ private const val ARG_EMPLOYEE = "employee_id"
 
 private fun AppContainer.item(v: Visit): VisitItem? {
     val partner = partners.partners.value.firstOrNull { p -> p.stores.any { it.id == v.storeId } }
-    return visitItem(v, partner?.stores?.firstOrNull { it.id == v.storeId }, partner)
+    return visitItem(v, partner?.stores?.firstOrNull { it.id == v.storeId }, partner, operations.todayOf(v.employeeId))
 }
 
 private fun AppContainer.storesOf(id: Long, role: SalesRole): List<Store> = DemoSeed.storesOf(partners.partners.value, id, role)
@@ -81,7 +81,6 @@ class SalesHomeFragment : HomeBase() {
                 online = online,
                 week = repo.visitWeek(today),
                 visitedToday = repo.visitsOn(today).isNotEmpty(),
-                dayOff = repo.isDayOff(today),
                 groups = repo.visitPartners(today),
                 unread = container.partners.notificationsOf(s.user.id).filter { !it.read },
                 partners = container.partners.myPartners(s.user.id, s.role),
@@ -130,7 +129,7 @@ class TlHomeFragment : HomeBase() {
                 myWeek = if (repo.stores().isEmpty()) null else repo.visitWeek(today),
                 teamPresent = statuses.count { it == AttendanceStatus.ON_TIME || it == AttendanceStatus.LATE },
                 teamNotYet = statuses.count { it == AttendanceStatus.NOT_YET },
-                teamAbsent = statuses.count { it == AttendanceStatus.ABSENT || it == AttendanceStatus.DAY_OFF },
+                teamAbsent = statuses.count { it == AttendanceStatus.ABSENT },
                 teamVisitedToday = visitedToday,
                 teamNotVisitedToday = team.size - visitedToday,
                 teamCompleteWeek = team.count { o.visitWeek(it.id, ActivityRules.weekStart(today)).complete },

@@ -81,7 +81,8 @@ fun AttendanceCard(
             }
         }
         when {
-            a?.clockIn == null -> AmarButton(stringResource(R.string.att_clock_in), onClockIn, Modifier.fillMaxWidth(), size = AmarButtonSize.Medium, enabled = online)
+            // Sunday is not a workday (Monday–Saturday, PRD Scope 2 S10): no check in kerja.
+            a?.clockIn == null -> AmarButton(stringResource(R.string.att_clock_in), onClockIn, Modifier.fillMaxWidth(), size = AmarButtonSize.Medium, enabled = online && day.status != AttendanceStatus.NOT_WORKDAY)
             a.clockOut == null -> AmarButton(stringResource(R.string.att_clock_out), onClockOut, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium, enabled = online)
             else -> Text(stringResource(R.string.att_done), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         }
@@ -112,7 +113,7 @@ private fun RowScope.TimeTile(label: String, punch: Punch?, employeeId: Long?, b
 
 /**
  * Figma `Attendance status`: Badge Small; labels from the revision 2026-10-08: "Belum Check In" Warning, "Tepat Waktu"
- * Success, "Terlambat" Warning, "Absen" Error, "Libur" Info.
+ * Success, "Terlambat" Warning, "Absen" Error (also check in without check out, S13), "Bukan hari kerja" Info (Sunday).
  */
 @Composable
 fun AttendanceBadge(status: AttendanceStatus) {
@@ -121,7 +122,7 @@ fun AttendanceBadge(status: AttendanceStatus) {
         AttendanceStatus.ON_TIME -> R.string.att_status_on_time to AmarBadgeType.Success
         AttendanceStatus.LATE -> R.string.att_status_late to AmarBadgeType.Warning
         AttendanceStatus.ABSENT -> R.string.att_status_absent to AmarBadgeType.Error
-        AttendanceStatus.DAY_OFF -> R.string.att_status_day_off to AmarBadgeType.Info
+        AttendanceStatus.NOT_WORKDAY -> R.string.att_status_not_workday to AmarBadgeType.Info
     }
     AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small)
 }

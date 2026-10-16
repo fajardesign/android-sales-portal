@@ -85,7 +85,7 @@ class ActivityScreensScreenshotTest {
         val partners = PartnerSeed.partners()
         val stores = DemoSeed.storesOf(partners, 11, com.example.and_sales_portal.data.auth.SalesRole.SR)
         fun partnerOf(id: String) = partners.first { p -> p.stores.any { it.id == id } }
-        fun item(v: Visit) = requireNotNull(visitItem(v, stores.first { it.id == v.storeId }, partnerOf(v.storeId)))
+        fun item(v: Visit) = requireNotNull(visitItem(v, stores.first { it.id == v.storeId }, partnerOf(v.storeId), today))
         fun visit(i: Int, state: VisitState, inAt: String, outAt: String? = null, synced: Boolean = true) = Visit(
             "v$i", 11, stores[i].id, today.toString(), state,
             checkIn = Punch(at(inAt), stores[i].lat, stores[i].lng, distance = 120),
@@ -99,11 +99,10 @@ class ActivityScreensScreenshotTest {
             date = "Rabu, 7 Oktober 2026",
             week = VisitWeek(monday, 1, 3),
             visitedToday = true,
-            dayOff = false,
             groups = com.example.and_sales_portal.data.activity.ActivityRules.weekPartners(stores.map { partnerOf(it.id) to it }, setOf(stores[0].id)),
             visits = listOf(item(done), item(ongoing)),
             online = true,
-            block = VisitCheckInBlock.Ongoing,
+            block = null,
         )
         capture("03_list") { VisitListScreen("Kunjungan", state, null, {}, {}, {}) }
         capture("03_before_start") { VisitListScreen("Kunjungan", state.copy(visits = emptyList(), visitedToday = false, block = VisitCheckInBlock.BeforeStart), null, {}, {}, {}) }

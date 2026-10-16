@@ -11,13 +11,15 @@ import kotlinx.coroutines.flow.update
 import java.time.Instant
 import java.time.LocalDate
 
-/** Why a visit check-in cannot start (stakeholder revision 2026-10-08, SOP decision 2026-10-08). */
-enum class VisitCheckInBlock { NotWorkCheckedIn, BeforeStart, DayOff, Ongoing, StoreNotAssigned }
+/**
+ * Why a visit check-in cannot start (SOP decision 2026-10-08; PRD Scope 2 S12: one visit per toko per week, so
+ * [VisitedThisWeek] until the next Monday).
+ */
+enum class VisitCheckInBlock { NotWorkCheckedIn, BeforeStart, VisitedThisWeek, StoreNotAssigned }
 
 /**
- * Attendance, visits and days off of every SA/SR/TL on the device (shared, so the TL sees the team's attendance and
- * visits and marks days off). Spec: ATT-01 … ATT-05, TL-01 … TL-04 (PRD v3 C5, C7, C8, D2, D3; stakeholder revision
- * 2026-10-08: no hourly visit plan).
+ * Attendance and visits of every SA/SR/TL on the device (shared, so the TL sees the team's attendance and visits).
+ * Spec: ATT-01 … ATT-05, TL-01 … TL-04 (PRD v3 C5, C7, C8, D2, D3; PRD Scope 2, 2.0: no days off, S10).
  */
 class OperationsRepository(
     private val store: DemoStore,
@@ -35,16 +37,14 @@ class OperationsRepository(
     fun now(): Instant = clock()
     fun today(): LocalDate = clock().atZone(ActivityRules.ZONE).toLocalDate()
 
-    /** Today for [employeeId] on this device (device zone, else the area's). */
-    fun todayOf(employeeId: Long): LocalDate = clock().atZone(ActivityRules.deviceZone(employeeId)).toLocalDate()
+    /** Today for [employeeId]: the app clock in the zone of their area (PRD Scope 2 S8). */
+    fun todayOf(employeeId: Long): LocalDate = clock().atZone(ActivityRules.zoneOf(employeeId)).toLocalDate()
 
     fun attendanceOf(employeeId: Long, date: LocalDate): Attendance? =
         _data.value.attendance.firstOrNull { it.employeeId == employeeId && it.date == date.toString() }
 
-    fun isDayOff(employeeId: Long, date: LocalDate) = OpsData.key(employeeId, date) in _data.value.daysOff
-
     fun attendanceStatus(employeeId: Long, date: LocalDate): AttendanceStatus =
-        ActivityRules.attendanceStatus(attendanceOf(employeeId, date), date, today(), isDayOff(employeeId, date), ActivityRules.zoneOf(employeeId))
+        ActivityRules.attendanceStatus(attendanceOf(employeeId, date), date, todayOf(employeeId), ActivityRules.zoneOf(employeeId))
 
     fun visit(id: String): Visit? = _data.value.visits.firstOrNull { it.id == id }
 
@@ -54,33 +54,30 @@ class OperationsRepository(
     fun visitsBetween(employeeId: Long, from: LocalDate, to: LocalDate): List<Visit> =
         _data.value.visits.filter { it.employeeId == employeeId && LocalDate.parse(it.date) in from..to }
 
-    /** Toko of [employeeId] to visit in the week of [weekStart], by partner, with whether each was visited. */
+    /**
+     * Toko of [employeeId] to visit in the week of [weekStart], by partner, with whether each was visited (same as the
+     * web `visitWeekStores`). PRD Scope 2 S9/S11: the current week uses the toko held **now** (the target changes at once,
+     * no proration); a finished week stays frozen from the history (held on Monday and still held at its end).
+     */
     fun weekPartners(employeeId: Long, weekStart: LocalDate): List<WeekPartner> {
         val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
-        // Toko of that week, not of today (decision 2026-10-14): held on Monday and still held at the end of the week.
-        val zone = ActivityRules.zoneOf(employeeId)
-        val endOf = { d: LocalDate -> d.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1 }
-        val targets = partners.weekStores(employeeId, role, endOf(weekStart), minOf(endOf(ActivityRules.weekEnd(weekStart)), clock().toEpochMilli()))
-        val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
+        val weekEnd = ActivityRules.weekEnd(weekStart)
+        val targets = if (!weekEnd.isBefore(todayOf(employeeId))) {
+            val list = partners.partners.value
+            DemoSeed.storesOf(list, employeeId, role).mapNotNull { s -> list.firstOrNull { p -> p.stores.any { it.id == s.id } }?.let { it to s } }
+        } else {
+            val zone = ActivityRules.zoneOf(employeeId)
+            val endOf = { d: LocalDate -> d.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1 }
+            partners.weekStores(employeeId, role, endOf(weekStart), endOf(weekEnd))
+        }
+        val seen = visitsBetween(employeeId, weekStart, weekEnd).map { it.storeId }.toSet()
         return ActivityRules.weekPartners(targets, seen)
     }
 
-    /**
-     * Toko [employeeId] can visit now (ATT-03, Beranda SA/SR), by partner: the toko held **today** (SA/SR: assigned; TL:
-     * toko of the partners they own), marked whether they count in this week's target (decision 2026-10-14). A toko
-     * assigned mid-week shows with "Dihitung mulai minggu depan" instead of being hidden until Monday.
-     */
-    fun visitPartners(employeeId: Long, date: LocalDate): List<WeekPartner> {
-        val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
-        val weekStart = ActivityRules.weekStart(date)
-        val list = partners.partners.value
-        val current = DemoSeed.storesOf(list, employeeId, role).mapNotNull { s -> list.firstOrNull { p -> p.stores.any { it.id == s.id } }?.let { it to s } }
-        val counted = weekPartners(employeeId, weekStart).flatMap { g -> g.stores.map { it.store.id } }.toSet()
-        val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
-        return ActivityRules.weekPartners(current, seen, counted)
-    }
+    /** Toko [employeeId] can visit now (ATT-03, Beranda SA/SR), by partner: the toko held today, i.e. this week's target. */
+    fun visitPartners(employeeId: Long, date: LocalDate): List<WeekPartner> = weekPartners(employeeId, ActivityRules.weekStart(date))
 
-    /** Week of [weekStart] (Monday): toko visited over toko to visit (PRD alignment 2026-10-09; days off do not count). */
+    /** Week of [weekStart] (Monday): toko visited over toko to visit. */
     fun visitWeek(employeeId: Long, weekStart: LocalDate): VisitWeek = ActivityRules.visitWeek(weekStart, weekPartners(employeeId, weekStart))
 
     /**
@@ -106,22 +103,25 @@ class OperationsRepository(
         d.copy(attendance = d.attendance.map { if (it.employeeId == employeeId && it.date == date) it.copy(clockOut = punch) else it })
     }
 
-    /** Visit that has started and not ended. */
-    fun ongoingVisit(employeeId: Long): Visit? = _data.value.visits.firstOrNull { it.employeeId == employeeId && it.state == VisitState.IN_PROGRESS }
+    /** Visits of today not checked out yet (check-out is optional, S13, so several can be open at once). */
+    fun ongoingVisits(employeeId: Long): List<Visit> {
+        val today = todayOf(employeeId)
+        return visitsOf(employeeId, today).filter { ActivityRules.visitStatus(it, today) == VisitStatus.ONGOING }
+    }
 
     /**
-     * Why [employeeId] cannot check in at [storeId] now: check in kerja first (SOP), from 12:00 local time, not on a day
-     * off, one visit at a time, only at their toko. A second visit on the same day is allowed but counts once.
+     * Why [employeeId] cannot check in at [storeId] now: only at their toko, check in kerja first (SOP), from 12:00 in the
+     * area zone, and once per toko per week (S12; until the next Monday). No check-out needed before another toko (S13).
      */
     fun checkInBlock(employeeId: Long, storeId: String): VisitCheckInBlock? {
         val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return VisitCheckInBlock.StoreNotAssigned
         val today = todayOf(employeeId)
+        val monday = ActivityRules.weekStart(today)
         return when {
             DemoSeed.storesOf(partners.partners.value, employeeId, role).none { it.id == storeId } -> VisitCheckInBlock.StoreNotAssigned
-            isDayOff(employeeId, today) -> VisitCheckInBlock.DayOff
+            visitsBetween(employeeId, monday, ActivityRules.weekEnd(monday)).any { it.storeId == storeId } -> VisitCheckInBlock.VisitedThisWeek
             attendanceOf(employeeId, today)?.clockIn == null -> VisitCheckInBlock.NotWorkCheckedIn
             !ActivityRules.visitOpen(clock(), employeeId) -> VisitCheckInBlock.BeforeStart
-            ongoingVisit(employeeId) != null -> VisitCheckInBlock.Ongoing
             else -> null
         }
     }
@@ -135,8 +135,13 @@ class OperationsRepository(
         return v
     }
 
-    fun checkOut(visitId: String, punch: Punch, note: String?) =
+    /** Optional check-out with an optional note (S13), the same day only; it can be saved offline and sent later. */
+    fun checkOut(visitId: String, punch: Punch, note: String?): Boolean {
+        val v = visit(visitId) ?: return false
+        if (ActivityRules.visitStatus(v, todayOf(v.employeeId)) != VisitStatus.ONGOING) return false
         changeVisit(visitId) { it.copy(state = VisitState.DONE, checkOut = punch, note = note?.trim()?.ifEmpty { null }) }
+        return true
+    }
 
     fun pendingSync(employeeId: Long): Int = _data.value.visits.count { it.employeeId == employeeId && it.checkOut?.synced == false }
 
@@ -149,13 +154,6 @@ class OperationsRepository(
     }
 
     // endregion
-
-    /** Marks or clears a day off (TL-04, today or later): attendance shows Libur and visit check-in is closed that day. */
-    fun setDayOff(employeeId: Long, date: LocalDate, off: Boolean) {
-        if (date.isBefore(todayOf(employeeId))) return
-        val key = OpsData.key(employeeId, date)
-        change { d -> d.copy(daysOff = if (off) d.daysOff + key else d.daysOff - key) }
-    }
 
     /** "Reset data demo". */
     fun reset() {

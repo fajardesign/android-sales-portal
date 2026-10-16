@@ -63,7 +63,6 @@ data class SalesHomeState(
     /** This week's visits against the target (revision 2026-10-08). */
     val week: VisitWeek,
     val visitedToday: Boolean,
-    val dayOff: Boolean,
     /** This week's toko by partner with "Sudah dikunjungi minggu ini" / "Belum dikunjungi" (PRD alignment 2026-10-09). */
     val groups: List<WeekPartner>,
     val partners: List<Partner>,
@@ -103,7 +102,6 @@ fun SalesHomeScreen(
             Text(
                 stringResource(
                     when {
-                        s.dayOff -> R.string.vis_today_off
                         s.visitedToday -> R.string.vis_today_done
                         else -> R.string.vis_today_not_yet
                     },

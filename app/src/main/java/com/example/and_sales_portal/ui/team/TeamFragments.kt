@@ -167,7 +167,6 @@ class ScheduleFragment : ComposeFragment() {
         val people = remember { container.activeTeam(tl.user.id) }
         var selectedId by rememberSaveable { mutableLongStateOf(arguments?.getLong(ARG_EMPLOYEE, NONE) ?: NONE) }
         var weekEpoch by rememberSaveable { mutableLongStateOf(ActivityRules.weekStart(repo.today()).toEpochDay()) }
-        var offPending by remember { mutableStateOf<LocalDate?>(null) }
         val (incoming, clearIncoming) = incomingToast()
         val weekStart = LocalDate.ofEpochDay(weekEpoch)
         val person = people.firstOrNull { it.id == selectedId }
@@ -176,9 +175,9 @@ class ScheduleFragment : ComposeFragment() {
         val days = remember(ops, partners, selectedId, weekStart) {
             person?.let { p ->
                 (0L..5L).map { weekStart.plusDays(it) }.map { d ->
-                    WeekDay(d, repo.isDayOff(p.id, d), repo.visitsOf(p.id, d).mapNotNull { v ->
+                    WeekDay(d, repo.visitsOf(p.id, d).mapNotNull { v ->
                         val partner = partners.firstOrNull { pt -> pt.stores.any { it.id == v.storeId } }
-                        visitItem(v, partner?.stores?.firstOrNull { it.id == v.storeId }, partner)
+                        visitItem(v, partner?.stores?.firstOrNull { it.id == v.storeId }, partner, repo.todayOf(p.id))
                     })
                 }
             }.orEmpty()
@@ -189,17 +188,6 @@ class ScheduleFragment : ComposeFragment() {
                 people, person, { selectedId = it.id }, weekStart, week, days, today, hasStores, ::back,
                 onPrevWeek = { weekEpoch = weekStart.minusWeeks(1).toEpochDay() },
                 onNextWeek = { weekEpoch = weekStart.plusWeeks(1).toEpochDay() },
-                onToggleOff = { d -> if (repo.isDayOff(selectedId, d)) repo.setDayOff(selectedId, d, false) else offPending = d },
-            )
-        }
-        offPending?.let { d ->
-            ConfirmDialog(
-                stringResource(R.string.sch_off_confirm_title), stringResource(R.string.sch_off_confirm, person?.fullName.orEmpty(), Fmt.longDate(d)), stringResource(R.string.sch_mark_off),
-                onConfirm = {
-                    offPending = null
-                    repo.setDayOff(selectedId, d, true)
-                },
-                onDismiss = { offPending = null },
             )
         }
     }
