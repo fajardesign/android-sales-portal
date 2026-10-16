@@ -21,11 +21,11 @@ object DemoSeed {
     /** Days of history generated before the first day the user opens the app. */
     private const val HISTORY_DAYS = 14L
 
-    /** Toko the user works at: SA/SR their assigned toko, TL the toko of the partners they own. */
+    /** Toko the user works at: SA/SR their assigned toko, TL the toko they hold (PRD Scope 1 v2: TL per toko). */
     fun storesOf(partners: List<Partner>, userId: Long, role: SalesRole): List<Store> {
         val active = partners.filter { it.status == PartnerStatus.ACTIVE }
         val stores = when (role) {
-            SalesRole.TL -> active.filter { it.ownerTlId == userId }.flatMap { it.stores }
+            SalesRole.TL -> active.flatMap { p -> p.stores.filter { it.tlId == userId } }
             SalesRole.SA, SalesRole.SR -> active.flatMap { p -> p.stores.filter { userId in it.assigned } }
         }
         return stores.filter { it.status == "ACTIVE" }

@@ -91,15 +91,43 @@ object PartnerSeed {
         set(p142.advance(40 to (PartnerStatus.VERIFIED to VERIFIED_REASON)))
         set(p141.advance(30 to (PartnerStatus.VERIFIED to VERIFIED_REASON)))
         set(p140.advance(26 to (PartnerStatus.VERIFIED to VERIFIED_REASON), 50 to (PartnerStatus.WAITING_PKS to "PKS dikirim di Privy web via Privy ID PRV48802")))
-        listOf(p139 to "via Privy ID PRV31877", p138 to "via email ${p138.picEmail}", p137 to "via email ${p137.picEmail}", p136 to "via email ${p136.picEmail}",
-            p132 to "via email ${p132.picEmail}", p131 to "via email ${p131.picEmail}", p133 to "via Privy ID PRV22014").forEach { (p, via) ->
+        listOf(p139 to "via Privy ID PRV31877", p138 to "via Email PIC ${p138.picEmail}", p137 to "via Email PIC ${p137.picEmail}", p136 to "via Email PIC ${p136.picEmail}",
+            p132 to "via Email PIC ${p132.picEmail}", p131 to "via Email PIC ${p131.picEmail}", p133 to "via Privy ID PRV22014").forEach { (p, via) ->
             set(p.advance(22 to (PartnerStatus.VERIFIED to VERIFIED_REASON), 46 to (PartnerStatus.WAITING_PKS to "PKS dikirim di Privy web $via"), 24 * 6 to (PartnerStatus.ACTIVE to ACTIVE_REASON)))
         }
         set(p135.advance(30 to (PartnerStatus.REJECTED to "Usaha tidak sesuai kriteria partner (bukan toko gadget)")))
         set(p134.advance(50 to (PartnerStatus.CANCELLED to "Partner mengundurkan diri sebelum review selesai")))
         set(byId.getValue(p133.id).advance(24 * 150 to (PartnerStatus.INACTIVE to "Partner berhenti bekerja sama per Oktober 2026")))
-        // The owner is saved per partner (decision PO 2026-10-12): the TL submitter, or the TL of the SR submitter.
-        return list.map { byId.getValue(it.id) }.map { it.copy(ownerTl = Partner.defaultOwner(it.submittedBy) { id -> DemoDirectory.samplePerson(id) }) }
+        // TL per toko (PRD Scope 1 v2, decision 2026-10-16): the TL who submitted the partner or added the toko, or the TL of
+        // the SR who did. Kode Referral per toko, same as the web sample: toko of Active, Inactive and Rejected partners
+        // already have one (`OF{area}{3 digits of the registration}{n}`), filled by the Admin before activation.
+        val withCodes = setOf(139, 138, 137, 136, 132, 131, 133, 135).map { "REG2026-0$it" }.toSet()
+        val out = list.map { byId.getValue(it.id) }.map { p ->
+            val area = requireNotNull(DemoDirectory.area(p.areaId))
+            p.copy(stores = p.stores.mapIndexed { i, s ->
+                s.copy(
+                    tlId = Partner.defaultTl(if (s.addedBy != 0L) s.addedBy else p.submittedBy) { id -> DemoDirectory.samplePerson(id) },
+                    referralCode = if (p.id in withCodes) "OF${area.code}${p.id.takeLast(3)}${i + 1}" else null,
+                )
+            })
+        }
+        // Same as the web sample: a toko added after Jaya Abadi Cellular became Active, by the second TL of Makassar
+        // (Bagus Wicaksono), waiting for its Kode Referral (OQ-25 option 1); one partner, two TL.
+        return out.map { p -> if (p.id == "REG2026-0139") p.copy(stores = p.stores + antang(p), outletCount = 4) else p }
+    }
+
+    /** "Jaya Abadi Cellular Antang" (`REG2026-0139-4`): TL Bagus (22), added 26 hours before the base time, not assigned. */
+    private fun antang(p: Partner): Store {
+        val area = requireNotNull(DemoDirectory.area(p.areaId))
+        val main = p.stores.first()
+        return main.copy(
+            id = "${p.id}-4", code = null, name = "${p.name} Antang",
+            address = main.address.replace(Regex("No\\. \\d+"), "No. 31"),
+            lat = round6(area.lat + 0.006), lng = round6(area.lng + 0.004),
+            omzet = 82_000_000, scale = "TRADITIONAL", productSold = "BRAND_NEW", location = "PINGGIR_JALAN",
+            primary = false, status = Store.WAITING_REFERRAL, assigned = emptyList(),
+            addedBy = 22, addedAt = ago(26), tlId = 22, tlLog = emptyList(), referralCode = null,
+        )
     }
 
     private const val VERIFIED_REASON = "Seluruh dokumen wajib dan data rekening valid"
@@ -142,10 +170,9 @@ object PartnerSeed {
             address = street, province = area.province, regency = area.city, district = area.district, village = area.village,
             rt = "003", rw = "005",
             // Same as the web portal sample: AMR + submitter id + number.
-            referralCode = "AMR$submittedBy$n",
             email = "admin@${bare.filter { it in 'a'..'z' }}.co.id", channel = "STORE", outletCount = stores.size,
             picName = picName, picEmail = picEmail, picPhone = "85" + (300_000_000 + n * 104_729).toString().take(9),
-            picStatus = cfg.picStatus, privyId = cfg.privyId, pksInviteEmail = picEmail,
+            picStatus = cfg.picStatus, privyId = cfg.privyId,
             bankCode = BANK_CODES[n % BANK_CODES.size], bankName = Banks.name(BANK_CODES[n % BANK_CODES.size]),
             bankBranch = "KCP ${area.name} ${BRANCHES[n % BRANCHES.size]}",
             accountNumber = (1_000_000_000L + n * 7_654_321L).toString().take(10),

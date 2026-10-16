@@ -242,7 +242,8 @@ class TeamSalesFragment : ComposeFragment() {
         val range = period.range(today)
         val loans = remember(partners) { container.sales.loansOfTl(tlId) }
         val team = remember { container.team.teamOf(tlId).filter { it.status == "ACTIVE" } }
-        val owned = remember(partners) { partners.filter { it.ownerTlId == tlId && it.status.name == "ACTIVE" } }
+        // PRD Scope 1 v2: the TL sees the toko they hold, grouped by partner.
+        val owned = remember(partners) { partners.filter { it.hasTl(tlId) && it.status.name == "ACTIVE" }.map { p -> p.copy(stores = p.stores.filter { it.tlId == tlId }) } }
         val members = remember(loans, period) { team.map { p -> p to summary(loans.filter { it.salesId == p.id }, range) } }
         val perPartner = remember(loans, period, owned) {
             owned.map { p -> p to p.stores.map { st -> StoreSales(st, summary(loans.filter { it.storeId == st.id }, range)) } }
@@ -290,7 +291,7 @@ class TeamIncentiveFragment : ComposeFragment() {
         val team = remember(ops, partners) {
             container.team.teamOf(tlId).filter { it.status == "ACTIVE" }.map { it to sales.salesIncentive(it.id, SalesRole.valueOf(it.role)) }
         }
-        val own = remember(partners) { partners.filter { it.ownerTlId == tlId && it.status.name == "ACTIVE" }.map { it to sales.partnerIncentive(it) } }
+        val own = remember(partners) { partners.filter { it.hasTl(tlId) && it.status.name == "ACTIVE" }.map { it to sales.partnerIncentive(it) } }
         TeamIncentiveScreen(tab, { tab = it }, mine, team, own, ::back)
     }
 }

@@ -125,8 +125,16 @@ class SubmissionDetailFragment : ComposeFragment() {
             AdminAction(R.string.sim_admin_cancel) { repo.adminCancel(id) },
         )
         PartnerStatus.VERIFIED -> listOf(AdminAction(R.string.sim_admin_send_pks) { repo.adminSendPks(id) }, AdminAction(R.string.sim_admin_cancel) { repo.adminCancel(id) })
-        PartnerStatus.WAITING_PKS -> listOf(AdminAction(R.string.sim_admin_activate) { repo.adminActivate(id) }, AdminAction(R.string.sim_admin_cancel) { repo.adminCancel(id) })
-        PartnerStatus.ACTIVE -> listOf(AdminAction(R.string.sim_admin_deactivate) { repo.adminDeactivate(id) })
+        // PRD Scope 1 v2 C2: Aktifkan stays locked until every toko has its Kode Referral.
+        PartnerStatus.WAITING_PKS -> listOfNotNull(
+            AdminAction(R.string.sim_admin_fill_referral) { repo.adminFillReferral(id) }.takeIf { repo.referralMissing(id) },
+            AdminAction(R.string.sim_admin_activate, enabled = !repo.referralMissing(id)) { repo.adminActivate(id) },
+            AdminAction(R.string.sim_admin_cancel) { repo.adminCancel(id) },
+        )
+        PartnerStatus.ACTIVE -> listOfNotNull(
+            AdminAction(R.string.sim_admin_fill_referral) { repo.adminFillReferral(id) }.takeIf { repo.referralMissing(id) },
+            AdminAction(R.string.sim_admin_deactivate) { repo.adminDeactivate(id) },
+        )
         else -> emptyList()
     }
 
@@ -181,9 +189,9 @@ class RevisionFragment : ComposeFragment() {
             val save = { vm.saveSection(editing); Unit }
             CompositionLocalProvider(LocalRegFrame provides RegFrame(stringResource(R.string.rev_title), showStep = false, cta = stringResource(R.string.rev_save))) {
                 when (editing) {
-                    RegStep.PartnerInfo -> RegPartnerInfoScreen(state, PartnerInfoActions(vm::setPartnerName, vm::setAddress, vm::selectProvince, vm::selectRegency, vm::selectDistrict, vm::selectVillage, vm::setRt, vm::setRw, save, close, vm::setReferralCode))
+                    RegStep.PartnerInfo -> RegPartnerInfoScreen(state, PartnerInfoActions(vm::setPartnerName, vm::setAddress, vm::selectProvince, vm::selectRegency, vm::selectDistrict, vm::selectVillage, vm::setRt, vm::setRw, save, close))
                     RegStep.Business -> RegBusinessScreen(state, DetailsActions(onEmail = vm::setEmail, onRevenue = vm::setRevenue, onOutletCount = vm::setOutletCount, onChoose = vm::choose, onContinue = save, onBack = close))
-                    RegStep.Pic -> RegPicScreen(state, DetailsActions(onPicName = vm::setPicName, onPicEmail = vm::setPicEmail, onPicPhone = vm::setPicPhone, onPrivyId = vm::setPrivyId, onPksEmail = vm::setPksEmail, onChoose = vm::choose, onContinue = save, onBack = close))
+                    RegStep.Pic -> RegPicScreen(state, DetailsActions(onPicName = vm::setPicName, onPicEmail = vm::setPicEmail, onPicPhone = vm::setPicPhone, onPrivyId = vm::setPrivyId, onChoose = vm::choose, onContinue = save, onBack = close))
                     RegStep.BankAccount -> RegBankAccountScreen(state, BankAccountActions(vm::selectBank, vm::setBranch, vm::setAccountNumber, vm::setAccountName, save, close))
                     RegStep.Documents -> Unit
                 }
@@ -255,7 +263,8 @@ class PartnerDetailFragment : ComposeFragment() {
         val p = remember(partners) { container.partners.get(id) } ?: return
         WithToast(toast, clearToast) {
             PartnerDetailScreen(
-                p,
+                // PRT-01 (PRD Scope 1 v2): a TL sees only the toko they hold.
+                if (user.role == SalesRole.TL) p.copy(stores = p.stores.filter { it.tlId == user.user.id }) else p,
                 // PRD C4 / D4: TL and SR add toko; SA does not.
                 canAddStore = user.role != SalesRole.SA,
                 onBack = ::back,

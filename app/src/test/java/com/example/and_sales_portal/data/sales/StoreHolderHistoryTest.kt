@@ -78,12 +78,12 @@ class StoreHolderHistoryTest {
     }
 
     @Test
-    fun closedWeeksOfATlKeepThePartnersOwnedThatWeek() {
+    fun closedWeeksOfATlKeepTheTokoHeldThatWeek() {
         val andi = ops.visitWeek(6, lastWeek)
         val bagus = ops.visitWeek(22, lastWeek)
         assertTrue(andi.target > 0)
 
-        partners.transferOwnership(6, 22, "TL lama dinonaktifkan")
+        partners.transferStores(6, 22, "TL lama dinonaktifkan")
         assertEquals(andi, ops.visitWeek(6, lastWeek))
         assertEquals(bagus, ops.visitWeek(22, lastWeek))
     }

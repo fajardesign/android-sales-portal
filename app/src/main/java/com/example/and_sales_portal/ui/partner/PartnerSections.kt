@@ -79,7 +79,6 @@ fun PartnerSections(partner: Partner, onEdit: ((RegStep) -> Unit)? = null, showV
         InfoRow(stringResource(R.string.reg_village), "${partner.village}, ${partner.district}")
         InfoRow(stringResource(R.string.reg_regency), "${partner.regency}, ${partner.province}")
         InfoRow("${stringResource(R.string.reg_rt)} / ${stringResource(R.string.reg_rw)}", "${partner.rt} / ${partner.rw}")
-        InfoRow(stringResource(R.string.reg_referral), partner.referralCode ?: "-")
     }
     Section(R.string.sec_business, onEdit?.let { { it(RegStep.Business) } }) {
         InfoRow(stringResource(R.string.reg_email), partner.email)
@@ -88,6 +87,8 @@ fun PartnerSections(partner: Partner, onEdit: ((RegStep) -> Unit)? = null, showV
         InfoRow(stringResource(R.string.reg_entity_type), choice(RegChoice.EntityType, partner.entity))
         InfoRow(stringResource(R.string.reg_channel), choice(RegChoice.Channel, partner.channel))
         store?.let { StoreChoices(it) }
+        // PRD Scope 1 v2 C2: Kode Referral is per toko, filled by the Admin (REG-10 only, read-only).
+        if (onEdit == null && store != null) InfoRow(stringResource(R.string.reg_referral), store.referralCode ?: stringResource(R.string.prt_referral_empty))
     }
     Section(R.string.sec_pic, onEdit?.let { { it(RegStep.Pic) } }) {
         InfoRow(stringResource(R.string.reg_pic_name), partner.picName)
@@ -95,7 +96,6 @@ fun PartnerSections(partner: Partner, onEdit: ((RegStep) -> Unit)? = null, showV
         InfoRow(stringResource(R.string.reg_phone), "+62 ${partner.picPhone}")
         InfoRow(stringResource(R.string.reg_pic_status), choice(RegChoice.PicStatus, partner.picStatus))
         InfoRow(stringResource(R.string.reg_privy_id), partner.privyId ?: "-")
-        InfoRow(stringResource(R.string.reg_pks_email), partner.pksInviteEmail ?: partner.picEmail)
     }
     Section(R.string.sec_bank, onEdit?.let { { it(RegStep.BankAccount) } }) {
         InfoRow(stringResource(R.string.reg_bank), partner.bankName)

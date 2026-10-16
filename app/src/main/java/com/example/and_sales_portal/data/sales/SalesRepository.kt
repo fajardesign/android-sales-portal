@@ -207,8 +207,8 @@ class SalesRepository(private val partners: PartnerRepository, private val ops: 
                             storeId = s.id,
                             // The SA/SR who held the toko on that date: past sales stay with them after a Lepas (fix 2026-10-14).
                             salesId = partners.holderAt(s.id, submittedAt),
-                            // The TL who owned the partner on that date: past sales stay with the old TL (DD review point 7).
-                            tlId = p.ownerAt(submittedAt),
+                            // The TL of the toko on that date: past sales stay with the old TL (PRD Scope 1 v2, TL per toko).
+                            tlId = s.tlAt(submittedAt),
                             customer = "${FIRST[rnd.nextInt(FIRST.size)]} ${LAST[rnd.nextInt(LAST.size)]}",
                             amount = (30 + rnd.nextInt(121)) * 100_000L,
                             units = if (rnd.nextDouble() < 0.2) 2 else 1,

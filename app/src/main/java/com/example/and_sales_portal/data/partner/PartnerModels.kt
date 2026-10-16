@@ -103,17 +103,50 @@ data class Store(
     val location: String = "PINGGIR_JALAN",
     val productType: String = "GADGET",
     val primary: Boolean = false,
-    /** `PENDING` until the partner is Active, then `ACTIVE`; `INACTIVE` with the partner. */
+    /**
+     * `PENDING` until the partner is Active, then `ACTIVE`; [WAITING_REFERRAL] for a toko added after the partner is
+     * Active until the Admin fills its Kode Referral (PRD Scope 1 v2 C2, OQ-25); `INACTIVE` with the partner.
+     */
     val status: String = "PENDING",
-    /** `merchant_assignment`: SA/SR assigned to this toko. */
+    /** `merchant_assignment`: SA/SR assigned to this toko (one toko = one SA/SR, a subordinate of [tlId]). */
     val assigned: List<Long> = emptyList(),
     val addedBy: Long = 0,
     val addedAt: Long = 0,
-)
+    /**
+     * TL of the toko (PRD Scope 1 v2, decision 2026-10-16): the partner is only an umbrella for its toko, so one partner
+     * can have several TL. Default: the TL who submitted the partner or added the toko, or the TL of the SR who did.
+     */
+    val tlId: Long? = null,
+    /** Every change of [tlId], oldest first (TL disabled, APL remap). */
+    val tlLog: List<TlChange> = emptyList(),
+    /** Kode Referral from AppsFlyer, filled by the Admin on the web per toko (PRD Scope 1 v2 C2); read-only here. */
+    val referralCode: String? = null,
+) {
+    val active: Boolean get() = status == ACTIVE
 
-/** The owning TL changed (web ACC-05: the TL was disabled and a replacement TL took over; decision PO 2026-10-12). */
+    /** TL of the toko at [at] (millis): loans keep the TL of that date, so past sales stay with the old TL. */
+    fun tlAt(at: Long): Long? = tlLog.firstOrNull { it.at > at }?.fromTlId ?: tlId
+
+    companion object {
+        const val ACTIVE = "ACTIVE"
+        const val WAITING_REFERRAL = "WAITING_REFERRAL"
+    }
+}
+
+/** The TL of a toko changed: the TL was disabled (web ACC-05) or the APL remapped it (decision 2026-10-16). */
 @Serializable
-data class OwnerChange(val at: Long, val fromTlId: Long?, val toTlId: Long, val reason: String)
+data class TlChange(val at: Long, val fromTlId: Long?, val toTlId: Long, val reason: String)
+
+/**
+ * "Konfirmasi dan Persetujuan Pendaftaran Toko" accepted before the first submission (PRD Scope 1 v2 C5): when, the
+ * version of the page and who submitted.
+ */
+@Serializable
+data class Consent(val at: Long, val version: String, val by: Long) {
+    companion object {
+        const val VERSION = "1.0"
+    }
+}
 
 @Serializable
 data class Partner(
@@ -127,8 +160,6 @@ data class Partner(
     val village: String,
     val rt: String,
     val rw: String,
-    /** Kode Referral (stakeholder revision 2026-10-08): letters and digits, max. 20; `null` in data saved before it. */
-    val referralCode: String? = null,
     val email: String,
     val channel: String,
     val outletCount: Int,
@@ -138,7 +169,6 @@ data class Partner(
     val picPhone: String,
     val picStatus: String,
     val privyId: String? = null,
-    val pksInviteEmail: String? = null,
     val bankCode: String,
     val bankName: String,
     val bankBranch: String,
@@ -158,28 +188,22 @@ data class Partner(
     val revision: RevisionRequest? = null,
     /** Reason of a Rejected, Cancelled or Inactive status. */
     val statusReason: String? = null,
-    /** Owning TL, saved per partner (decision PO 2026-10-12, OQ-C05); `null` in data saved before it. */
-    val ownerTl: Long? = null,
-    /** Every change of the owning TL, oldest first. */
-    val ownerHistory: List<OwnerChange> = emptyList(),
+    /** Consent of the first submission (C5); resubmitting a revision does not ask again. */
+    val consent: Consent? = null,
 ) {
     val registrationNumber: String get() = id
     val primaryStore: Store? get() = stores.firstOrNull { it.primary } ?: stores.firstOrNull()
 
-    /** TL that owns the partner: saved per partner; by default the TL who submitted it, or the TL of the SR who did. */
-    val ownerTlId: Long?
-        get() = ownerTl ?: defaultOwner(submittedBy)
+    /** TL of the partner's toko (several when toko have different TL), in toko order. */
+    val tlIds: List<Long> get() = stores.mapNotNull { it.tlId }.distinct()
 
-    /** Owning TL at [at] (millis): loans keep the TL who owned the partner then, so past sales stay with the old TL. */
-    fun ownerAt(at: Long): Long? {
-        if (ownerHistory.isEmpty()) return ownerTlId
-        return ownerHistory.lastOrNull { it.at <= at }?.toTlId ?: ownerHistory.first().fromTlId
-    }
+    /** Whether [tlId] holds at least one toko of the partner. */
+    fun hasTl(tlId: Long): Boolean = stores.any { it.tlId == tlId }
 
     companion object {
-        /** TL submitter, or the current leader of the SR submitter. */
-        fun defaultOwner(submittedBy: Long, person: (Long) -> DemoDirectory.Person? = { DemoDirectory.person(it) }): Long? =
-            person(submittedBy)?.let { if (it.role == "TL") it.id else it.supervisorId }
+        /** TL submitter / adder, or the current leader of the SR who submitted or added the toko. */
+        fun defaultTl(by: Long, person: (Long) -> DemoDirectory.Person? = { DemoDirectory.person(it) }): Long? =
+            person(by)?.let { if (it.role == "TL") it.id else it.supervisorId }
     }
 }
 

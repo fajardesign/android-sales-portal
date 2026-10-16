@@ -23,8 +23,6 @@ data class Simulation(
     val location: LocationMode = LocationMode.AT_STORE,
     val mockLocation: Boolean = false,
     val offline: Boolean = false,
-    /** Feature flag of the REG-07 consent checkbox (FR-PA-007, AS-PA-01: behind a flag until Business confirms). */
-    val regConsent: Boolean = false,
 )
 
 class SimulationSettings(context: Context) {
@@ -41,7 +39,6 @@ class SimulationSettings(context: Context) {
             .putString(KEY_LOCATION, s.location.name)
             .putBoolean(KEY_MOCK, s.mockLocation)
             .putBoolean(KEY_OFFLINE, s.offline)
-            .putBoolean(KEY_CONSENT, s.regConsent)
             .apply()
         _state.value = s
     }
@@ -50,13 +47,11 @@ class SimulationSettings(context: Context) {
         location = prefs.getString(KEY_LOCATION, null)?.let { runCatching { LocationMode.valueOf(it) }.getOrNull() } ?: LocationMode.AT_STORE,
         mockLocation = prefs.getBoolean(KEY_MOCK, false),
         offline = prefs.getBoolean(KEY_OFFLINE, false),
-        regConsent = prefs.getBoolean(KEY_CONSENT, false),
     )
 
     private companion object {
         const val KEY_LOCATION = "location"
         const val KEY_MOCK = "mock_location"
         const val KEY_OFFLINE = "offline"
-        const val KEY_CONSENT = "reg_consent"
     }
 }

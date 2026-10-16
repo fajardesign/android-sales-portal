@@ -106,7 +106,7 @@ class AddStoreViewModel(private val partner: Partner, private val partners: Part
             partner.stores.any { it.name.equals(name, ignoreCase = true) } -> FieldError(R.string.ts_err_name_taken)
             else -> null
         }
-        return PartnerRegistrationValidator.partnerInfo(s.form) - RegField.PartnerName - RegField.ReferralCode +
+        return PartnerRegistrationValidator.partnerInfo(s.form) - RegField.PartnerName +
             listOfNotNull(nameError?.let { RegField.StoreName to it }, PartnerRegistrationValidator.revenue(s.revenue)?.let { RegField.Revenue to it })
     }
 

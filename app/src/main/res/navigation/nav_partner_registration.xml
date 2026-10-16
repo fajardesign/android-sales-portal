@@ -52,7 +52,12 @@
             app:destination="@id/reg09_success"
             app:popUpTo="@id/reg02_partner_info"
             app:popUpToInclusive="true" />
+        <action android:id="@+id/action_reg08_to_consent" app:destination="@id/reg12_consent" />
     </fragment>
+
+    <fragment
+        android:id="@+id/reg12_consent"
+        android:name="com.example.and_sales_portal.ui.partnerregistration.RegConsentFragment" />
 
     <fragment
         android:id="@+id/reg09_success"

@@ -45,7 +45,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 |---|---|---|
 | MLG-00 … MLG-02 | Splash, Login, sesi | `ui/auth/`, `data/auth/` |
 | ATT-01 … ATT-05 | Absensi, Check In/Out Kerja, Kunjungan (target mingguan), Check-in/out | `ui/attendance/`, `ui/visits/`, `data/activity/` |
-| REG-01 … REG-11 | Tab Partner, pendaftaran, Pengajuan, revisi | `ui/partner/`, `ui/partnerregistration/`, `data/partner/` |
+| REG-01 … REG-12 | Tab Partner, pendaftaran, persetujuan (REG-12), Pengajuan, revisi | `ui/partner/`, `ui/partnerregistration/`, `data/partner/` |
 | PRT-01, PRT-02 | Detail Partner, Tambah Toko | `ui/partner/` |
 | TL-01 … TL-04 | Tim, Assign SA/SR (per toko), Jadwal Kunjungan (mingguan + libur; TL-05 dihapus) | `ui/team/`, `data/team/` |
 | TL-06 … TL-10 | Beranda TL, Produktivitas, Kinerja Penjualan, Pinjaman, Insentif | `ui/dashboard/`, `data/sales/` |
@@ -61,7 +61,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 
 ## Simulasi (debug)
 
-**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline, flag consent pendaftaran (REG-07, default mati). **Simulasi Admin: akun** meniru Nonaktifkan di web (ACC-05): TL Andi Pratama (partner dan tim pindah ke Bagus Wicaksono) dan SA Eko Saputra (tokonya dilepas). Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk menjalankan aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Aktifkan, Tolak, Batalkan, Nonaktifkan).
+**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline. **Simulasi Admin: akun** meniru web: Nonaktifkan TL Andi Pratama (toko dan tim pindah ke Bagus Wicaksono), APL ganti TL toko Jaya Abadi Cellular Sudiang ke Bagus (tanpa batas tanggal 1–3), Pindahkan Bawahan Siti ke Bagus (Siti dilepas dari toko Andi), dan Nonaktifkan SA Eko Saputra (tokonya dilepas). Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk menjalankan aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Isi kode referral, Aktifkan yang terkunci sampai semua toko punya Kode Referral, Tolak, Batalkan, Nonaktifkan). TL dicatat per toko (PRD Scope 1 v2); toko baru partner Active menunggu kode referral sebelum bisa ditugaskan.
 
 ## Batasan prototype
 

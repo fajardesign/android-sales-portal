@@ -98,7 +98,7 @@ class AssignFragment : ComposeFragment() {
         val assigned = remember(partners, selectedId) { person?.let { container.partners.assignedStores(it.id) }.orEmpty() }
         val available = remember(partners, selectedId) {
             person?.let { p ->
-                container.partners.activeStores().filter { (pt, s) -> pt.ownerTlId == tlId && pt.areaId == p.areaId && p.id !in s.assigned }
+                container.partners.activeStores().filter { (pt, s) -> s.tlId == tlId && pt.areaId == p.areaId && p.id !in s.assigned }
             }.orEmpty()
         }
         WithToast(toast, { toast = null }) {

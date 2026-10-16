@@ -11,8 +11,6 @@ object PartnerRegistrationValidator {
 
     private val EMAIL = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     private val THREE_DIGITS = Regex("^\\d{3}$")
-    private val ALPHANUMERIC = Regex("^[A-Za-z0-9]+$")
-    const val REFERRAL_MAX = 20
 
     private val required = FieldError(R.string.reg_required)
 
@@ -35,17 +33,6 @@ object PartnerRegistrationValidator {
         else -> null
     }
 
-    /** Kode Referral (revision 2026-10-08): required, letters and digits only, max. 20 characters after trimming. */
-    fun referralCode(value: String): FieldError? {
-        val v = value.trim()
-        return when {
-            v.isEmpty() -> required
-            !ALPHANUMERIC.matches(v) -> FieldError(R.string.reg_err_format)
-            v.length > REFERRAL_MAX -> FieldError(R.string.reg_err_max, REFERRAL_MAX)
-            else -> null
-        }
-    }
-
     fun revenue(value: String): FieldError? = when {
         value.isBlank() -> required
         (value.toLongOrNull() ?: 0L) <= 0L -> FieldError(R.string.reg_err_revenue)
@@ -65,7 +52,6 @@ object PartnerRegistrationValidator {
         RegField.Village to chosen(form.village),
         RegField.Rt to threeDigits(form.rt),
         RegField.Rw to threeDigits(form.rw),
-        RegField.ReferralCode to referralCode(form.referralCode),
     )
 
     /** REG-03 text fields. */
@@ -88,7 +74,6 @@ object PartnerRegistrationValidator {
         RegField.PicName to filled(form.name),
         RegField.PicEmail to email(form.email),
         RegField.PicPhone to filled(form.phone),
-        RegField.PksEmail to email(form.pksEmail),
     )
 
     /** REG-05: no bank inquiry in phase 1 (PRD C2). */

@@ -207,6 +207,7 @@ fun AssignScreen(
                 val by = when {
                     e.by != AssignmentEvent.SYSTEM -> PartnerRepository.actorName(e.by)
                     e.reason == AssignmentEvent.ACCOUNT_DISABLED -> stringResource(R.string.asg_by_disabled)
+                    e.reason == AssignmentEvent.LEADER_CHANGED -> stringResource(R.string.asg_by_leader, e.source.orEmpty())
                     else -> stringResource(R.string.asg_by_system)
                 }
                 Text(stringResource(R.string.asg_history_meta, by, eventTime(e)), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.bodySm)
