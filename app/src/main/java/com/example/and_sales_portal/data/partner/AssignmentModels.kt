@@ -20,14 +20,18 @@ data class AssignmentEvent(
     val partnerId: String,
     val partnerName: String,
     val by: String,
-    /** Why the system released it: [PARTNER_INACTIVE] or [ACCOUNT_DISABLED]; `null` for a TL's Tugaskan / Lepas. */
+    /** Why the system released it: [PARTNER_INACTIVE], [ACCOUNT_DISABLED] or [LEADER_CHANGED]; `null` for a TL's Tugaskan / Lepas. */
     val reason: String? = null,
+    /** What caused a [LEADER_CHANGED] release ("Pindahkan Bawahan", "bukan bawahan Bagus Wicaksono", …; FR-MP-007). */
+    val source: String? = null,
 ) {
     companion object {
         const val SYSTEM = "SYSTEM"
         const val PARTNER_INACTIVE = "PARTNER_INACTIVE"
         /** The SA/SR account was disabled (web ACC-05, DD review point 5). */
         const val ACCOUNT_DISABLED = "ACCOUNT_DISABLED"
+        /** The SA/SR got a new TL who does not hold the toko (FR-AM-013, decision 2026-10-16). */
+        const val LEADER_CHANGED = "LEADER_CHANGED"
     }
 }
 

@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.and_sales_portal.R
+import com.example.and_sales_portal.designsystem.components.feedback.AmarInfoBox
+import com.example.and_sales_portal.designsystem.components.feedback.AmarInfoBoxType
 import com.example.and_sales_portal.designsystem.components.inputs.AmarDropdownPicker
 import com.example.and_sales_portal.designsystem.components.inputs.AmarTextField
 import com.example.and_sales_portal.designsystem.components.inputs.AmarTextFieldType
@@ -27,14 +29,12 @@ class PartnerInfoActions(
     val onRw: (String) -> Unit = {},
     val onContinue: () -> Unit = {},
     val onBack: () -> Unit = {},
-    /** REG-02 only. */
-    val onReferral: (String) -> Unit = {},
 )
 
 /**
  * Spec: REG-02 Informasi Partner (PRD v3 C2 step 1; Figma "01 | Partner Information"): Nama Partner (3–100), Alamat
- * sesuai legalitas (5–255), Provinsi → Kabupaten/Kota → Kecamatan → Kelurahan, RT and RW (3 digits), Kode Referral
- * (revision 2026-10-08: required, letters and digits, max. 20). Region Dropdowns
+ * sesuai legalitas (5–255), Provinsi → Kabupaten/Kota → Kecamatan → Kelurahan, RT and RW (3 digits); Kode
+ * Referral is no longer asked (PRD Scope 1 v2 C2: the Admin fills it per toko). Region Dropdowns
  * cascade: each one stays disabled until its parent is chosen and its list is loaded.
  */
 @Composable
@@ -50,8 +50,6 @@ fun RegPartnerInfoScreen(state: PartnerRegistrationState, actions: PartnerInfoAc
         val errors = if (RegStep.PartnerInfo in state.showErrors) PartnerRegistrationValidator.partnerInfo(state.partner) else emptyMap()
         RegTextField(state.partner.name, actions.onName, R.string.reg_partner_name, R.string.reg_partner_name_placeholder, errors[RegField.PartnerName])
         AddressFields(state.partner, state.regions, actions, errors)
-        val referralError = errors[RegField.ReferralCode] ?: FieldError(R.string.reg_err_referral_taken).takeIf { RegField.ReferralCode in state.taken }
-        RegTextField(state.partner.referralCode, actions.onReferral, R.string.reg_referral, R.string.reg_referral_placeholder, referralError)
     }
 }
 
@@ -78,7 +76,6 @@ class DetailsActions(
     val onPicEmail: (String) -> Unit = {},
     val onPicPhone: (String) -> Unit = {},
     val onPrivyId: (String) -> Unit = {},
-    val onPksEmail: (String) -> Unit = {},
     val onChoose: (RegChoice, String) -> Unit = { _, _ -> },
     val onContinue: () -> Unit = {},
     val onBack: () -> Unit = {},
@@ -135,7 +132,8 @@ fun RegPicScreen(state: PartnerRegistrationState, actions: DetailsActions) {
         RegTextField(form.phone, actions.onPicPhone, R.string.reg_phone, R.string.reg_phone_placeholder, phoneError, type = AmarTextFieldType.Phone)
         RegChoiceField(RegChoice.PicStatus, state.choices[RegChoice.PicStatus], { actions.onChoose(RegChoice.PicStatus, it) }, showErrors && state.choices[RegChoice.PicStatus] == null)
         RegTextField(form.privyId, actions.onPrivyId, R.string.reg_privy_id, R.string.reg_privy_id_placeholder, null, required = false, hint = R.string.reg_privy_id_hint)
-        RegTextField(form.pksEmail, actions.onPksEmail, R.string.reg_pks_email, R.string.reg_pks_email_placeholder, errors[RegField.PksEmail], keyboardType = KeyboardType.Email, hint = R.string.reg_pks_email_hint)
+        // PRD Scope 1 v2 C3: no separate PKS email; the PKS goes to Email PIC or Privy ID.
+        AmarInfoBox(stringResource(R.string.reg_pks_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
     }
 }
 

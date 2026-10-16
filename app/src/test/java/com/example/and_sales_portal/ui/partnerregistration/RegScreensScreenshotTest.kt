@@ -43,7 +43,7 @@ class RegScreensScreenshotTest {
         capture("02_error") { RegPartnerInfoScreen(errors, PartnerInfoActions()) }
         val r = { name: String -> Region(name, name) }
         val short = PartnerRegistrationState(
-            partner = PartnerInfoForm("Ab", "Jl 1", r("Sulawesi Selatan"), r("Kota Makassar"), r("Panakkukang"), r("Pandang"), "3", "005", "AMR-1"),
+            partner = PartnerInfoForm("Ab", "Jl 1", r("Sulawesi Selatan"), r("Kota Makassar"), r("Panakkukang"), r("Pandang"), "3", "005"),
             showErrors = setOf(RegStep.PartnerInfo),
         )
         capture("02_rules") { RegPartnerInfoScreen(short, PartnerInfoActions()) }
@@ -51,11 +51,10 @@ class RegScreensScreenshotTest {
         val offline = PartnerRegistrationState(choices = mapOf(RegChoice.StoreType to Keys.STORE_OFFLINE, RegChoice.EntityType to Keys.ENTITY_PT))
         capture("03_offline") { RegBusinessScreen(offline, DetailsActions()) }
         capture("04_error") { RegPicScreen(errors, DetailsActions()) }
-        val pic = PartnerRegistrationState(pic = PicForm("Budi Santoso", "budi@gmail.com", "81234567890", "", "budi@gmail.com"), choices = mapOf(RegChoice.PicStatus to Keys.PIC_OWNER))
+        val pic = PartnerRegistrationState(pic = PicForm("Budi Santoso", "budi@gmail.com", "81234567890", ""), choices = mapOf(RegChoice.PicStatus to Keys.PIC_OWNER))
         capture("04_filled") { RegPicScreen(pic, DetailsActions()) }
         // Review 2026-10-09: unique per partner.
         capture("04_phone_taken") { RegPicScreen(pic.copy(showErrors = setOf(RegStep.Pic), taken = setOf(RegField.PicPhone)), DetailsActions()) }
-        capture("02_referral_taken") { RegTextField("AMR6148", {}, R.string.reg_referral, R.string.reg_referral_placeholder, FieldError(R.string.reg_err_referral_taken)) }
         capture("05_error") { RegBankAccountScreen(errors, BankAccountActions()) }
         val bank = PartnerRegistrationState(bank = BankForm(Bank("BCA", "BCA"), "KCP Makassar Panakkukang", "1234567890", "Budi Santoso"))
         capture("05_filled") { RegBankAccountScreen(bank, BankAccountActions()) }
@@ -80,22 +79,19 @@ class RegScreensScreenshotTest {
     fun reviewLocationSuccess() {
         val p = partners.first { it.id == "REG2026-0148" }
         capture("07_review") { RegReviewScreen(p, {}, {}, {}) }
-        // FR-PA-007 consent (flag on): the checkbox sits under the sections; the CTA stays disabled until it is ticked.
-        capture("07_consent") {
-            com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionControl(
-                false, {}, androidx.compose.ui.Modifier, label = androidx.compose.ui.res.stringResource(R.string.reg_consent),
-            )
-        }
         capture("08_locating") { RegLocationScreen(LocationCaptureState(locating = true), false, {}, CaptureActions(), {}) }
         val found = LocationResult.Found(-5.1478, 119.4326, "Panakkukang, Kota Makassar, Sulawesi Selatan", false)
+        // PRD Scope 1 v2 C5: the consent checkbox above "Kirim Pengajuan", which stays disabled until it is ticked.
         capture("08_found") { RegLocationScreen(LocationCaptureState(found = found), false, {}, CaptureActions(), {}) }
+        capture("08_consent_ticked") { RegLocationScreen(LocationCaptureState(found = found), false, {}, CaptureActions(), {}, consent = true) }
+        capture("12_consent") { RegConsentScreen {} }
         capture("09_success") { RegSuccessScreen("Toko Sinar Baru", "REG2026-0149", 1_791_400_000_000, {}) }
     }
 
     @Test
     fun partnerTabAndDetails() {
-        val mine = partners.filter { it.status == PartnerStatus.ACTIVE && it.ownerTlId == 6L }
-        val subs = partners.filter { it.ownerTlId == 6L }
+        val mine = partners.filter { it.status == PartnerStatus.ACTIVE && it.hasTl(6L) }
+        val subs = partners.filter { it.hasTl(6L) }
         capture("01_mine") { PartnerTabScreen(PartnerTab.Mine, {}, mine, subs, null, {}, {}, {}, {}) }
         capture("01_submissions") { PartnerTabScreen(PartnerTab.Submissions, {}, mine, subs, null, {}, {}, {}, {}) }
         capture("01_sa") { PartnerTabScreen(PartnerTab.Mine, {}, mine.take(1), null, null, {}, {}, {}, {}) }

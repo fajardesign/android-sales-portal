@@ -90,7 +90,7 @@ class DashboardScreensScreenshotTest {
         val members = team.teamOf(6).filter { it.status == "ACTIVE" }
         capture("tl_07_productivity") { TeamProductivityScreen(Period.MONTH, {}, members.map { it to team.productivity(it.id) }, {}, {}) }
         val inc = members.map { it to sales.salesIncentive(it.id, SalesRole.valueOf(it.role)) }
-        val own = partners.partners.value.filter { it.ownerTlId == 6L && it.status == PartnerStatus.ACTIVE }
+        val own = partners.partners.value.filter { it.hasTl(6L) && it.status == PartnerStatus.ACTIVE }
         capture("tl_10_incentive_team") { TeamIncentiveScreen(1, {}, sales.tlIncentive(6), inc, own.map { it to sales.partnerIncentive(it) }, {}) }
         capture("tl_10_incentive_partner") { TeamIncentiveScreen(2, {}, sales.tlIncentive(6), inc, own.map { it to sales.partnerIncentive(it) }, {}) }
         val loans = sales.loansOfTl(6)

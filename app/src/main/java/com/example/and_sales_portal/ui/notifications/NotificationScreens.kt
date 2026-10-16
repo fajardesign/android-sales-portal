@@ -40,6 +40,7 @@ fun eventTime(e: AssignmentEvent): String = eventTime(e.at)
 fun notificationText(e: AssignmentEvent): String = when {
     e.action == AssignmentAction.ASSIGN -> stringResource(R.string.notif_assigned, e.storeName, e.partnerName, PartnerRepository.actorName(e.by))
     e.by == AssignmentEvent.SYSTEM && e.reason == AssignmentEvent.ACCOUNT_DISABLED -> stringResource(R.string.notif_released_disabled, e.storeName, e.partnerName)
+    e.by == AssignmentEvent.SYSTEM && e.reason == AssignmentEvent.LEADER_CHANGED -> stringResource(R.string.notif_released_leader, e.storeName, e.partnerName, e.source.orEmpty())
     e.by == AssignmentEvent.SYSTEM -> stringResource(R.string.notif_released_system, e.storeName, e.partnerName)
     else -> stringResource(R.string.notif_released, e.storeName, e.partnerName, PartnerRepository.actorName(e.by))
 }

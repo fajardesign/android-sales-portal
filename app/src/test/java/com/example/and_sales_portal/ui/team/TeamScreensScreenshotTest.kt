@@ -55,7 +55,7 @@ class TeamScreensScreenshotTest {
     @Test
     fun assign() {
         val sa = person(15)
-        val owned = partners.filter { it.ownerTlId == 6L && it.status.name == "ACTIVE" }.flatMap { p -> p.stores.map { p to it } }
+        val owned = partners.filter { it.status.name == "ACTIVE" }.flatMap { p -> p.stores.filter { it.tlId == 6L && it.status == "ACTIVE" }.map { p to it } }
         val history = listOf(
             com.example.and_sales_portal.data.partner.AssignmentEvent(1_791_520_200_000L, com.example.and_sales_portal.data.partner.AssignmentAction.ASSIGN, 15, "REG2026-0132-1", "PT Bintang Gadget Store", "REG2026-0132", "PT Bintang Gadget Store", "6"),
             com.example.and_sales_portal.data.partner.AssignmentEvent(1_791_430_200_000L, com.example.and_sales_portal.data.partner.AssignmentAction.RELEASE, 15, "REG2026-0139-2", "Jaya Abadi Cellular Mall Panakkukang", "REG2026-0139", "Jaya Abadi Cellular", "SYSTEM"),

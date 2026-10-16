@@ -29,6 +29,13 @@ class PartnerRepositoryTest {
         repo.reset()
     }
 
+    /** A toko added to an Active partner, with its Kode Referral filled by the Admin so it can be assigned. */
+    private fun newStore(partnerId: String, name: String): Store {
+        val s = repo.addStore(partnerId, repo.get(partnerId)!!.stores.first().copy(name = name, primary = false, assigned = emptyList()))
+        repo.adminFillReferral(partnerId)
+        return repo.get(partnerId)!!.stores.first { it.id == s.id }
+    }
+
     @Test
     fun sampleMatchesThePortal() {
         val all = repo.partners.value
@@ -37,7 +44,7 @@ class PartnerRepositoryTest {
         assertEquals("TK0139-02", repo.get("REG2026-0139")?.stores?.get(1)?.code)
         assertEquals(PartnerStatus.REVISION_REQUIRED, repo.get("REG2026-0144")?.status)
         assertEquals(PartnerStatus.INACTIVE, repo.get("REG2026-0133")?.status)
-        assertEquals(6L, repo.get("REG2026-0146")?.ownerTlId) // submitted by SR Siti, TL Andi owns it
+        assertEquals(6L, repo.get("REG2026-0146")?.stores?.first()?.tlId) // submitted by SR Siti, TL Andi holds its toko
     }
 
     @Test
@@ -48,15 +55,18 @@ class PartnerRepositoryTest {
         assertTrue(repo.submissionsFor(15, SalesRole.SA).isEmpty())
         assertEquals(listOf("REG2026-0139", "REG2026-0132"), repo.myPartners(6, SalesRole.TL).map { it.id })
         assertEquals(listOf("REG2026-0139"), repo.myPartners(15, SalesRole.SA).map { it.id })
+        // PRD Scope 1 v2: Bagus (22) holds only Jaya Abadi Cellular Antang of REG2026-0139.
+        assertEquals(listOf("REG2026-0139"), repo.myPartners(22, SalesRole.TL).map { it.id })
+        assertTrue("REG2026-0139" in repo.submissionsFor(22, SalesRole.TL).map { it.id })
     }
 
     @Test
     fun submitGivesTheNextNumberAndUnderReview() {
-        // Sample Kode Referral like the web portal: AMR + submitter id + number.
-        assertEquals("AMR6148", repo.get("REG2026-0148")!!.referralCode)
-        val p = repo.submit(repo.get("REG2026-0148")!!.copy(id = "", name = "Toko Baru", submittedBy = 11, submittedAt = now.toEpochMilli(), referralCode = "SITI11"))
+        val p = repo.submit(repo.get("REG2026-0148")!!.copy(id = "", name = "Toko Baru", submittedBy = 11, submittedAt = now.toEpochMilli()))
         assertEquals("REG2026-0149", p.id)
-        assertEquals("SITI11", repo.get(p.id)!!.referralCode)
+        // PRD Scope 1 v2: no Kode Referral from the app (the Admin fills it per toko); the toko goes to Siti's TL.
+        assertNull(p.stores.first().referralCode)
+        assertEquals(6L, p.stores.first().tlId)
         assertEquals(PartnerStatus.UNDER_REVIEW, p.status)
         assertEquals("REG2026-0149-1", p.stores.first().id)
         assertTrue(p.id in repo.submissionsFor(6, SalesRole.TL).map { it.id })
@@ -79,35 +89,57 @@ class PartnerRepositoryTest {
     fun activationAndNewStore() {
         repo.adminVerify("REG2026-0148")
         repo.adminSendPks("REG2026-0148")
-        repo.adminActivate("REG2026-0148")
+        // PRD Scope 1 v2 C2: Aktifkan is locked until every toko has its Kode Referral.
+        assertTrue(repo.referralMissing("REG2026-0148"))
+        assertFalse(repo.adminActivate("REG2026-0148"))
+        assertEquals(PartnerStatus.WAITING_PKS, repo.get("REG2026-0148")!!.status)
+        assertEquals(1, repo.adminFillReferral("REG2026-0148"))
+        assertTrue(repo.adminActivate("REG2026-0148"))
         val p = repo.get("REG2026-0148")!!
         assertEquals(PartnerStatus.ACTIVE, p.status)
         assertEquals("TK0148-01", p.stores.first().code)
-        val s = repo.addStore(p.id, p.stores.first().copy(name = "Sinar Jaya Ponsel Cabang", primary = false))
-        assertEquals("TK0148-02", s.code)
-        assertEquals("ACTIVE", s.status)
+        assertEquals("OFMKS1481", p.stores.first().referralCode)
+        repo.addStore(p.id, p.stores.first().copy(name = "Sinar Jaya Ponsel Cabang", primary = false))
         assertEquals(2, repo.get(p.id)!!.stores.size)
     }
 
     @Test
-    fun referralCodeAndPicPhoneAreUniquePerPartner() {
-        // Review 2026-10-09: Kode Referral identifies the partner; No. Handphone PIC signs in to the Partner account.
-        assertTrue(repo.referralTaken("amr6148"))
-        assertFalse(repo.referralTaken("AMR6148", exceptId = "REG2026-0148"))
-        assertFalse(repo.referralTaken("BARU01"))
+    fun storeAddedToAnActivePartnerWaitsForItsReferralCode() {
+        // PRD Scope 1 v2 C2: status "Menunggu kode referral", no toko code; it cannot be assigned until the Admin fills it.
+        val s = repo.addStore("REG2026-0139", repo.get("REG2026-0139")!!.stores.first().copy(name = "Cabang Baru", primary = false, assigned = emptyList(), addedBy = 11))
+        assertEquals(Store.WAITING_REFERRAL, s.status)
+        assertNull(s.code)
+        assertNull(s.referralCode)
+        assertEquals(6L, s.tlId) // added by SR Siti: her TL
+        assertEquals(AssignError.NotOwner, repo.assignmentError(6, 11, s.id))
+        assertTrue(repo.activeStores().none { it.second.id == s.id })
+        // The sample toko of Bagus waits too.
+        val antang = repo.get("REG2026-0139")!!.stores.first { it.id == "REG2026-0139-4" }
+        assertEquals(Store.WAITING_REFERRAL, antang.status)
+        assertEquals(22L, antang.tlId)
+        // "Isi kode referral" (Simulasi Admin): both become active with a toko code.
+        assertEquals(2, repo.adminFillReferral("REG2026-0139"))
+        val filled = repo.get("REG2026-0139")!!.stores.first { it.id == s.id }
+        assertEquals(Store.ACTIVE, filled.status)
+        assertEquals("TK0139-05", filled.code)
+        assertEquals("OFMKS1395", filled.referralCode)
+        assertNull(repo.assign(6, 11, s.id))
+    }
+
+    @Test
+    fun picPhoneIsUniquePerPartner() {
+        // Review 2026-10-09: No. Handphone PIC signs in to the Partner account (Kode Referral is no longer asked).
         val phone = repo.get("REG2026-0148")!!.picPhone
         assertTrue(repo.picPhoneTaken("0$phone"))
         assertTrue(repo.picPhoneTaken("+62 $phone"))
         assertFalse(repo.picPhoneTaken(phone, exceptId = "REG2026-0148"))
-        // Rejected and Cancelled partners do not block a new registration.
-        assertFalse(repo.referralTaken(repo.get("REG2026-0135")!!.referralCode!!))
         assertEquals("81200047514", PartnerRepository.normalizePhone("+62 812-0004-7514"))
     }
 
     @Test
     fun assignmentHistoryAndNotifications() {
         // FR-MP-007: every Tugaskan and Lepas logged with actor, time, toko, partner and SA/SR.
-        val free = repo.addStore("REG2026-0139", repo.get("REG2026-0139")!!.stores.first().copy(name = "Cabang Baru", primary = false, assigned = emptyList()))
+        val free = newStore("REG2026-0139", "Cabang Baru")
         assertNull(repo.assign(6, 11, free.id))
         repo.unassign(11, free.id, 6)
         val history = repo.historyOf(11)
@@ -146,7 +178,7 @@ class PartnerRepositoryTest {
         assertEquals(listOf(15L), repo.get("REG2026-0139")!!.stores.first().assigned)
         // Every toko of Andi's partners is held, so new toko are added for the limits below.
         val p = repo.get("REG2026-0139")!!
-        val extra = (1..5).map { repo.addStore(p.id, p.stores.first().copy(name = "Cabang Baru $it", primary = false, assigned = emptyList())) }
+        val extra = (1..5).map { newStore(p.id, "Cabang Baru $it") }
         // A 4th toko for Siti reaches the minimum.
         assertNull(repo.assign(6, 11, extra[0].id))
         assertFalse(repo.belowMinimum(11))
@@ -158,7 +190,7 @@ class PartnerRepositoryTest {
         assertNull(repo.assign(6, 11, extra[3].id))
         assertNull(repo.assign(6, 11, extra[4].id))
         assertEquals(6, repo.assignedStores(11).size)
-        val seventh = repo.addStore(p.id, p.stores.first().copy(name = "Cabang Baru 6", primary = false, assigned = emptyList()))
+        val seventh = newStore(p.id, "Cabang Baru 6")
         assertEquals(AssignError.SrLimit, repo.assignmentError(6, 11, seventh.id))
         // Not the direct leader, not the TL's partner.
         assertEquals(AssignError.NotLeader, repo.assignmentError(7, 11, extra[4].id))
@@ -171,25 +203,40 @@ class PartnerRepositoryTest {
 
 
     @Test
-    fun ownerIsSavedPerPartnerAndMovesWithItsHistory() {
-        // DD review point 7: saved per partner; by default the TL submitter, or the TL of the SR submitter.
+    fun tlIsSavedPerTokoAndMovesWithItsHistory() {
+        // PRD Scope 1 v2: one partner can have several TL; each toko has one TL, by default the TL who submitted or
+        // added it (or the TL of the SR who did).
         val p = repo.get("REG2026-0139")!!
-        assertEquals(6L, p.ownerTl)
+        assertEquals(listOf(6L, 22L), p.tlIds.sorted())
         val before = now.toEpochMilli() - 1
-        val owned = repo.partners.value.count { it.ownerTlId == 6L }
-        assertEquals(6, owned) // every status: Active, Under Review, Verified, Rejected, …
-        assertEquals(owned, repo.transferOwnership(6, 22, "Kepemilikan partner pindah dari Andi Pratama ke Bagus Wicaksono (TL lama dinonaktifkan)"))
-        assertEquals(0, repo.partners.value.count { it.ownerTlId == 6L })
-        val moved = repo.get("REG2026-0139")!!
-        assertEquals(22L, moved.ownerTlId)
-        // Loans keep the TL who owned the partner on their date.
-        assertEquals(6L, moved.ownerAt(before))
-        assertEquals(22L, moved.ownerAt(now.toEpochMilli()))
-        // The new TL sees it in Partner Saya and can assign its toko; the old TL no longer can.
-        assertTrue("REG2026-0139" in repo.myPartners(22, SalesRole.TL).map { it.id })
+        val andi = repo.activeStores().count { it.second.tlId == 6L }
+        assertEquals(andi, repo.transferStores(6, 22, "TL lama dinonaktifkan"))
+        assertEquals(0, repo.activeStores().count { it.second.tlId == 6L })
+        val moved = repo.get("REG2026-0139")!!.stores.first()
+        assertEquals(22L, moved.tlId)
+        // Loans keep the TL of the toko on their date.
+        assertEquals(6L, moved.tlAt(before))
+        assertEquals(22L, moved.tlAt(now.toEpochMilli()))
         assertTrue(repo.myPartners(6, SalesRole.TL).isEmpty())
-        // A partner the old TL did not own stays as it was.
-        assertEquals(7L, repo.get("REG2026-0138")!!.ownerTlId)
+        // A toko the old TL did not hold stays as it was.
+        assertEquals(7L, repo.get("REG2026-0138")!!.stores.first().tlId)
+    }
+
+    @Test
+    fun aplRemapReleasesSalesWhoAreNotTheNewTlsSubordinates() {
+        // FR-AM-013: Siti (SR of Andi) holds Sudiang; the APL moves its TL to Bagus, so Siti is released by the system.
+        val sudiang = "REG2026-0139-3"
+        assertEquals(listOf(11L), repo.get("REG2026-0139")!!.stores.first { it.id == sudiang }.assigned)
+        assertEquals(listOf(11L), repo.remapStoreTl(sudiang, 22, "APL ganti TL toko"))
+        val s = repo.get("REG2026-0139")!!.stores.first { it.id == sudiang }
+        assertEquals(22L, s.tlId)
+        assertTrue(s.assigned.isEmpty())
+        val e = repo.historyOf(11).first()
+        assertEquals(AssignmentEvent.SYSTEM, e.by)
+        assertEquals(AssignmentEvent.LEADER_CHANGED, e.reason)
+        assertEquals(1, repo.notificationsOf(11).count { !it.read })
+        // Andi can no longer assign it; Bagus can (once he has a subordinate there).
+        assertEquals(AssignError.NotOwner, repo.assignmentError(6, 11, sudiang))
     }
 
     @Test

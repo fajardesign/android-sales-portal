@@ -85,11 +85,12 @@ class SalesRepositoryTest {
 
     @Test
     fun pastSalesStayWithTheOldOwnerAfterTheTlIsReplaced() {
-        // DD review point 7: partners of Andi (6) move to Bagus (22); loans before the move stay with Andi.
+        // PRD Scope 1 v2: toko of Andi (6) move to Bagus (22); loans before the move stay with Andi.
         val before = sales.loansOfTl(6).map { it.id }.toSet()
+        val bagus = sales.loansOfTl(22).map { it.id }.toSet()
         assertTrue(before.isNotEmpty())
-        partners.transferOwnership(6, 22, "TL lama dinonaktifkan")
+        partners.transferStores(6, 22, "TL lama dinonaktifkan")
         assertEquals(before, sales.loansOfTl(6).map { it.id }.toSet())
-        assertTrue(sales.loansOfTl(22).isEmpty())
+        assertEquals(bagus, sales.loansOfTl(22).map { it.id }.toSet())
     }
 }

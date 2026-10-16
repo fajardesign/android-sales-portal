@@ -71,7 +71,6 @@ class RegPartnerInfoFragment : RegFragment() {
                 onVillage = viewModel::selectVillage,
                 onRt = viewModel::setRt,
                 onRw = viewModel::setRw,
-                onReferral = viewModel::setReferralCode,
                 onContinue = { if (viewModel.submitStep(RegStep.PartnerInfo)) navigate(R.id.action_reg02_to_reg03) },
                 onBack = ::back,
             ),
@@ -121,7 +120,6 @@ class RegPicFragment : RegFragment() {
         onPicEmail = viewModel::setPicEmail,
         onPicPhone = viewModel::setPicPhone,
         onPrivyId = viewModel::setPrivyId,
-        onPksEmail = viewModel::setPksEmail,
         onChoose = viewModel::choose,
         onContinue = onContinue,
         onBack = ::back,
@@ -183,15 +181,11 @@ class RegReviewFragment : RegFragment() {
     @Composable
     override fun Content(state: PartnerRegistrationState) {
         val preview = remember(state) { viewModel.preview() }
-        val sim by container.simulation.state.collectAsState()
         RegReviewScreen(
             preview,
             onBack = ::back,
             onEdit = { step -> findNavController().popBackStack(destinationOf(step), false) },
-            onContinue = { if (!sim.regConsent || state.consent) navigate(R.id.action_reg07_to_reg08) },
-            consentRequired = sim.regConsent,
-            consent = state.consent,
-            onConsent = viewModel::setConsent,
+            onContinue = { navigate(R.id.action_reg07_to_reg08) },
         )
     }
 
@@ -231,7 +225,13 @@ class RegLocationFragment : RegFragment() {
                 navigate(R.id.action_reg08_to_success, bundleOf(RegSuccessFragment.ARG_PARTNER to it.partnerName, RegSuccessFragment.ARG_ID to it.registrationNumber, RegSuccessFragment.ARG_TIME to it.atMillis))
             }
         }
-        RegLocationScreen(loc, state.submitting, ::back, location.actions { lat, lng -> openMaps(lat, lng) }) { confirm = true }
+        RegLocationScreen(
+            loc, state.submitting, ::back, location.actions { lat, lng -> openMaps(lat, lng) },
+            onSubmit = { if (state.consent) confirm = true },
+            consent = state.consent,
+            onConsent = viewModel::setConsent,
+            onOpenConsent = { navigate(R.id.action_reg08_to_consent) },
+        )
         if (confirm) {
             ConfirmDialog(
                 title = stringResource(R.string.reg_submit_confirm_title),
@@ -245,6 +245,14 @@ class RegLocationFragment : RegFragment() {
                 onDismiss = { confirm = false },
             )
         }
+    }
+}
+
+/** Spec: REG-12 Konfirmasi dan Persetujuan Pendaftaran Toko. Back returns to REG-08 with the checkbox as it was. */
+class RegConsentFragment : RegFragment() {
+    @Composable
+    override fun Content(state: PartnerRegistrationState) {
+        RegConsentScreen(::back)
     }
 }
 

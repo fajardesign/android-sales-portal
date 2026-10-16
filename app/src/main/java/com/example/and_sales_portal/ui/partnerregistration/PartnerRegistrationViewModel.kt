@@ -7,6 +7,7 @@ import com.example.and_sales_portal.data.demo.DemoStore
 import com.example.and_sales_portal.data.device.LocationResult
 import com.example.and_sales_portal.data.partner.DocType
 import com.example.and_sales_portal.data.partner.Keys
+import com.example.and_sales_portal.data.partner.Consent
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.PartnerDoc
 import com.example.and_sales_portal.data.partner.PartnerRepository
@@ -151,10 +152,6 @@ class PartnerRegistrationViewModel(
     fun setAddress(value: String) = updatePartner { it.copy(address = value.take(255)) }
     fun setRt(value: String) = updatePartner { it.copy(rt = value.filter(Char::isDigit).take(3)) }
     fun setRw(value: String) = updatePartner { it.copy(rw = value.filter(Char::isDigit).take(3)) }
-    fun setReferralCode(value: String) {
-        _state.update { it.copy(taken = it.taken - RegField.ReferralCode) }
-        updatePartner { it.copy(referralCode = value) }
-    }
 
     /** Choosing a parent region clears its children and loads the next list (children stay disabled until then). */
     fun selectProvince(region: Region) {
@@ -192,13 +189,12 @@ class PartnerRegistrationViewModel(
     fun setPicName(value: String) = updatePic { it.copy(name = value) }
 
     /** Email undangan PKS follows Email PIC until it is edited (PRD C2 "defaults to Email PIC"). */
-    fun setPicEmail(value: String) = updatePic { it.copy(email = value.trim(), pksEmail = if (it.pksEmailEdited) it.pksEmail else value.trim()) }
+    fun setPicEmail(value: String) = updatePic { it.copy(email = value.trim()) }
     fun setPicPhone(value: String) {
         _state.update { it.copy(taken = it.taken - RegField.PicPhone) }
         updatePic { it.copy(phone = value) }
     }
     fun setPrivyId(value: String) = updatePic { it.copy(privyId = value.trim()) }
-    fun setPksEmail(value: String) = updatePic { it.copy(pksEmail = value.trim(), pksEmailEdited = true) }
 
     fun selectBank(bank: Bank) = updateBank { it.copy(bank = bank) }
     fun setBranch(value: String) = updateBank { it.copy(branch = value) }
@@ -212,7 +208,6 @@ class PartnerRegistrationViewModel(
         val s = _state.value
         val except = (mode as? RegMode.Revision)?.partnerId
         val taken = when (step) {
-            RegStep.PartnerInfo -> setOfNotNull(RegField.ReferralCode.takeIf { partners.referralTaken(s.partner.referralCode, except) })
             RegStep.Pic -> setOfNotNull(RegField.PicPhone.takeIf { partners.picPhoneTaken(s.pic.phone, except) })
             else -> emptySet()
         }
@@ -286,9 +281,10 @@ class PartnerRegistrationViewModel(
     fun submit() {
         val s = _state.value
         val location = s.location ?: return
-        if (s.submitting || s.submitted != null || location.mock) return
+        // PRD Scope 1 v2 C5: consent is required and saved with the first submission only (not on Kirim Ulang).
+        if (s.submitting || s.submitted != null || location.mock || !s.consent) return
         _state.update { it.copy(submitting = true) }
-        val p = partners.submit(s.toPartner(partners.now(), location))
+        val p = partners.submit(s.toPartner(partners.now(), location).copy(consent = Consent(partners.now(), Consent.VERSION, user.id)))
         store.deleteDraft(user.id)
         _state.update { it.copy(submitting = false, submitted = Submitted(p.registrationNumber, p.name, p.submittedAt)) }
     }
@@ -324,7 +320,7 @@ class PartnerRegistrationViewModel(
         val formPartner = s.toPartner(now, null)
         if (Sections.PARTNER in sections) {
             p = p.copy(name = formPartner.name, address = formPartner.address, province = formPartner.province, regency = formPartner.regency,
-                district = formPartner.district, village = formPartner.village, rt = formPartner.rt, rw = formPartner.rw, referralCode = formPartner.referralCode)
+                district = formPartner.district, village = formPartner.village, rt = formPartner.rt, rw = formPartner.rw)
         }
         if (Sections.BUSINESS in sections || Sections.STORE in sections) {
             val form = formPartner.stores.first()
@@ -336,7 +332,7 @@ class PartnerRegistrationViewModel(
         }
         if (Sections.PIC in sections) {
             p = p.copy(picName = formPartner.picName, picEmail = formPartner.picEmail, picPhone = formPartner.picPhone, picStatus = formPartner.picStatus,
-                privyId = formPartner.privyId, pksInviteEmail = formPartner.pksInviteEmail)
+                privyId = formPartner.privyId)
         }
         if (Sections.BANK in sections) {
             p = p.copy(bankCode = formPartner.bankCode, bankName = formPartner.bankName, bankBranch = formPartner.bankBranch,
@@ -391,13 +387,12 @@ class PartnerRegistrationViewModel(
             address = f.address.trim(),
             province = f.province?.name.orEmpty(), regency = f.regency?.name.orEmpty(), district = f.district?.name.orEmpty(), village = f.village?.name.orEmpty(),
             rt = f.rt, rw = f.rw,
-            referralCode = f.referralCode.trim(),
             email = business.email.trim(),
             channel = choices[RegChoice.Channel].orEmpty(),
             outletCount = business.outletCount.toIntOrNull() ?: 1,
             picName = pic.name.trim(), picEmail = pic.email.trim(), picPhone = pic.phone,
             picStatus = choices[RegChoice.PicStatus].orEmpty(),
-            privyId = pic.privyId.ifBlank { null }, pksInviteEmail = pic.pksEmail.ifBlank { pic.email },
+            privyId = pic.privyId.ifBlank { null },
             bankCode = bank.bank?.code.orEmpty(), bankName = bank.bank?.name.orEmpty(), bankBranch = bank.branch.trim(),
             accountNumber = bank.accountNumber, accountName = bank.accountName.trim(),
             areaId = user.areaIds.firstOrNull() ?: 0,
@@ -431,9 +426,9 @@ class PartnerRegistrationViewModel(
             }
         }.filterValues { it.isNotEmpty() }
         return PartnerRegistrationState(
-            partner = PartnerInfoForm(p.name, p.address, Region(p.province, p.province), Region(p.regency, p.regency), Region(p.district, p.district), Region(p.village, p.village), p.rt, p.rw, p.referralCode.orEmpty()),
+            partner = PartnerInfoForm(p.name, p.address, Region(p.province, p.province), Region(p.regency, p.regency), Region(p.district, p.district), Region(p.village, p.village), p.rt, p.rw),
             business = BusinessForm(p.email, (st?.omzet ?: 0L).toString(), p.outletCount.toString()),
-            pic = PicForm(p.picName, p.picEmail, p.picPhone, p.privyId.orEmpty(), p.pksInviteEmail ?: p.picEmail, pksEmailEdited = true),
+            pic = PicForm(p.picName, p.picEmail, p.picPhone, p.privyId.orEmpty()),
             bank = BankForm(Bank(p.bankCode, p.bankName), p.bankBranch, p.accountNumber, p.accountName),
             choices = choices,
         )

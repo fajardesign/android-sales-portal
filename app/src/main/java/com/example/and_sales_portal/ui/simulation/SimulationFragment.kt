@@ -57,6 +57,14 @@ class SimulationFragment : ComposeFragment() {
                     val n = container.directory.disableSales(SA_EKO)
                     toast = getString(R.string.sim_admin_disable_sa_done, n)
                 },
+                onRemapStore = {
+                    val released = container.partners.remapStoreTl(STORE_SUDIANG, TL_BAGUS, "Pemetaan ulang APL (simulasi)")
+                    toast = getString(R.string.sim_admin_remap_done, released.size)
+                },
+                onMoveSubordinate = {
+                    val n = container.directory.moveSubordinate(SR_SITI, TL_BAGUS)
+                    toast = getString(R.string.sim_admin_move_done, n)
+                },
             )
         }
         WithToast(toast, { toast = null }) { SimulationScreen(sim, ::back, admin, onCatalog = ::openCatalog) { f -> settings.update(f) } }
@@ -77,11 +85,21 @@ class SimulationFragment : ComposeFragment() {
         const val TL_ANDI = 6L
         const val TL_BAGUS = 22L
         const val SA_EKO = 15L
+        const val SR_SITI = 11L
+        /** Jaya Abadi Cellular Sudiang: TL Andi, held by Siti. */
+        const val STORE_SUDIANG = "REG2026-0139-3"
     }
 }
 
-/** Web ACC-05 effects tried on the device (DD review points 5 and 7); no admin screen on Android. */
-class AdminSimulation(val tlActive: Boolean, val saActive: Boolean, val onDisableTl: () -> Unit, val onDisableSa: () -> Unit)
+/** Web ACC-05 / APL effects tried on the device (DD review points 5 and 7, PRD Scope 1 v2 C4); no admin screen on Android. */
+class AdminSimulation(
+    val tlActive: Boolean,
+    val saActive: Boolean,
+    val onDisableTl: () -> Unit,
+    val onDisableSa: () -> Unit,
+    val onRemapStore: () -> Unit = {},
+    val onMoveSubordinate: () -> Unit = {},
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -108,7 +126,6 @@ fun SimulationScreen(
             }
             Switch(R.string.sim_mock, sim.mockLocation) { v -> onChange { it.copy(mockLocation = v) } }
             Switch(R.string.sim_offline, sim.offline) { v -> onChange { it.copy(offline = v) } }
-            Switch(R.string.sim_reg_consent, sim.regConsent) { v -> onChange { it.copy(regConsent = v) } }
         }
         admin?.let { a ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
@@ -116,6 +133,9 @@ fun SimulationScreen(
                 Text(stringResource(R.string.sim_admin_accounts_desc), color = c.content.secondary, style = AmarTheme.typography.bodySm)
                 AmarButton(stringResource(R.string.sim_admin_disable_tl), a.onDisableTl, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium, enabled = a.tlActive)
                 AmarButton(stringResource(R.string.sim_admin_disable_sa), a.onDisableSa, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium, enabled = a.saActive)
+                AmarButton(stringResource(R.string.sim_admin_remap), a.onRemapStore, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
+                Text(stringResource(R.string.sim_admin_remap_note), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+                AmarButton(stringResource(R.string.sim_admin_move), a.onMoveSubordinate, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
             }
         }
         onCatalog?.let { AmarButton(stringResource(R.string.sim_open_catalog), it, Modifier.fillMaxWidth(), type = AmarButtonType.Naked, size = AmarButtonSize.Medium) }

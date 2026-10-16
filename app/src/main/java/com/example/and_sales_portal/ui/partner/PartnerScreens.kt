@@ -161,7 +161,7 @@ private fun SubmissionCard(p: Partner, onClick: () -> Unit) {
 }
 
 /** Debug-only Admin actions available for a status (the web portal's transitions, PRD v3 A2). */
-data class AdminAction(val label: Int, val run: () -> Unit)
+data class AdminAction(val label: Int, val enabled: Boolean = true, val run: () -> Unit)
 
 /**
  * Spec: REG-10 Detail Pengajuan (PRD v3 C3): status, the Admin's notes per flagged item (Revision Required), the
@@ -226,7 +226,7 @@ private fun AdminSimulation(actions: List<AdminAction>) {
         SectionTitle(stringResource(R.string.sim_admin_title))
         Text(stringResource(R.string.sim_admin_desc), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-            actions.forEach { AmarButton(stringResource(it.label), it.run, type = AmarButtonType.Secondary, size = AmarButtonSize.Small) }
+            actions.forEach { AmarButton(stringResource(it.label), it.run, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = it.enabled) }
         }
     }
 }
@@ -268,10 +268,15 @@ private fun StoreCard(s: Store, onOpenMaps: (Double, Double) -> Unit) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
             s.code?.let { AmarBadge(it, type = AmarBadgeType.Info, size = AmarBadgeSize.Small) }
             if (s.primary) AmarBadge(stringResource(R.string.prt_primary), type = AmarBadgeType.Success, size = AmarBadgeSize.Small)
+            if (s.status == Store.WAITING_REFERRAL) AmarBadge(stringResource(R.string.prt_store_waiting_referral), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
         }
         Text(s.address, color = c.content.secondary, style = AmarTheme.typography.bodySm)
         InfoRow(stringResource(R.string.reg_revenue), rupiah(s.omzet))
+        // PRD Scope 1 v2: Kode Referral per toko (read-only) and the TL of the toko.
+        InfoRow(stringResource(R.string.reg_referral), s.referralCode ?: stringResource(R.string.prt_referral_empty))
+        InfoRow(stringResource(R.string.account_role_tl), s.tlId?.let(::nameOf) ?: "-")
         InfoRow(stringResource(R.string.prt_assigned), s.assigned.map(::nameOf).ifEmpty { listOf(stringResource(R.string.ptn_unassigned)) }.joinToString())
+        if (s.status == Store.WAITING_REFERRAL) AmarInfoBox(stringResource(R.string.prt_store_waiting_referral_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
         MapPreview(s.lat, s.lng, { onOpenMaps(s.lat, s.lng) })
     }
 }

@@ -15,22 +15,18 @@ import org.junit.Test
 class PartnerRegistrationValidatorTest {
 
     private val region = Region("x", "X")
-    private val full = PartnerInfoForm("Erafone", "Jl. Satrio 1", region, region, region, region, "001", "002", "AMR6148")
+    private val full = PartnerInfoForm("Erafone", "Jl. Satrio 1", region, region, region, region, "001", "002")
 
     @Test
     fun partnerInfoRules() {
-        assertEquals(RegField.entries.take(9).toSet(), PartnerRegistrationValidator.partnerInfo(PartnerInfoForm()).keys)
+        assertEquals(RegField.entries.take(8).toSet(), PartnerRegistrationValidator.partnerInfo(PartnerInfoForm()).keys)
         assertTrue(PartnerRegistrationValidator.partnerInfo(full).isEmpty())
         assertEquals(FieldError(R.string.reg_err_min, 3), PartnerRegistrationValidator.partnerInfo(full.copy(name = "Ab"))[RegField.PartnerName])
         assertEquals(FieldError(R.string.reg_err_min, 5), PartnerRegistrationValidator.partnerInfo(full.copy(address = "Jl 1"))[RegField.Address])
         assertEquals(FieldError(R.string.reg_err_digits3), PartnerRegistrationValidator.partnerInfo(full.copy(rt = "1"))[RegField.Rt])
         assertEquals(FieldError(R.string.reg_required), PartnerRegistrationValidator.partnerInfo(full.copy(rw = " "))[RegField.Rw])
-        // Kode Referral (revision 2026-10-08): required, letters and digits only, max. 20 after trimming.
-        assertEquals(FieldError(R.string.reg_required), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "  "))[RegField.ReferralCode])
-        assertEquals(FieldError(R.string.reg_err_format), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "AMR-61"))[RegField.ReferralCode])
-        assertEquals(FieldError(R.string.reg_err_format), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "AMR 61"))[RegField.ReferralCode])
-        assertEquals(FieldError(R.string.reg_err_max, 20), PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = "A".repeat(21)))[RegField.ReferralCode])
-        assertTrue(PartnerRegistrationValidator.partnerInfo(full.copy(referralCode = " ab12CD34ef56GH78ij90 ")).isEmpty())
+        // PRD Scope 1 v2 C2: Kode Referral is no longer asked.
+        assertTrue(PartnerRegistrationValidator.partnerInfo(full).keys.isEmpty())
     }
 
     @Test
@@ -52,10 +48,11 @@ class PartnerRegistrationValidatorTest {
 
     @Test
     fun picAndBankRules() {
-        val pic = PicForm("Budi", "budi@mail.com", "81234567890", pksEmail = "budi@mail.com")
+        val pic = PicForm("Budi", "budi@mail.com", "81234567890")
         assertTrue(PartnerRegistrationValidator.pic(pic).isEmpty())
         assertTrue(PartnerRegistrationValidator.pic(pic.copy(privyId = "")).isEmpty())
-        assertEquals(setOf(RegField.PksEmail), PartnerRegistrationValidator.pic(pic.copy(pksEmail = "x")).keys)
+        // PRD Scope 1 v2 C3: Email PIC stays required (the PKS goes to it or to the Privy ID).
+        assertEquals(setOf(RegField.PicEmail), PartnerRegistrationValidator.pic(pic.copy(email = "x")).keys)
         assertEquals(setOf(RegField.Bank, RegField.Branch, RegField.AccountNumber, RegField.AccountName), PartnerRegistrationValidator.bank(BankForm()).keys)
         assertTrue(PartnerRegistrationValidator.bank(BankForm(Bank("BCA", "BCA"), "KCP Makassar", "1234567890", "Budi")).isEmpty())
     }
