@@ -108,24 +108,31 @@ data class Store(
      * Active until the Admin fills its Kode Referral (PRD Scope 1 v2 C2, OQ-25); `INACTIVE` with the partner.
      */
     val status: String = "PENDING",
-    /** `merchant_assignment`: SA/SR assigned to this toko (one toko = one SA/SR, a subordinate of [tlId]). */
+    /** Kursi SA/SR (`merchant_assignment`, PRD Scope 1 v1.1 C6): one SA/SR, a direct subordinate of [tlId]; empty when free. */
     val assigned: List<Long> = emptyList(),
     val addedBy: Long = 0,
     val addedAt: Long = 0,
     /**
-     * TL of the toko (PRD Scope 1 v2, decision 2026-10-16): the partner is only an umbrella for its toko, so one partner
-     * can have several TL. Default: the TL who submitted the partner or added the toko, or the TL of the SR who did.
+     * Kursi TL of the toko (PRD Scope 1 v1.1 C6): the partner is only an umbrella for its toko, so one partner can have
+     * several TL. `null` = "Belum ada TL". Filled at activation (the TL who submitted, or the TL of the SR who did, when
+     * active), by the APL (Mapping TL), or moved to the replacement when the TL is disabled; a toko from Tambah Toko
+     * starts without one.
      */
     val tlId: Long? = null,
-    /** Every change of [tlId], oldest first (TL disabled, APL remap). */
+    /** Every change of [tlId], oldest first (activation, APL, TL disabled, partner Inactive, Ubah Area). */
     val tlLog: List<TlChange> = emptyList(),
-    /** Kode Referral from AppsFlyer, filled by the Admin on the web per toko (PRD Scope 1 v2 C2); read-only here. */
+    /** Kode Referral, filled by the Admin per toko (PRD Scope 1 v1.1 C2); read-only here. */
     val referralCode: String? = null,
+    /** File name of the toko's QR, uploaded by the Admin with the code (FR-019); the prototype draws a sample QR from the code. */
+    val referralQr: String? = null,
 ) {
     val active: Boolean get() = status == ACTIVE
 
     /** TL of the toko at [at] (millis): loans keep the TL of that date, so past sales stay with the old TL. */
-    fun tlAt(at: Long): Long? = tlLog.firstOrNull { it.at > at }?.fromTlId ?: tlId
+    fun tlAt(at: Long): Long? {
+        val next = tlLog.firstOrNull { it.at > at } ?: return tlId
+        return next.fromTlId
+    }
 
     companion object {
         const val ACTIVE = "ACTIVE"
@@ -135,7 +142,16 @@ data class Store(
 
 /** The TL of a toko changed: the TL was disabled (web ACC-05) or the APL remapped it (decision 2026-10-16). */
 @Serializable
-data class TlChange(val at: Long, val fromTlId: Long?, val toTlId: Long, val reason: String)
+data class TlChange(
+    val at: Long,
+    val fromTlId: Long?,
+    /** `null` when the kursi TL was released. */
+    val toTlId: Long?,
+    /** Who changed it: "Sistem", the APL or the Admin by name. */
+    val by: String,
+    /** Why: "aktivasi", "APL", "dilepas APL", "TL dinonaktifkan", "partner nonaktif", "ubah area". */
+    val source: String,
+)
 
 /**
  * "Konfirmasi dan Persetujuan Pendaftaran Toko" accepted before the first submission (PRD Scope 1 v2 C5): when, the

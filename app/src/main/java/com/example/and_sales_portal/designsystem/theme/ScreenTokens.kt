@@ -78,4 +78,6 @@ object AmarActivityTokens {
     val MetricPaddingY = AmarSpace.S8
     /** `Incentive hero content` gap Spacing/Gap/MD. */
     val HeroGap = AmarSpace.S12
+    /** Not in Figma: sample QR of the Kode Referral on the toko card (Space 128). */
+    val QrSize = AmarSpace.S128
 }

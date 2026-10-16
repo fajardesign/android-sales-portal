@@ -57,10 +57,10 @@ class DirectoryRepositoryTest {
         assertTrue(DemoDirectory.teamOf(6).isEmpty())
         assertEquals(setOf("REG2026-0139", "REG2026-0132"), partners.myPartners(22, SalesRole.TL).map { it.id }.toSet())
         // Every toko moved with them, so nobody is released.
-        assertEquals(3, partners.assignedStores(11).size)
-        // A new submission by Siti now goes to Bagus.
+        assertEquals(2, partners.assignedStores(11).size)
+        // A new submission by Siti now shows up for Bagus (its kursi TL is filled at activation).
         val p = partners.submit(partners.get("REG2026-0148")!!.copy(id = "", submittedBy = 11, submittedAt = now.toEpochMilli()))
-        assertEquals(22L, p.stores.first().tlId)
+        assertTrue(p.id in partners.submissionsFor(22, SalesRole.TL).map { it.id })
         // Saved on the device: a new repository reads it back.
         DemoDirectory.changes = emptyMap()
         DirectoryRepository(store, partners)
@@ -71,8 +71,8 @@ class DirectoryRepositoryTest {
     fun movingASubordinateReleasesTokoOfTheOldTl() {
         // FR-AM-012/013: Siti (SR 11) moves from Andi to Bagus; Andi keeps his toko, so Siti is released from them.
         val held = partners.assignedStores(11).map { it.second.id }
-        assertEquals(3, held.size)
-        assertEquals(3, directory.moveSubordinate(11, 22))
+        assertEquals(2, held.size)
+        assertEquals(2, directory.moveSubordinate(11, 22))
         assertEquals(22L, DemoDirectory.person(11)!!.supervisorId)
         assertTrue(partners.assignedStores(11).isEmpty())
         val e = partners.historyOf(11).first()

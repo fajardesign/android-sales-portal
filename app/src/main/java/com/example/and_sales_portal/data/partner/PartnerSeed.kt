@@ -98,25 +98,66 @@ object PartnerSeed {
         set(p135.advance(30 to (PartnerStatus.REJECTED to "Usaha tidak sesuai kriteria partner (bukan toko gadget)")))
         set(p134.advance(50 to (PartnerStatus.CANCELLED to "Partner mengundurkan diri sebelum review selesai")))
         set(byId.getValue(p133.id).advance(24 * 150 to (PartnerStatus.INACTIVE to "Partner berhenti bekerja sama per Oktober 2026")))
-        // TL per toko (PRD Scope 1 v2, decision 2026-10-16): the TL who submitted the partner or added the toko, or the TL of
-        // the SR who did. Kode Referral per toko, same as the web sample: toko of Active, Inactive and Rejected partners
-        // already have one (`OF{area}{3 digits of the registration}{n}`), filled by the Admin before activation.
+        // Kursi TL (PRD Scope 1 v1.1 C6, same as the web sample): only partners that were activated have one, filled at
+        // activation (the TL who submitted, or the TL of the SR who did); partners in the pipeline have none. Kode Referral
+        // and QR per toko: toko of Active, Inactive and Rejected partners have them (`OF{area}{3 digits}{n}`, no prefix rule).
         val withCodes = setOf(139, 138, 137, 136, 132, 131, 133, 135).map { "REG2026-0$it" }.toSet()
         val out = list.map { byId.getValue(it.id) }.map { p ->
             val area = requireNotNull(DemoDirectory.area(p.areaId))
+            val activated = p.history.any { it.to == PartnerStatus.ACTIVE }
             p.copy(stores = p.stores.mapIndexed { i, s ->
+                val code = if (p.id in withCodes) "OF${area.code}${p.id.takeLast(3)}${i + 1}" else null
                 s.copy(
-                    tlId = Partner.defaultTl(if (s.addedBy != 0L) s.addedBy else p.submittedBy) { id -> DemoDirectory.samplePerson(id) },
-                    referralCode = if (p.id in withCodes) "OF${area.code}${p.id.takeLast(3)}${i + 1}" else null,
+                    tlId = if (activated) Partner.defaultTl(if (s.addedBy != 0L) s.addedBy else p.submittedBy) { id -> DemoDirectory.samplePerson(id) } else null,
+                    referralCode = code,
+                    referralQr = code?.let { "qr_${it.lowercase()}.png" },
                 )
             })
+        }.map { p ->
+            when (p.id) {
+                // Partner Inactive released every kursi (FR-013, "partner nonaktif"); the log keeps the past.
+                "REG2026-0133" -> p.copy(stores = p.stores.map { s ->
+                    s.tlId?.let { s.copy(tlId = null, tlLog = listOf(TlChange(p.statusUpdatedAt, it, null, "Sistem", "partner nonaktif"))) } ?: s
+                })
+                // 1.7 Mapping TL sample: two days ago the APL released Andi from Tamalanrea, and Siti with him ([assignments]).
+                "REG2026-0132" -> {
+                    val s = p.stores[1]
+                    p.copy(
+                        stores = p.stores.map { if (it.id == s.id) it.copy(tlId = null, assigned = emptyList(), tlLog = listOf(TlChange(TAMALANREA_AT, s.tlId, null, APL_HASAN, "dilepas APL"))) else it },
+                        history = p.history + StatusEvent(TAMALANREA_AT, null, p.status, APL_HASAN, "Andi Pratama dilepas dari ${s.name} (dilepas APL)"),
+                    )
+                }
+                // A toko added after Jaya Abadi Cellular became Active, waiting for its Kode Referral and QR (OQ-25 option 1);
+                // no kursi (C6): "Belum ada TL" once active, until the APL assigns one.
+                "REG2026-0139" -> p.copy(stores = p.stores + antang(p), outletCount = 4)
+                else -> p
+            }
         }
-        // Same as the web sample: a toko added after Jaya Abadi Cellular became Active, by the second TL of Makassar
-        // (Bagus Wicaksono), waiting for its Kode Referral (OQ-25 option 1); one partner, two TL.
-        return out.map { p -> if (p.id == "REG2026-0139") p.copy(stores = p.stores + antang(p), outletCount = 4) else p }
+        return out
     }
 
-    /** "Jaya Abadi Cellular Antang" (`REG2026-0139-4`): TL Bagus (22), added 26 hours before the base time, not assigned. */
+    /** APL Hasan Basri released TL Andi (and SR Siti) from Tamalanrea 48 hours before the base time (web `db.js`). */
+    private val TAMALANREA_AT = ago(48)
+    private const val APL_HASAN = "Hasan Basri (APL)"
+
+    /**
+     * Assignment history of the sample: Siti (SR 11) released from Tamalanrea with its TL, so loans before that stay hers
+     * ([PartnerRepository.holderAt]), with the notifications to Siti and Andi.
+     */
+    fun assignments(): AssignmentData {
+        val store = "REG2026-0132-2"
+        val sales = AssignmentEvent(TAMALANREA_AT, AssignmentAction.RELEASE, 11, store, "PT Bintang Gadget Store Tamalanrea", "REG2026-0132", "PT Bintang Gadget Store", APL_HASAN, AssignmentEvent.TL_RELEASED, "TL dilepas")
+        val tl = AssignmentEvent(TAMALANREA_AT, AssignmentAction.RELEASE, 6, store, sales.storeName, sales.partnerId, sales.partnerName, APL_HASAN, AssignmentEvent.TL_RELEASED, "dilepas APL", AssignmentEvent.TL, listOf("Siti Rahmawati"))
+        return AssignmentData(
+            events = listOf(sales, tl),
+            notifications = listOf(
+                AppNotification("N-$TAMALANREA_AT-11-$store-SALES-RELEASE", 11, sales, read = true),
+                AppNotification("N-$TAMALANREA_AT-6-$store-TL-RELEASE", 6, tl, read = true),
+            ),
+        )
+    }
+
+    /** "Jaya Abadi Cellular Antang" (`REG2026-0139-4`): added by TL Bagus (22) 26 hours before the base time, no kursi. */
     private fun antang(p: Partner): Store {
         val area = requireNotNull(DemoDirectory.area(p.areaId))
         val main = p.stores.first()
@@ -126,7 +167,7 @@ object PartnerSeed {
             lat = round6(area.lat + 0.006), lng = round6(area.lng + 0.004),
             omzet = 82_000_000, scale = "TRADITIONAL", productSold = "BRAND_NEW", location = "PINGGIR_JALAN",
             primary = false, status = Store.WAITING_REFERRAL, assigned = emptyList(),
-            addedBy = 22, addedAt = ago(26), tlId = 22, tlLog = emptyList(), referralCode = null,
+            addedBy = 22, addedAt = ago(26), tlId = null, tlLog = emptyList(), referralCode = null, referralQr = null,
         )
     }
 

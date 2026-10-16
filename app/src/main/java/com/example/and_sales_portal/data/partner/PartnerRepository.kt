@@ -10,8 +10,11 @@ import kotlinx.coroutines.flow.update
 import java.time.Instant
 import java.time.ZoneId
 
-/** Why an assignment is refused (PRD v3 C6). */
-enum class AssignError { SaLimit, SrLimit, NotOwner, OtherArea, NotLeader, Taken }
+/**
+ * Why an assignment is refused (PRD Scope 1 v1.1, 1.5 FR-MP-002): "Bukan anggota tim Anda", "Toko belum Active",
+ * "Toko bukan pegangan Anda", "Toko sudah ditugaskan ke {nama}". No limit of toko per SA/SR (C6).
+ */
+enum class AssignError { NotTeam, NotActive, NotHolder, Taken }
 
 /**
  * Partners of the organisation on this device (shared by every account, so an SR's submission shows up for their TL),
@@ -23,12 +26,17 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     private val _partners = MutableStateFlow(saved ?: PartnerSeed.partners())
     val partners: StateFlow<List<Partner>> = _partners.asStateFlow()
 
-    private val _assignments = MutableStateFlow(store.loadAssignments() ?: AssignmentData())
+    private val _assignments = MutableStateFlow(store.loadAssignments() ?: PartnerSeed.assignments())
     /** Assignment history and notifications (TL-03, PRD Scope 1 FR-MP-004, FR-MP-007). */
     val assignments: StateFlow<AssignmentData> = _assignments.asStateFlow()
 
     init {
-        if (saved == null) store.savePartners(_partners.value)
+        if (saved == null) {
+            store.savePartners(_partners.value)
+            // The sample history belongs to the sample partners (Tamalanrea released by the APL).
+            _assignments.value = PartnerSeed.assignments()
+            store.saveAssignments(_assignments.value)
+        }
     }
 
     fun now(): Long = clock().toEpochMilli()
@@ -36,22 +44,35 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     fun get(id: String): Partner? = _partners.value.firstOrNull { it.id == id }
 
     /**
-     * PRD C3: a TL sees own submissions and those of their SRs, i.e. partners with a toko they hold (TL per toko, decision
-     * 2026-10-16); an SR sees own submissions; an SA has none.
+     * PRD C3: a TL sees own submissions, those of their SRs and partners where they hold a kursi TL (a submission has no
+     * kursi until activation, PRD Scope 1 v1.1 C6); an SR sees own submissions; an SA has none.
      */
     fun submissionsFor(userId: Long, role: SalesRole): List<Partner> = when (role) {
-        SalesRole.TL -> _partners.value.filter { it.submittedBy == userId || it.hasTl(userId) }
+        SalesRole.TL -> _partners.value.filter { it.submittedBy == userId || DemoDirectory.person(it.submittedBy)?.supervisorId == userId || it.hasTl(userId) }
         SalesRole.SR -> _partners.value.filter { it.submittedBy == userId }
         SalesRole.SA -> emptyList()
     }.sortedByDescending { it.submittedAt }
 
-    /** PRD C4 / D4: TL the Active partners with a toko they hold; SA/SR the Active partners with a toko assigned to them. */
-    fun myPartners(userId: Long, role: SalesRole): List<Partner> = _partners.value.filter { p ->
-        p.status == PartnerStatus.ACTIVE && when (role) {
-            SalesRole.TL -> p.hasTl(userId)
-            SalesRole.SR, SalesRole.SA -> p.stores.any { userId in it.assigned }
+    /**
+     * FR-PA-012 (PRD Scope 1 v1.1 C6): TL the Active partners where they hold a kursi TL; SA/SR the Active partners where
+     * they hold a kursi SA/SR. Each sees only the toko of their kursi ([storesOf]).
+     */
+    fun myPartners(userId: Long, role: SalesRole): List<Partner> = _partners.value
+        .filter { it.status == PartnerStatus.ACTIVE }
+        .mapNotNull { p -> storesOf(p, userId, role).takeIf { it.isNotEmpty() }?.let { p.copy(stores = it) } }
+        .sortedBy { it.name }
+
+    /** Toko of [p] where [userId] holds the kursi of their [role] (PRT-01 shows only these, FR-PA-012). */
+    fun storesOf(p: Partner, userId: Long, role: SalesRole): List<Store> = p.stores.filter { s ->
+        when (role) {
+            SalesRole.TL -> s.tlId == userId
+            SalesRole.SR, SalesRole.SA -> userId in s.assigned
         }
-    }.sortedBy { it.name }
+    }
+
+    /** FR-PA-013: a TL adds toko to a partner where they hold ≥ 1 kursi TL, an SR where they hold ≥ 1 kursi SA/SR. */
+    fun canAddStore(p: Partner, userId: Long, role: SalesRole): Boolean =
+        p.status == PartnerStatus.ACTIVE && role != SalesRole.SA && storesOf(p, userId, role).isNotEmpty()
 
     /** Active toko of Active partners (for visits). */
     fun activeStores(): List<Pair<Partner, Store>> =
@@ -72,9 +93,8 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
             status = PartnerStatus.UNDER_REVIEW,
             history = listOf(StatusEvent(partner.submittedAt, null, PartnerStatus.UNDER_REVIEW, partner.submittedBy.toString(), "Pengajuan dikirim dari aplikasi mobile")),
         ).let { p ->
-            // TL per toko (decision 2026-10-16): the TL who submits, or the TL of the SR who submits.
-            val tl = Partner.defaultTl(partner.submittedBy)
-            p.copy(stores = p.stores.mapIndexed { i, s -> s.copy(id = "${p.id}-${i + 1}", tlId = tl, referralCode = null) })
+            // C6: no kursi until activation ([adminActivate]).
+            p.copy(stores = p.stores.mapIndexed { i, s -> s.copy(id = "${p.id}-${i + 1}", tlId = null, tlLog = emptyList(), assigned = emptyList(), referralCode = null, referralQr = null) })
         }
         change { it + p }
         return p
@@ -89,16 +109,16 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     }
 
     /**
-     * PRD C4 Tambah Toko on an Active partner: the toko waits for its Kode Referral from the Admin (PRD Scope 1 v2 C2,
-     * OQ-25 option 1) and becomes active, with its toko code, once the code is filled ([adminFillReferral]). Its TL is
-     * the TL who adds it, or the TL of the SR who does (decision 2026-10-16).
+     * PRD C4 Tambah Toko on an Active partner ([canAddStore]): the toko waits for its Kode Referral and QR from the Admin
+     * (OQ-25 option 1) and becomes active, with its toko code, once they are filled ([adminFillReferral]). It starts
+     * without kursi (PRD Scope 1 v1.1 C6, FR-PA-013): "Belum ada TL" until the APL assigns one; it never inherits an SA/SR.
      */
     fun addStore(partnerId: String, store: Store): Store {
         val p = requireNotNull(get(partnerId))
         val n = p.stores.size + 1
         val s = store.copy(
             id = "${p.id}-$n", code = null, status = Store.WAITING_REFERRAL, primary = false,
-            tlId = Partner.defaultTl(store.addedBy), tlLog = emptyList(), referralCode = null, assigned = emptyList(),
+            tlId = null, tlLog = emptyList(), referralCode = null, referralQr = null, assigned = emptyList(),
         )
         replace(p.copy(stores = p.stores + s, outletCount = maxOf(p.outletCount, p.stores.size + 1)))
         return s
@@ -128,29 +148,19 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     fun assignedStores(employeeId: Long): List<Pair<Partner, Store>> =
         activeStores().filter { (_, s) -> employeeId in s.assigned }
 
-    /** Assigned toko below the role's minimum (SA 1, SR 4): only a marker, never blocks (revision 2026-10-08). */
-    fun belowMinimum(employeeId: Long): Boolean {
-        val role = DemoDirectory.person(employeeId)?.role ?: return false
-        return assignedStores(employeeId).size < storeLimits(role).first
-    }
-
     /**
-     * Why [employeeId] cannot be assigned to toko [storeId] by [tlId]: SA max 3 toko, SR max 6; only active toko of
-     * Active partners owned by the TL in the person's area; the TL must be the person's direct leader.
+     * Why [employeeId] cannot be assigned to toko [storeId] by [tlId] (1.5 FR-MP-002): the SA/SR must be the TL's direct
+     * subordinate, the toko Active and held by the TL, and free (one toko = one SA/SR). No limit of toko per SA/SR (C6).
      */
     fun assignmentError(tlId: Long, employeeId: Long, storeId: String): AssignError? {
-        val person = DemoDirectory.person(employeeId) ?: return AssignError.NotLeader
-        val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return AssignError.NotOwner
+        val person = DemoDirectory.person(employeeId)
+        val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return AssignError.NotActive
         val store = p.stores.first { it.id == storeId }
-        val current = assignedStores(employeeId).count { (_, s) -> s.id != storeId }
         return when {
-            person.supervisorId != tlId -> AssignError.NotLeader
-            // TL per toko (decision 2026-10-16): only toko the TL holds; a toko waiting for its Kode Referral cannot be assigned.
-            store.tlId != tlId || p.status != PartnerStatus.ACTIVE || store.status != Store.ACTIVE -> AssignError.NotOwner
-            p.areaId != person.areaId -> AssignError.OtherArea
-            // DD review point 5 (decision PO 2026-10-12): one toko = one SA/SR.
+            person == null || person.supervisorId != tlId -> AssignError.NotTeam
+            p.status != PartnerStatus.ACTIVE || store.status != Store.ACTIVE -> AssignError.NotActive
+            store.tlId != tlId -> AssignError.NotHolder
             store.assigned.any { it != employeeId } -> AssignError.Taken
-            current >= storeLimits(person.role).last -> if (person.role == "SA") AssignError.SaLimit else AssignError.SrLimit
             else -> null
         }
     }
@@ -163,12 +173,12 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         return null
     }
 
-    /** Removes [employeeId] from toko [storeId] (Lepas by [by]); logged and notified. */
+    /** Removes [employeeId] from toko [storeId] (Lepas by the TL [by]); logged and notified "dicabut (dilepas <TL>)". */
     fun unassign(employeeId: Long, storeId: String, by: Long) {
         val assigned = _partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId }?.assigned.orEmpty()
         if (employeeId !in assigned) return
         changeStore(storeId) { it.copy(assigned = it.assigned - employeeId) }
-        log(AssignmentAction.RELEASE, employeeId, storeId, by.toString())
+        log(AssignmentAction.RELEASE, employeeId, storeId, by.toString(), source = "dilepas ${actorName(by.toString())}")
     }
 
     /** SA/SR holding toko [storeId], if any (one toko = one SA/SR). */
@@ -182,34 +192,68 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         val ids = _partners.value.flatMap { it.stores }.filter { employeeId in it.assigned }.map { it.id }
         ids.forEach { id ->
             changeStore(id) { it.copy(assigned = it.assigned - employeeId) }
-            log(AssignmentAction.RELEASE, employeeId, id, AssignmentEvent.SYSTEM, AssignmentEvent.ACCOUNT_DISABLED)
+            log(AssignmentAction.RELEASE, employeeId, id, AssignmentEvent.SYSTEM, AssignmentEvent.ACCOUNT_DISABLED, "akun dinonaktifkan")
         }
         return ids.size
     }
 
     /**
-     * The TL [fromTl] was disabled (web ACC-05 handover, decision 2026-10-16): their active toko move to [toTl]. Loans keep
-     * the TL of their date ([Store.tlAt]). Returns how many toko moved.
+     * The TL [fromTl] was disabled (web ACC-05 handover): their kursi TL on active toko move to [toTl]. Loans keep the TL
+     * of their date ([Store.tlAt]). No notification (decision 2026-10-17). Returns how many toko moved.
      */
-    fun transferStores(fromTl: Long, toTl: Long, reason: String): Int {
+    fun transferStores(fromTl: Long, toTl: Long): Int {
         val ids = activeStores().filter { (_, s) -> s.tlId == fromTl }.map { it.second.id }.toSet()
         if (ids.isEmpty()) return 0
         val at = now()
-        ids.forEach { id -> changeStore(id) { it.copy(tlId = toTl, tlLog = it.tlLog + TlChange(at, fromTl, toTl, reason)) } }
+        ids.forEach { id -> changeStore(id) { it.copy(tlId = toTl, tlLog = it.tlLog + TlChange(at, fromTl, toTl, ADMIN, "TL dinonaktifkan")) } }
         return ids.size
     }
 
+    // region Kursi TL (1.7 Mapping TL; the APL acts on the web, the prototype simulates it)
+
     /**
-     * APL remaps the TL of one toko (decision 2026-10-16; the web allows it on the 1st–3rd of the month). SA/SR holding it
-     * who are not subordinates of [toTl] are released (FR-AM-013). Returns the people released.
+     * 1.7 FR-004 Tugaskan TL: the APL [apl] gives an Active toko without TL to TL [tlId] (Active, same area). The TL is
+     * notified "Anda ditugaskan ke {toko} ({partner}) oleh {APL}." (FR-006). `false` when the toko cannot take it.
      */
-    fun remapStoreTl(storeId: String, toTl: Long, reason: String): List<Long> {
-        val s = _partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId } ?: return emptyList()
-        if (s.tlId == toTl) return emptyList()
-        changeStore(storeId) { it.copy(tlId = toTl, tlLog = it.tlLog + TlChange(now(), s.tlId, toTl, reason)) }
-        val to = DemoDirectory.person(toTl)?.fullName.orEmpty()
-        return s.assigned.filter { DemoDirectory.person(it)?.supervisorId != toTl }.onEach { releaseBySystem(it, storeId, "bukan bawahan $to") }
+    fun aplAssignTl(storeId: String, tlId: Long, apl: String): Boolean {
+        val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return false
+        val s = p.stores.first { it.id == storeId }
+        val tl = DemoDirectory.person(tlId)
+        if (p.status != PartnerStatus.ACTIVE || s.status != Store.ACTIVE || s.tlId != null) return false
+        if (tl == null || tl.role != "TL" || tl.status != "ACTIVE" || tl.areaId != p.areaId) return false
+        changeStore(storeId) { it.copy(tlId = tlId, tlLog = it.tlLog + TlChange(now(), null, tlId, apl, "APL")) }
+        log(AssignmentAction.ASSIGN, tlId, storeId, apl, seat = AssignmentEvent.TL)
+        return true
     }
+
+    /**
+     * 1.7 FR-005 Lepas TL by the APL [apl]: the SA/SR of the toko is released too ("TL dilepas"). Returns the SA/SR
+     * released, or `null` when the toko has no TL.
+     */
+    fun aplReleaseTl(storeId: String, apl: String): List<Long>? {
+        val s = _partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId } ?: return null
+        if (s.tlId == null) return null
+        releaseTlSeat(storeId, apl, "dilepas APL")
+        return s.assigned
+    }
+
+    /**
+     * C6 kursi release: the SA/SR (source "TL dilepas", or [source] for Inactive / Ubah Area) and then the kursi TL; the TL
+     * is notified "Anda dilepas dari {toko} ({partner}). Penugasan {SA/SR} di toko ini juga dicabut." (FR-006).
+     */
+    private fun releaseTlSeat(storeId: String, by: String, source: String) {
+        val s = _partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId } ?: return
+        val salesSource = if (source == "dilepas APL") "TL dilepas" else source
+        s.assigned.forEach { x ->
+            changeStore(storeId) { it.copy(assigned = it.assigned - x) }
+            log(AssignmentAction.RELEASE, x, storeId, by, AssignmentEvent.TL_RELEASED, salesSource)
+        }
+        val tl = s.tlId ?: return
+        changeStore(storeId) { it.copy(tlId = null, tlLog = it.tlLog + TlChange(now(), tl, null, by, source)) }
+        log(AssignmentAction.RELEASE, tl, storeId, by, AssignmentEvent.TL_RELEASED, source, AssignmentEvent.TL, s.assigned.mapNotNull { DemoDirectory.person(it)?.fullName })
+    }
+
+    // endregion
 
     /**
      * FR-AM-013 (per toko, decision 2026-10-16): [employeeId] got a new leader, so every toko whose TL is not that leader is
@@ -224,6 +268,9 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         log(AssignmentAction.RELEASE, employeeId, storeId, AssignmentEvent.SYSTEM, AssignmentEvent.LEADER_CHANGED, source)
     }
 
+    /** The SA/SR kursi events of [storeId] (kursi TL events are not holders). */
+    private fun salesEvents(storeId: String) = _assignments.value.events.filter { it.storeId == storeId && it.seat == AssignmentEvent.SALES }
+
     // region Holder by date (pending fix 2026-10-13): the past stays with the person of that date.
 
     /** SA/SR holding toko [storeId] at [at] (millis): loans of that date are theirs (one toko = one SA/SR). */
@@ -232,7 +279,7 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     /** The current holders of [storeId] with every Tugaskan / Lepas after [at] undone, newest first. */
     private fun heldAt(storeId: String, at: Long): Set<Long> {
         val held = _partners.value.firstNotNullOfOrNull { p -> p.stores.firstOrNull { it.id == storeId } }?.assigned?.toMutableSet() ?: return emptySet()
-        _assignments.value.events.filter { it.storeId == storeId && it.at > at }.asReversed().forEach { e ->
+        salesEvents(storeId).filter { it.at > at }.asReversed().forEach { e ->
             if (e.action == AssignmentAction.ASSIGN) held -= e.employeeId else held += e.employeeId
         }
         return held
@@ -260,8 +307,9 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
 
     // endregion
 
-    /** Tugaskan / Lepas of [employeeId], newest first (the later one first at the same time). */
-    fun historyOf(employeeId: Long): List<AssignmentEvent> = _assignments.value.events.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.at }
+    /** Tugaskan / Lepas of the SA/SR [employeeId], newest first (the later one first at the same time). */
+    fun historyOf(employeeId: Long): List<AssignmentEvent> =
+        _assignments.value.events.filter { it.employeeId == employeeId && it.seat == AssignmentEvent.SALES }.asReversed().sortedByDescending { it.at }
 
     /** Notifications of [employeeId], newest first. */
     fun notificationsOf(employeeId: Long): List<AppNotification> =
@@ -271,13 +319,16 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         d.copy(notifications = d.notifications.map { if (it.employeeId == employeeId) it.copy(read = true) else it })
     }
 
-    /** Logs a Tugaskan / Lepas and notifies the SA/SR (FR-MP-007, FR-MP-004). */
-    private fun log(action: AssignmentAction, employeeId: Long, storeId: String, by: String, reason: String? = null, source: String? = null) {
+    /** Logs a Tugaskan / Lepas and notifies the person (FR-MP-007, FR-MP-004; kursi TL 1.7 FR-006). */
+    private fun log(
+        action: AssignmentAction, employeeId: Long, storeId: String, by: String, reason: String? = null, source: String? = null,
+        seat: String = AssignmentEvent.SALES, withSales: List<String> = emptyList(),
+    ) {
         val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return
         val s = p.stores.first { it.id == storeId }
-        val e = AssignmentEvent(now(), action, employeeId, storeId, s.name, p.id, p.name, by, reason, source)
+        val e = AssignmentEvent(now(), action, employeeId, storeId, s.name, p.id, p.name, by, reason, source, seat, withSales)
         changeAssignments { d ->
-            d.copy(events = d.events + e, notifications = d.notifications + AppNotification("N-${e.at}-$employeeId-$storeId-${action.name}", employeeId, e))
+            d.copy(events = d.events + e, notifications = d.notifications + AppNotification("N-${e.at}-$employeeId-$storeId-$seat-${action.name}", employeeId, e))
         }
     }
 
@@ -308,9 +359,9 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
             documents = p.documents.map { if (it.key == doc.key) it.copy(verification = Verification.NEEDS_REVISION, note = items[0].note) else it },
         )
         replace(PartnerActions.move(withNotes, PartnerStatus.REVISION_REQUIRED, at, ADMIN, "${items.size} item diminta revisi: ${items.joinToString { it.label }}"))
-        // DD review point 2 (decision PO 2026-10-12): the submitter and the TL of its toko (when different) are notified.
+        // DD review point 2 (decision PO 2026-10-12): the submitter and their TL (a submission has no kursi TL yet).
         val notice = RevisionNotice(at, p.id, p.name)
-        val to = (listOf(p.submittedBy) + p.tlIds).distinct()
+        val to = listOfNotNull(p.submittedBy, Partner.defaultTl(p.submittedBy)).distinct()
         changeAssignments { d -> d.copy(notifications = d.notifications + to.map { AppNotification("N-$at-$it-${p.id}-REVISION", it, revision = notice) }) }
     }
 
@@ -326,20 +377,31 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         replace(PartnerActions.move(p, PartnerStatus.WAITING_PKS, now(), ADMIN, "PKS dikirim di Privy web $via"))
     }
 
-    /** Every toko needs a Kode Referral before activation (web `REFERRAL_MISSING`); `false` when one is missing. */
+    /**
+     * Every toko needs a Kode Referral and QR before activation (FR-010, AC-028); `false` when one is missing. C6 FR-010:
+     * kursi TL = the TL who submitted, or the TL of the SR who did, when that account is Active, otherwise "Belum ada TL";
+     * kursi SA/SR empty (the SR who submitted does not hold the toko).
+     */
     fun adminActivate(id: String): Boolean {
         if (referralMissing(id)) return false
-        adminMove(id, PartnerStatus.ACTIVE, "PKS ditandatangani (dicek di Privy web); partner diaktifkan") { it }
+        val p = get(id) ?: return false
+        val tl = Partner.defaultTl(p.submittedBy)?.let { DemoDirectory.person(it) }?.takeIf { it.role == "TL" && it.status == "ACTIVE" }?.id
+        val at = now()
+        adminMove(id, PartnerStatus.ACTIVE, "PKS ditandatangani (dicek di Privy web); partner diaktifkan") { pt ->
+            pt.copy(stores = pt.stores.map { s ->
+                s.copy(assigned = emptyList(), tlId = tl, tlLog = if (tl != null) s.tlLog + TlChange(at, null, tl, "Sistem", "aktivasi") else s.tlLog)
+            })
+        }
         return true
     }
 
-    /** Whether a toko of the partner has no Kode Referral yet. */
-    fun referralMissing(id: String): Boolean = get(id)?.stores?.any { it.referralCode == null } ?: false
+    /** Whether a toko of the partner has no Kode Referral or QR yet. */
+    fun referralMissing(id: String): Boolean = get(id)?.stores?.any { it.referralCode == null || it.referralQr == null } ?: false
 
     /**
-     * Simulasi Admin "Isi kode referral" (web REF-01, filled from AppsFlyer): every toko without a code gets
-     * `OF{area}{3 digits of the registration}{n}`; a toko waiting for its code becomes active with its toko code.
-     * Returns how many toko got a code.
+     * Simulasi Admin "Isi kode referral" (web Toko Aktif / tab Toko, FR-019): every toko without a code gets a sample code
+     * (no required prefix, PRD 1.1) and its QR; a toko waiting for them becomes Active with its toko code and "Belum ada
+     * TL" until the APL assigns one. Returns how many toko were filled.
      */
     fun adminFillReferral(id: String): Int {
         val p = get(id) ?: return 0
@@ -348,28 +410,47 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         var filled = 0
         val events = mutableListOf<StatusEvent>()
         val stores = p.stores.mapIndexed { i, s ->
-            if (s.referralCode != null) return@mapIndexed s
+            if (s.referralCode != null && s.referralQr != null) return@mapIndexed s
             filled++
-            val code = "OF$area${p.id.takeLast(3)}${i + 1}"
-            events += StatusEvent(at, null, p.status, ADMIN, "Kode referral ${s.name}: - → $code")
+            val code = s.referralCode ?: "OF$area${p.id.takeLast(3)}${i + 1}"
+            val qr = "qr_${code.lowercase()}.png"
+            events += StatusEvent(at, null, p.status, ADMIN, "Kode referral ${s.name}: $code, QR $qr")
             if (s.status == Store.WAITING_REFERRAL) {
-                events += StatusEvent(at, null, p.status, "Sistem", "${s.name} aktif setelah kode referral diisi")
-                s.copy(referralCode = code, status = Store.ACTIVE, code = "TK${p.id.takeLast(4)}-${(i + 1).toString().padStart(2, '0')}")
+                events += StatusEvent(at, null, p.status, "Sistem", "${s.name} aktif setelah kode referral dan QR diisi; menunggu penugasan TL oleh APL")
+                s.copy(referralCode = code, referralQr = qr, status = Store.ACTIVE, code = "TK${p.id.takeLast(4)}-${(i + 1).toString().padStart(2, '0')}")
             } else {
-                s.copy(referralCode = code)
+                s.copy(referralCode = code, referralQr = qr)
             }
         }
         if (filled > 0) replace(p.copy(stores = stores, history = p.history + events))
         return filled
     }
+
     fun adminReject(id: String) = adminMove(id, PartnerStatus.REJECTED, "Usaha tidak sesuai kriteria partner") { it }
     fun adminCancel(id: String) = adminMove(id, PartnerStatus.CANCELLED, "Dibatalkan atas permintaan partner") { it }
-    /** Inactive releases every SA/SR from the partner's toko; each release is logged as the system (FR-MP-007). */
+    /** C6 FR-013: Inactive releases every kursi (TL and SA/SR) of the partner's toko, logged as the system (FR-MP-007). */
     fun adminDeactivate(id: String) {
         val p = get(id) ?: return
-        val released = p.stores.flatMap { s -> s.assigned.map { it to s.id } }
-        adminMove(id, PartnerStatus.INACTIVE, "Partner berhenti bekerja sama") { it.copy(stores = it.stores.map { s -> s.copy(assigned = emptyList()) }) }
-        released.forEach { (employeeId, storeId) -> log(AssignmentAction.RELEASE, employeeId, storeId, AssignmentEvent.SYSTEM, AssignmentEvent.PARTNER_INACTIVE) }
+        p.stores.forEach { releaseTlSeat(it.id, AssignmentEvent.SYSTEM, "partner nonaktif") }
+        adminMove(id, PartnerStatus.INACTIVE, "Partner berhenti bekerja sama") { it }
+    }
+
+    /** Statuses where the Admin can change the partner's area (FR-021: Under Review up to Active). */
+    fun canChangeArea(id: String): Boolean = get(id)?.status in AREA_EDITABLE
+
+    /**
+     * C6 FR-021 Ubah Area Partner (Simulasi Admin): the partner and all its toko move to the next area of the sample; every
+     * kursi TL and SA/SR is released (source "ubah area"). Returns the new area name, or `null` when not allowed.
+     */
+    fun adminChangeArea(id: String): String? {
+        val p = get(id)?.takeIf { it.status in AREA_EDITABLE } ?: return null
+        val areas = DemoDirectory.areas
+        val to = areas[(areas.indexOfFirst { it.id == p.areaId } + 1) % areas.size]
+        p.stores.forEach { releaseTlSeat(it.id, ADMIN, "ubah area") }
+        val from = DemoDirectory.area(p.areaId)?.name.orEmpty()
+        val released = get(id) ?: return null
+        replace(released.copy(areaId = to.id, history = released.history + StatusEvent(now(), null, released.status, ADMIN, "Area partner diubah dari $from ke ${to.name}: simulasi")))
+        return to.name
     }
 
     private fun adminMove(id: String, to: PartnerStatus, reason: String?, prepare: (Partner) -> Partner) {
@@ -383,7 +464,7 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     fun reset() {
         _partners.value = PartnerSeed.partners()
         store.savePartners(_partners.value)
-        _assignments.value = AssignmentData()
+        _assignments.value = PartnerSeed.assignments()
         store.saveAssignments(_assignments.value)
     }
 
@@ -397,11 +478,8 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     companion object {
         private val ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
         const val ADMIN = "Rina Saraswati (Admin)"
-        /** Toko per SA (1–3) and SR (4–6), revision 2026-10-08: the maximum blocks, the minimum is only a marker. */
-        val SA_STORES = 1..3
-        val SR_STORES = 4..6
-
-        fun storeLimits(role: String): IntRange = if (role == "SA") SA_STORES else SR_STORES
+        /** FR-021: Ubah Area from Under Review up to Active. */
+        private val AREA_EDITABLE = setOf(PartnerStatus.UNDER_REVIEW, PartnerStatus.REVISION_REQUIRED, PartnerStatus.VERIFIED, PartnerStatus.WAITING_PKS, PartnerStatus.ACTIVE)
 
         /** Phone digits as stored (`8…`): `08…`, `62…`, `+62…` and `8…` are the same number. */
         fun normalizePhone(phone: String): String {

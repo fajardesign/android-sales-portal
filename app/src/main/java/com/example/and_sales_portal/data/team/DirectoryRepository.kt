@@ -29,10 +29,10 @@ class DirectoryRepository(private val store: DemoStore, private val partners: Pa
      */
     fun disableTl(tlId: Long, replacementId: Long): Int {
         val old = DemoDirectory.person(tlId) ?: return 0
-        val new = DemoDirectory.person(replacementId) ?: return 0
+        DemoDirectory.person(replacementId) ?: return 0
         val subs = DemoDirectory.people.filter { it.supervisorId == tlId && it.status != "DISABLED" }
         apply(subs.associate { it.id to DemoDirectory.Change(supervisorId = replacementId) } + (tlId to DemoDirectory.Change(status = "DISABLED")))
-        val moved = partners.transferStores(tlId, replacementId, "TL toko pindah dari ${old.fullName} ke ${new.fullName} (TL lama dinonaktifkan)")
+        val moved = partners.transferStores(tlId, replacementId)
         subs.forEach { partners.releaseNotLedBy(it.id, replacementId, "atasan baru setelah ${old.fullName} dinonaktifkan") }
         return moved
     }

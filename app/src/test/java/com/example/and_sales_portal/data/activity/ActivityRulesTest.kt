@@ -35,13 +35,13 @@ class ActivityRulesTest {
     @Test
     fun attendancePlacesAndRadius() {
         val partners = PartnerSeed.partners()
-        // Office of Makassar (same as the web portal OFFICES) first, then the SR's 3 toko.
+        // Office of Makassar (same as the web portal OFFICES) first, then the SR's 2 toko (Tamalanrea left with its TL).
         val places = DemoSeed.attendancePlaces(partners, 11, SalesRole.SR)
-        assertEquals(listOf("Kantor Amar Bank Makassar", "Jaya Abadi Cellular Mall Panakkukang", "Jaya Abadi Cellular Sudiang", "PT Bintang Gadget Store Tamalanrea"), places.map { it.name })
+        assertEquals(listOf("Kantor Amar Bank Makassar", "Jaya Abadi Cellular Mall Panakkukang", "Jaya Abadi Cellular Sudiang"), places.map { it.name })
         assertEquals(-5.1437, places.first().lat, 1e-9)
         assertEquals(119.4297, places.first().lng, 1e-9)
-        // TL: office + the toko of the partners they own.
-        assertEquals(6, DemoSeed.attendancePlaces(partners, 6, SalesRole.TL).size)
+        // TL: office + the toko of their kursi TL (4, Tamalanrea has no TL).
+        assertEquals(5, DemoSeed.attendancePlaces(partners, 6, SalesRole.TL).size)
         // Haversine like the portal: 0.027 deg latitude is about 3 km.
         val office = places.first()
         assertEquals(3002, ActivityRules.distanceMeters(office.lat, office.lng, office.lat + 0.027, office.lng))
@@ -91,12 +91,12 @@ class ActivityRulesTest {
         assertEquals(monday, ActivityRules.weekStart(today))
         val partners = PartnerSeed.partners()
         val targets = DemoSeed.storesOf(partners, 11, SalesRole.SR).map { s -> partners.first { p -> p.stores.any { it.id == s.id } } to s }
-        val groups = ActivityRules.weekPartners(targets, setOf("REG2026-0139-2", "REG2026-0139-3"))
-        assertEquals(listOf("REG2026-0139", "REG2026-0132"), groups.map { it.partner.id })
-        assertTrue(groups[0].visited)
-        assertTrue(!groups[1].visited)
+        val groups = ActivityRules.weekPartners(targets, setOf("REG2026-0139-2"))
+        assertEquals(listOf("REG2026-0139"), groups.map { it.partner.id })
+        assertTrue(!groups[0].visited)
+        assertTrue(ActivityRules.weekPartners(targets, setOf("REG2026-0139-2", "REG2026-0139-3"))[0].visited)
         val week = ActivityRules.visitWeek(monday, groups)
-        assertEquals(VisitWeek(monday, 2, 3), week)
+        assertEquals(VisitWeek(monday, 1, 2), week)
         assertTrue(!week.complete)
         assertTrue(ActivityRules.visitWeek(monday, ActivityRules.weekPartners(targets, targets.map { it.second.id }.toSet())).complete)
         // No toko to visit: never complete.
@@ -107,7 +107,8 @@ class ActivityRulesTest {
     fun storesPerRoleMatchThePortalSample() {
         val partners = PartnerSeed.partners()
         assertEquals(listOf("REG2026-0139-1"), DemoSeed.storesOf(partners, 15, SalesRole.SA).map { it.id })
-        assertEquals(listOf("REG2026-0139-2", "REG2026-0139-3", "REG2026-0132-2"), DemoSeed.storesOf(partners, 11, SalesRole.SR).map { it.id })
-        assertEquals(5, DemoSeed.storesOf(partners, 6, SalesRole.TL).size)
+        // Tamalanrea was released with its TL by the APL (PRD Scope 1 v1.1 sample).
+        assertEquals(listOf("REG2026-0139-2", "REG2026-0139-3"), DemoSeed.storesOf(partners, 11, SalesRole.SR).map { it.id })
+        assertEquals(4, DemoSeed.storesOf(partners, 6, SalesRole.TL).size)
     }
 }

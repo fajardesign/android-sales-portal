@@ -61,7 +61,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 
 ## Simulasi (debug)
 
-**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline. **Simulasi Admin: akun** meniru web: Nonaktifkan TL Andi Pratama (toko dan tim pindah ke Bagus Wicaksono), APL ganti TL toko Jaya Abadi Cellular Sudiang ke Bagus (tanpa batas tanggal 1–3), Pindahkan Bawahan Siti ke Bagus (Siti dilepas dari toko Andi), dan Nonaktifkan SA Eko Saputra (tokonya dilepas). Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk menjalankan aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Isi kode referral, Aktifkan yang terkunci sampai semua toko punya Kode Referral, Tolak, Batalkan, Nonaktifkan). TL dicatat per toko (PRD Scope 1 v2); toko baru partner Active menunggu kode referral sebelum bisa ditugaskan.
+**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline. **Simulasi Admin dan APL** meniru web: Nonaktifkan TL Andi Pratama (kursi TL dan tim pindah ke Bagus Wicaksono), APL tugaskan TL Tamalanrea ke Bagus, APL lepas TL Andi dari Sudiang (Siti ikut dilepas), Pindahkan Bawahan Siti ke Bagus, dan Nonaktifkan SA Eko Saputra. Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Isi kode referral dan QR, Aktifkan yang terkunci sampai semua toko punya kode dan QR, Ubah area partner, Tolak, Batalkan, Nonaktifkan). Setiap toko punya kursi TL ("Belum ada TL" bila kosong) dan kursi SA/SR (PRD Scope 1 v1.1); toko baru menunggu kode referral dan QR, lalu menunggu APL menugaskan TL.
 
 ## Batasan prototype
 

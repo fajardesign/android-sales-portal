@@ -113,7 +113,7 @@ private data class DirectoryFile(val changes: Map<Long, DemoDirectory.Change> = 
 @Serializable
 private data class PartnersFile(val version: Int = VERSION, val partners: List<Partner>) {
     companion object {
-        /** 4: TL and Kode Referral per toko, consent per partner (PRD Scope 1 v2). */
-        const val VERSION = 4
+        /** 5: kursi TL and SA/SR per toko, QR per toko (PRD Scope 1 v1.1). */
+        const val VERSION = 5
     }
 }

@@ -128,20 +128,21 @@ class ActivityRepositoryTest {
         assertEquals(listOf(LocalDate.of(2026, 9, 21), LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 5)), ops.visitWeeks(11, LocalDate.of(2026, 9, 21)..wednesday.plusDays(10)).map { it.start })
         // "Hari ini" on a Wednesday has no week of its own; the current week is shown separately.
         assertTrue(ops.visitWeeks(11, wednesday..wednesday).isEmpty())
-        // Target = Siti's 3 toko.
-        assertEquals(3, ops.visitWeek(11, wednesday.minusDays(2)).target)
+        // Target = Siti's 2 toko (Tamalanrea left on Monday with its TL; a closed week keeps it).
+        assertEquals(2, ops.visitWeek(11, wednesday.minusDays(2)).target)
+        assertEquals(3, ops.visitWeek(11, wednesday.minusDays(9)).target)
     }
 
     @Test
     fun weeklyTargetAndDaysOff() {
         val monday = wednesday.minusDays(2)
         val week = ops.visitWeek(11, monday)
-        assertEquals(3, week.target)
+        assertEquals(2, week.target)
         val visitedBefore = ops.visitsBetween(11, monday, wednesday.minusDays(1)).map { it.storeId }.toSet().size
         assertEquals(visitedBefore, week.visited)
         // Days off no longer change the target (it counts toko); past days cannot be changed.
         ops.setDayOff(11, wednesday.plusDays(2), true)
-        assertEquals(3, ops.visitWeek(11, monday).target)
+        assertEquals(2, ops.visitWeek(11, monday).target)
         ops.setDayOff(11, monday, true)
         assertTrue(!ops.isDayOff(11, monday))
         ops.setDayOff(11, wednesday, true)
