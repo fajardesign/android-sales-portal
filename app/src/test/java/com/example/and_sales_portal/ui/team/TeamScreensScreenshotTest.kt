@@ -40,7 +40,7 @@ class TeamScreensScreenshotTest {
     private fun assigned(id: Long) = partners.flatMap { p -> p.stores.filter { id in it.assigned }.map { p to it } }
 
     private val members = listOf(
-        Member(person(11), AttendanceStatus.ON_TIME, assigned(11), belowMinimum = true),
+        Member(person(11), AttendanceStatus.ON_TIME, assigned(11)),
         Member(person(15), AttendanceStatus.NOT_YET, assigned(15)),
         Member(person(16), AttendanceStatus.LATE, assigned(16)),
     )
@@ -66,6 +66,12 @@ class TeamScreensScreenshotTest {
                 history.mapIndexed { i, e -> com.example.and_sales_portal.data.partner.AppNotification("n$i", 15, e, read = i > 0) }, {},
             )
         }
+        // 1.7 FR-006: kursi TL notifications, and the sample release of Tamalanrea.
+        capture("03_notifications_tl") {
+            com.example.and_sales_portal.ui.notifications.NotificationsScreen(
+                com.example.and_sales_portal.data.partner.PartnerSeed.assignments().notifications.filter { it.employeeId == 6L }, {},
+            )
+        }
         capture("03_assign_empty") { AssignScreen(listOf(person(11), sa), null, {}, emptyList(), emptyList(), {}, {}, {}) }
     }
 
@@ -74,9 +80,9 @@ class TeamScreensScreenshotTest {
         val stores = DemoSeed.storesOf(partners, 11, SalesRole.SR)
         val at = { d: LocalDate, t: String -> d.atTime(LocalTime.parse(t)).atZone(ActivityRules.ZONE).toInstant().toEpochMilli() }
         val monday = today.minusDays(2)
-        fun item(d: LocalDate, i: Int, t: String, done: Boolean = true) = visitItem(
-            Visit("v$d$i", 11, stores[i].id, d.toString(), if (done) VisitState.DONE else VisitState.IN_PROGRESS, checkIn = Punch(at(d, t), 0.0, 0.0), checkOut = if (done) Punch(at(d, "15:00"), 0.0, 0.0) else null),
-            stores[i], partners.first { p -> p.stores.any { it.id == stores[i].id } },
+        fun item(d: LocalDate, n: Int, t: String, done: Boolean = true) = visitItem(
+            Visit("v$d$n", 11, stores[n % stores.size].id, d.toString(), if (done) VisitState.DONE else VisitState.IN_PROGRESS, checkIn = Punch(at(d, t), 0.0, 0.0), checkOut = if (done) Punch(at(d, "15:00"), 0.0, 0.0) else null),
+            stores[n % stores.size], partners.first { p -> p.stores.any { it.id == stores[n % stores.size].id } },
         )!!
         val days = (0L..5L).map { monday.plusDays(it) }.map { d ->
             when (d.dayOfWeek.value) {

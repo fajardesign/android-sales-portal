@@ -65,8 +65,8 @@ class StoreHolderHistoryTest {
 
         partners.unassign(11, toko, 6)
         assertEquals(past, ops.visitWeek(11, lastWeek))
-        // Released on Wednesday: gone from this week (Siti can no longer check in there).
-        assertEquals(2, ops.visitWeek(11, thisWeek).target)
+        // Released on Wednesday: gone from this week (Siti can no longer check in there; Tamalanrea left on Monday).
+        assertEquals(1, ops.visitWeek(11, thisWeek).target)
 
         // Assigned on Wednesday to Nurul (SA 16): from next week, never in a past week.
         val nurulPast = ops.visitWeek(16, lastWeek).target
@@ -83,7 +83,7 @@ class StoreHolderHistoryTest {
         val bagus = ops.visitWeek(22, lastWeek)
         assertTrue(andi.target > 0)
 
-        partners.transferStores(6, 22, "TL lama dinonaktifkan")
+        partners.transferStores(6, 22)
         assertEquals(andi, ops.visitWeek(6, lastWeek))
         assertEquals(bagus, ops.visitWeek(22, lastWeek))
     }

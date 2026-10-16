@@ -54,8 +54,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** A team member with today's attendance and assigned toko (TL-01); [belowMinimum] marks SA < 1 or SR < 4 toko. */
-data class Member(val person: DemoDirectory.Person, val today: AttendanceStatus?, val stores: List<Pair<Partner, Store>>, val belowMinimum: Boolean = false) {
+/** A team member with today's attendance and assigned toko (TL-01); no minimum of toko (PRD Scope 1 v1.1 C6). */
+data class Member(val person: DemoDirectory.Person, val today: AttendanceStatus?, val stores: List<Pair<Partner, Store>>) {
     val active: Boolean get() = person.status == "ACTIVE"
 }
 
@@ -75,7 +75,6 @@ private fun MemberBadges(m: Member) {
         RoleBadge(m.person.role)
         if (!m.active) AmarBadge(stringResource(R.string.team_pending), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
         m.today?.let { AttendanceBadge(it) }
-        if (m.active && m.belowMinimum) AmarBadge(stringResource(R.string.team_below_min), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
     }
 }
 
@@ -188,7 +187,7 @@ fun AssignScreen(
             AmarInfoBox(stringResource(R.string.asg_select_person), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
             return@ScreenScaffold
         }
-        AmarInfoBox(stringResource(if (selected.role == "SA") R.string.asg_rule_sa else R.string.asg_rule_sr), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
+        AmarInfoBox(stringResource(R.string.asg_rule), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
         SectionTitle(stringResource(R.string.asg_assigned, assigned.size))
         if (assigned.isEmpty()) Text(stringResource(R.string.asg_none), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
         assigned.forEach { StoreRow(it, stringResource(R.string.asg_unassign), AmarButtonType.Secondary) { onUnassign(it) } }
@@ -204,12 +203,8 @@ fun AssignScreen(
                     stringResource(if (e.action == AssignmentAction.ASSIGN) R.string.asg_history_assign else R.string.asg_history_release, e.storeName, e.partnerName),
                     color = AmarTheme.colors.content.primary, style = AmarTheme.typography.labelMdMedium,
                 )
-                val by = when {
-                    e.by != AssignmentEvent.SYSTEM -> PartnerRepository.actorName(e.by)
-                    e.reason == AssignmentEvent.ACCOUNT_DISABLED -> stringResource(R.string.asg_by_disabled)
-                    e.reason == AssignmentEvent.LEADER_CHANGED -> stringResource(R.string.asg_by_leader, e.source.orEmpty())
-                    else -> stringResource(R.string.asg_by_system)
-                }
+                // "oleh Andi Pratama", "oleh Hasan Basri (APL)", or "oleh Sistem (partner nonaktif)".
+                val by = if (e.by != AssignmentEvent.SYSTEM) PartnerRepository.actorName(e.by) else stringResource(R.string.asg_by_system, e.source.orEmpty())
                 Text(stringResource(R.string.asg_history_meta, by, eventTime(e)), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.bodySm)
             }
         }

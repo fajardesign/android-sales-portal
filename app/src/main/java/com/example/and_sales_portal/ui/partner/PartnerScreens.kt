@@ -236,10 +236,18 @@ private fun AdminSimulation(actions: List<AdminAction>) {
  * "Tambah Toko" for TL and SR on Active partners.
  */
 @Composable
-fun PartnerDetailScreen(p: Partner, canAddStore: Boolean, onBack: () -> Unit, onOpenMaps: (Double, Double) -> Unit, onAddStore: () -> Unit) {
+fun PartnerDetailScreen(
+    p: Partner,
+    canAddStore: Boolean,
+    onBack: () -> Unit,
+    onOpenMaps: (Double, Double) -> Unit,
+    onAddStore: () -> Unit,
+    /** FR-PA-013: TL/SR without a kursi in this partner see "Tambah Toko" disabled with the reason. */
+    addStoreBlocked: Boolean = false,
+) {
     val c = AmarTheme.colors
     val action: (@Composable () -> Unit)? = if (canAddStore && p.status == PartnerStatus.ACTIVE) {
-        { PersistentAction(stringResource(R.string.prt_add_store), onAddStore) }
+        { PersistentAction(stringResource(R.string.prt_add_store), onAddStore, enabled = !addStoreBlocked) }
     } else null
     ScreenScaffold(stringResource(R.string.prt_detail_title), onBack, action = action) {
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
@@ -253,6 +261,9 @@ fun PartnerDetailScreen(p: Partner, canAddStore: Boolean, onBack: () -> Unit, on
             InfoRow(stringResource(R.string.reg_phone), "+62 ${p.picPhone}")
             InfoRow(stringResource(R.string.reg_pic_email), p.picEmail)
             InfoRow(stringResource(R.string.reg_address), "${p.address}, ${p.village}, ${p.district}, ${p.regency}")
+        }
+        if (canAddStore && addStoreBlocked && p.status == PartnerStatus.ACTIVE) {
+            AmarInfoBox(stringResource(R.string.prt_add_store_blocked), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
         }
         SectionTitle(stringResource(R.string.prt_stores, p.stores.size))
         p.stores.forEach { StoreCard(it, onOpenMaps) }
@@ -272,9 +283,10 @@ private fun StoreCard(s: Store, onOpenMaps: (Double, Double) -> Unit) {
         }
         Text(s.address, color = c.content.secondary, style = AmarTheme.typography.bodySm)
         InfoRow(stringResource(R.string.reg_revenue), rupiah(s.omzet))
-        // PRD Scope 1 v2: Kode Referral per toko (read-only) and the TL of the toko.
+        // PRD Scope 1 v1.1: Kode Referral and QR per toko (read-only), kursi TL ("Belum ada TL") and kursi SA/SR.
         InfoRow(stringResource(R.string.reg_referral), s.referralCode ?: stringResource(R.string.prt_referral_empty))
-        InfoRow(stringResource(R.string.account_role_tl), s.tlId?.let(::nameOf) ?: "-")
+        if (s.referralCode != null && s.referralQr != null) ReferralQrImage(s.referralCode, stringResource(R.string.prt_qr))
+        InfoRow(stringResource(R.string.account_role_tl), s.tlId?.let(::nameOf) ?: stringResource(R.string.prt_no_tl))
         InfoRow(stringResource(R.string.prt_assigned), s.assigned.map(::nameOf).ifEmpty { listOf(stringResource(R.string.ptn_unassigned)) }.joinToString())
         if (s.status == Store.WAITING_REFERRAL) AmarInfoBox(stringResource(R.string.prt_store_waiting_referral_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
         MapPreview(s.lat, s.lng, { onOpenMaps(s.lat, s.lng) })

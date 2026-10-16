@@ -99,5 +99,7 @@ class RegScreensScreenshotTest {
         capture("10_revision") { SubmissionDetailScreen(revision, true, {}, {}, listOf(AdminAction(com.example.and_sales_portal.R.string.sim_admin_reject) {})) }
         capture("10_rejected") { SubmissionDetailScreen(partners.first { it.id == "REG2026-0135" }, true, {}, {}, null) }
         capture("prt_01_detail") { PartnerDetailScreen(partners.first { it.id == "REG2026-0139" }, true, {}, { _, _ -> }, {}) }
+        // PRD Scope 1 v1.1: TL/SR without a kursi in the partner see Tambah Toko disabled; a toko without TL.
+        capture("prt_01_blocked") { PartnerDetailScreen(partners.first { it.id == "REG2026-0132" }, true, {}, { _, _ -> }, {}, addStoreBlocked = true) }
     }
 }

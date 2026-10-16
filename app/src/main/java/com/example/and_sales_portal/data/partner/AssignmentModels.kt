@@ -7,8 +7,9 @@ import kotlinx.serialization.Serializable
 enum class AssignmentAction { ASSIGN, RELEASE }
 
 /**
- * One Tugaskan or Lepas with actor, time, toko, partner and SA/SR (PRD Scope 1 FR-MP-007, PRD alignment 2026-10-09).
- * [by] is the TL's user id, or [SYSTEM] when the partner became Inactive.
+ * One Tugaskan or Lepas with actor, time, toko, partner and person (PRD Scope 1 FR-MP-007; v1.1 C6 kursi per toko).
+ * [seat] [SALES]: the SA/SR kursi, [by] the TL's user id, [SYSTEM], or the APL by name. [seat] [TL]: the kursi TL of
+ * [employeeId] (only APL actions and releases are logged here, 1.7 FR-006).
  */
 @Serializable
 data class AssignmentEvent(
@@ -20,13 +21,20 @@ data class AssignmentEvent(
     val partnerId: String,
     val partnerName: String,
     val by: String,
-    /** Why the system released it: [PARTNER_INACTIVE], [ACCOUNT_DISABLED] or [LEADER_CHANGED]; `null` for a TL's Tugaskan / Lepas. */
+    /** Why the system released it: [PARTNER_INACTIVE], [ACCOUNT_DISABLED], [LEADER_CHANGED] or [TL_RELEASED]. */
     val reason: String? = null,
-    /** What caused a [LEADER_CHANGED] release ("Pindahkan Bawahan", "bukan bawahan Bagus Wicaksono", …; FR-MP-007). */
+    /** Why it was released, shown as "dicabut (<source>)" ("TL dilepas", "Pindahkan Bawahan", "dilepas Andi Pratama", …). */
     val source: String? = null,
+    val seat: String = SALES,
+    /** Kursi TL released: the SA/SR released with it ("Penugasan Siti Rahmawati di toko ini juga dicabut."). */
+    val withSales: List<String> = emptyList(),
 ) {
     companion object {
         const val SYSTEM = "SYSTEM"
+        const val SALES = "SALES"
+        const val TL = "TL"
+        /** Released together with the kursi TL (APL Lepas TL, partner Inactive, Ubah Area). */
+        const val TL_RELEASED = "TL_RELEASED"
         const val PARTNER_INACTIVE = "PARTNER_INACTIVE"
         /** The SA/SR account was disabled (web ACC-05, DD review point 5). */
         const val ACCOUNT_DISABLED = "ACCOUNT_DISABLED"
@@ -62,7 +70,7 @@ data class AssignmentData(
     val notifications: List<AppNotification> = emptyList(),
 ) {
     companion object {
-        /** 2: revision notifications. */
-        const val VERSION = 2
+        /** 3: kursi TL events, sample release of Tamalanrea (PRD Scope 1 v1.1). */
+        const val VERSION = 3
     }
 }

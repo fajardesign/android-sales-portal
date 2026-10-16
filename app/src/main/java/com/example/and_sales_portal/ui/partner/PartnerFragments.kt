@@ -125,7 +125,7 @@ class SubmissionDetailFragment : ComposeFragment() {
             AdminAction(R.string.sim_admin_cancel) { repo.adminCancel(id) },
         )
         PartnerStatus.VERIFIED -> listOf(AdminAction(R.string.sim_admin_send_pks) { repo.adminSendPks(id) }, AdminAction(R.string.sim_admin_cancel) { repo.adminCancel(id) })
-        // PRD Scope 1 v2 C2: Aktifkan stays locked until every toko has its Kode Referral.
+        // PRD Scope 1 v1.1 C2 FR-010: Aktifkan stays locked until every toko has its Kode Referral and QR.
         PartnerStatus.WAITING_PKS -> listOfNotNull(
             AdminAction(R.string.sim_admin_fill_referral) { repo.adminFillReferral(id) }.takeIf { repo.referralMissing(id) },
             AdminAction(R.string.sim_admin_activate, enabled = !repo.referralMissing(id)) { repo.adminActivate(id) },
@@ -136,6 +136,9 @@ class SubmissionDetailFragment : ComposeFragment() {
             AdminAction(R.string.sim_admin_deactivate) { repo.adminDeactivate(id) },
         )
         else -> emptyList()
+    }.let { actions ->
+        // C6 FR-021 Ubah Area Partner (Under Review up to Active): every kursi is released.
+        if (repo.canChangeArea(id)) actions + AdminAction(R.string.sim_admin_change_area) { repo.adminChangeArea(id) } else actions
     }
 
     companion object {
@@ -263,10 +266,11 @@ class PartnerDetailFragment : ComposeFragment() {
         val p = remember(partners) { container.partners.get(id) } ?: return
         WithToast(toast, clearToast) {
             PartnerDetailScreen(
-                // PRT-01 (PRD Scope 1 v2): a TL sees only the toko they hold.
-                if (user.role == SalesRole.TL) p.copy(stores = p.stores.filter { it.tlId == user.user.id }) else p,
-                // PRD C4 / D4: TL and SR add toko; SA does not.
+                // FR-PA-012 (PRD Scope 1 v1.1 C6): everyone sees only the toko of their kursi.
+                p.copy(stores = container.partners.storesOf(p, user.user.id, user.role)),
+                // PRD C4 / D4: TL and SR add toko; SA does not. FR-PA-013: only with a kursi in this partner.
                 canAddStore = user.role != SalesRole.SA,
+                addStoreBlocked = !container.partners.canAddStore(p, user.user.id, user.role),
                 onBack = ::back,
                 onOpenMaps = { lat, lng -> openMaps(lat, lng) },
                 onAddStore = { navigate(R.id.add_store, AddStoreFragment.args(id)) },

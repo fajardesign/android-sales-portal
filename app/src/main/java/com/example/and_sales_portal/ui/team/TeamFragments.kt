@@ -35,7 +35,7 @@ private const val NONE = -1L
 private fun AppContainer.members(tlId: Long): List<Member> {
     val today = operations.today()
     return team.teamOf(tlId).map { p ->
-        Member(p, if (p.status == "ACTIVE") operations.attendanceStatus(p.id, today) else null, partners.assignedStores(p.id), partners.belowMinimum(p.id))
+        Member(p, if (p.status == "ACTIVE") operations.attendanceStatus(p.id, today) else null, partners.assignedStores(p.id))
     }
 }
 
@@ -134,7 +134,7 @@ class AssignFragment : ComposeFragment() {
             is Pending.Error -> AmarBottomSheet(
                 onDismissRequest = { pending = null },
                 title = stringResource(R.string.asg_err_title),
-                // DD review point 5: one toko = one SA/SR; the message names who holds it.
+                // 1.5 FR-MP-002: one toko = one SA/SR; the message names who holds it.
                 description = if (p.error == AssignError.Taken) {
                     stringResource(R.string.asg_err_taken, DemoDirectory.person(p.holder)?.fullName.orEmpty())
                 } else {
@@ -148,11 +148,9 @@ class AssignFragment : ComposeFragment() {
     }
 
     private fun errorText(e: AssignError) = when (e) {
-        AssignError.SaLimit -> R.string.asg_err_sa
-        AssignError.SrLimit -> R.string.asg_err_sr
-        AssignError.OtherArea -> R.string.asg_err_area
-        AssignError.NotOwner -> R.string.asg_err_owner
-        AssignError.NotLeader -> R.string.asg_err_leader
+        AssignError.NotTeam -> R.string.asg_err_team
+        AssignError.NotActive -> R.string.asg_err_not_active
+        AssignError.NotHolder -> R.string.asg_err_not_holder
         AssignError.Taken -> R.string.asg_err_title
     }
 }

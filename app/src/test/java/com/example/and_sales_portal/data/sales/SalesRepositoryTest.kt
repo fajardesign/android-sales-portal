@@ -89,7 +89,7 @@ class SalesRepositoryTest {
         val before = sales.loansOfTl(6).map { it.id }.toSet()
         val bagus = sales.loansOfTl(22).map { it.id }.toSet()
         assertTrue(before.isNotEmpty())
-        partners.transferStores(6, 22, "TL lama dinonaktifkan")
+        partners.transferStores(6, 22)
         assertEquals(before, sales.loansOfTl(6).map { it.id }.toSet())
         assertEquals(bagus, sales.loansOfTl(22).map { it.id }.toSet())
     }

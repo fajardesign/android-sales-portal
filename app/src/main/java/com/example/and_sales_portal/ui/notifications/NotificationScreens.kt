@@ -35,14 +35,18 @@ fun eventTime(at: Long): String =
 
 fun eventTime(e: AssignmentEvent): String = eventTime(e.at)
 
-/** "Anda ditugaskan ke <toko> (<partner>) oleh <TL>." and the other assignment messages (FR-MP-004). */
+/**
+ * Assignment messages (1.5 FR-MP-009, 1.7 FR-006). SA/SR: "Anda ditugaskan ke {toko} ({partner})." / "Penugasan Anda di
+ * {toko} ({partner}) dicabut ({alasan})." TL: "Anda ditugaskan ke {toko} ({partner}) oleh {APL}." / "Anda dilepas dari
+ * {toko} ({partner}). Penugasan {SA/SR} di toko ini juga dicabut."
+ */
 @Composable
 fun notificationText(e: AssignmentEvent): String = when {
-    e.action == AssignmentAction.ASSIGN -> stringResource(R.string.notif_assigned, e.storeName, e.partnerName, PartnerRepository.actorName(e.by))
-    e.by == AssignmentEvent.SYSTEM && e.reason == AssignmentEvent.ACCOUNT_DISABLED -> stringResource(R.string.notif_released_disabled, e.storeName, e.partnerName)
-    e.by == AssignmentEvent.SYSTEM && e.reason == AssignmentEvent.LEADER_CHANGED -> stringResource(R.string.notif_released_leader, e.storeName, e.partnerName, e.source.orEmpty())
-    e.by == AssignmentEvent.SYSTEM -> stringResource(R.string.notif_released_system, e.storeName, e.partnerName)
-    else -> stringResource(R.string.notif_released, e.storeName, e.partnerName, PartnerRepository.actorName(e.by))
+    e.seat == AssignmentEvent.TL && e.action == AssignmentAction.ASSIGN -> stringResource(R.string.notif_tl_assigned, e.storeName, e.partnerName, PartnerRepository.actorName(e.by))
+    e.seat == AssignmentEvent.TL && e.withSales.isNotEmpty() -> stringResource(R.string.notif_tl_released_sales, e.storeName, e.partnerName, e.withSales.joinToString())
+    e.seat == AssignmentEvent.TL -> stringResource(R.string.notif_tl_released, e.storeName, e.partnerName)
+    e.action == AssignmentAction.ASSIGN -> stringResource(R.string.notif_assigned, e.storeName, e.partnerName)
+    else -> stringResource(R.string.notif_sales_released, e.storeName, e.partnerName, e.source ?: PartnerRepository.actorName(e.by))
 }
 
 /** Assignment or revision message (DD review point 2: "Pengajuan <partner> perlu diperbaiki."). */
