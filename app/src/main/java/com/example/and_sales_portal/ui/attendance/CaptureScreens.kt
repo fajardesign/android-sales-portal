@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -109,6 +110,10 @@ fun CaptureScreen(state: CaptureUiState, actions: CaptureActions) {
     if (state.mockDetected) MockLocationDialog(actions.onMockClose)
 }
 
+/**
+ * Step 1 (UI refresh 2026-10-17): the result first — the toko or nearest office, the distance in large type and the
+ * radius badge — then the map and address.
+ */
 @Composable
 private fun LocationStep(state: CaptureUiState, actions: CaptureActions) {
     val c = AmarTheme.colors
@@ -117,11 +122,11 @@ private fun LocationStep(state: CaptureUiState, actions: CaptureActions) {
         stringResource(R.string.cap_location_title),
         stringResource(if (state.mode == CaptureMode.CHECK_IN) R.string.cap_location_desc_visit else R.string.cap_location_desc_attendance),
     )
-    state.storeName?.let { Text(it, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold) }
     if (state.mode != CaptureMode.CHECK_IN) AmarInfoBox(stringResource(R.string.cap_radius_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
-    AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
-        val found = state.found
-        if (found == null) {
+    val found = state.found
+    if (found == null) {
+        AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+            state.storeName?.let { Text(it, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold) }
             Row(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.SequenceGap), verticalAlignment = Alignment.CenterVertically) {
                 if (state.locating) AmarSpinner(c.icon.brand)
                 Text(
@@ -130,44 +135,80 @@ private fun LocationStep(state: CaptureUiState, actions: CaptureActions) {
                     style = AmarTheme.typography.bodyMd,
                 )
             }
-        } else {
-            MapPreview(found.lat, found.lng, { actions.onOpenMaps(found.lat, found.lng) })
-            InfoRow(stringResource(R.string.cap_address), found.address ?: stringResource(R.string.cap_address_unknown))
-            if (state.mode != CaptureMode.CHECK_IN) state.nearest?.name?.let { InfoRow(stringResource(R.string.cap_nearest), it) }
-            state.distance?.let { d ->
-                InfoRow(stringResource(if (state.mode == CaptureMode.CHECK_IN) R.string.cap_distance else R.string.cap_distance_nearest), distanceLabel(d))
+        }
+        return
+    }
+    val place = state.storeName ?: state.nearest?.name
+    state.distance?.let { d ->
+        AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
+            Text(
+                stringResource(if (state.mode == CaptureMode.CHECK_IN) R.string.cap_distance else R.string.cap_distance_nearest),
+                color = c.content.secondary, style = AmarTheme.typography.captionSm,
+            )
+            place?.let { Text(it, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold) }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(distanceLabel(d), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingLg)
                 AmarBadge(
                     stringResource(if (state.inRadius) R.string.cap_in_radius else R.string.cap_out_of_radius),
                     type = if (state.inRadius) AmarBadgeType.Success else AmarBadgeType.Error,
-                    size = AmarBadgeSize.Small,
+                    size = AmarBadgeSize.Medium,
                 )
             }
+            Text(stringResource(R.string.cap_radius_limit), color = c.content.tertiary, style = AmarTheme.typography.captionSm)
         }
+    }
+    AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+        MapPreview(found.lat, found.lng, { actions.onOpenMaps(found.lat, found.lng) })
+        InfoRow(stringResource(R.string.cap_address), found.address ?: stringResource(R.string.cap_address_unknown))
     }
 }
 
+/**
+ * Step 2 (UI refresh 2026-10-17): the confirmed location, the photo area, and before the photo a short guide (face
+ * visible, enough light, time and location printed on the photo, PRD Scope 2 S14).
+ */
 @Composable
 private fun SelfieStep(state: CaptureUiState, actions: CaptureActions) {
     val c = AmarTheme.colors
     StepIntro(2, 2, stringResource(R.string.cap_selfie_title), stringResource(R.string.cap_selfie_desc))
+    if (state.locationOk) {
+        val place = state.storeName ?: state.nearest?.name
+        AmarInfoBox(
+            stringResource(R.string.cap_location_ok, place.orEmpty(), state.distance?.let { distanceLabel(it) }.orEmpty()),
+            Modifier.fillMaxWidth(), type = AmarInfoBoxType.Success,
+        )
+    }
     val bitmap by produceState<ImageBitmap?>(null, state.selfie) { value = state.selfie?.let { loadSelfie(it) } }
     Box(
         Modifier
             .fillMaxWidth()
-            .height(AmarActivityTokens.PreviewHeight)
+            .height(AmarActivityTokens.SelfiePreviewHeight)
             .clip(RoundedCornerShape(AmarActivityTokens.TileRadius))
             .background(c.background.brandSubtle),
         contentAlignment = Alignment.Center,
     ) {
         val b = bitmap
         if (b != null) {
-            Image(b, stringResource(R.string.cap_selfie), Modifier.fillMaxWidth().height(AmarActivityTokens.PreviewHeight), contentScale = ContentScale.Fit)
+            Image(b, stringResource(R.string.cap_selfie), Modifier.fillMaxWidth().height(AmarActivityTokens.SelfiePreviewHeight), contentScale = ContentScale.Fit)
         } else {
-            Icon(painterResource(R.drawable.ds_ic_camera_24), null, Modifier.size(AmarTheme.iconSizes.lg), tint = c.icon.brand)
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.SequenceGap)) {
+                Icon(painterResource(R.drawable.ds_ic_camera_24), null, Modifier.size(AmarTheme.iconSizes.lg), tint = c.icon.brand)
+                Text(stringResource(R.string.cap_no_photo), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            }
         }
     }
     if (state.selfie != null) {
         AmarButton(stringResource(R.string.cap_retake), actions.onTakeSelfie, type = AmarButtonType.Naked, size = AmarButtonSize.Small, leftIcon = painterResource(R.drawable.ds_ic_refresh_24))
+    } else {
+        AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+            Text(stringResource(R.string.cap_tips_title), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
+            listOf(R.string.cap_tip_face, R.string.cap_tip_light, R.string.cap_tip_watermark).forEach { tip ->
+                Row(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.SequenceGap), verticalAlignment = Alignment.Top) {
+                    Icon(painterResource(R.drawable.ds_ic_check_24), null, Modifier.size(AmarTheme.iconSizes.md), tint = c.icon.brand)
+                    Text(stringResource(tip), color = c.content.primary, style = AmarTheme.typography.bodySm)
+                }
+            }
+        }
     }
     if (!state.online) AmarInfoBox(stringResource(R.string.cap_offline), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
 }

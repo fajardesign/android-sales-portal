@@ -46,6 +46,9 @@ import com.example.and_sales_portal.ui.common.MapPreview
 import com.example.and_sales_portal.ui.common.PersistentAction
 import com.example.and_sales_portal.ui.common.ScreenScaffold
 import com.example.and_sales_portal.ui.common.SectionTitle
+import com.example.and_sales_portal.designsystem.components.layout.AmarDivider
+import com.example.and_sales_portal.ui.common.ListRow
+import com.example.and_sales_portal.ui.common.ProgressSummary
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 
@@ -96,10 +99,9 @@ data class VisitListUiState(
 )
 
 /**
- * Spec: ATT-03 Kunjungan (PRD v3 D3; PRD Scope 2): this week's progress (each toko once a week), today's visits, and the
- * toko grouped by partner with "Sudah dikunjungi minggu ini" / "Belum dikunjungi" and `Check-In Sekarang` (from 12:00 in
- * the area zone, after check in kerja); a toko visited this week cannot be checked in again until Monday (S12). SA/SR: tab Kunjungan (no back); TL: Aktivitas › Kunjungan
- * Saya.
+ * Spec: ATT-03 Kunjungan (PRD v3 D3; PRD Scope 2; UI refresh 2026-10-17): this week's progress (each toko once a week),
+ * then the toko to visit as rows (not visited first) with `Check-In` (from 12:00 in the area zone, after check in kerja;
+ * a toko visited this week waits until Monday, S12), then today's visits as rows that open ATT-04.
  */
 @Composable
 fun VisitListScreen(
@@ -118,17 +120,9 @@ fun VisitListScreen(
                 Text(stringResource(R.string.vis_week), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
                 VisitWeekBadge(s.week)
             }
-            Text(
-                stringResource(
-                    when {
-                        s.visitedToday -> R.string.vis_today_done
-                        else -> R.string.vis_today_not_yet
-                    },
-                ),
-                color = c.content.primary,
-                style = AmarTheme.typography.bodyMd,
-            )
-            Text(stringResource(R.string.vis_week_rule), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+            if (s.week.target > 0) ProgressSummary(stringResource(R.string.home_week_progress, s.week.visited, s.week.target), s.week.visited, s.week.target)
+            Text(stringResource(if (s.visitedToday) R.string.vis_today_done else R.string.vis_today_not_yet), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            Text(stringResource(R.string.vis_week_rule), color = c.content.tertiary, style = AmarTheme.typography.captionSm)
         }
         if (s.online) {
             when (s.block) {
@@ -141,39 +135,42 @@ fun VisitListScreen(
                 VisitCheckInBlock.VisitedThisWeek, VisitCheckInBlock.StoreNotAssigned, null -> Unit
             }
         }
+        SectionTitle(stringResource(R.string.vis_stores))
+        val stores = s.groups.flatMap { g -> g.stores.map { g.partner to it } }.sortedBy { it.second.visited }
+        if (stores.isEmpty()) {
+            Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        } else {
+            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+                Column {
+                    stores.forEachIndexed { i, (p, ws) ->
+                        if (i > 0) AmarDivider()
+                        // S12: one visit per toko per week; check-in opens again on Monday.
+                        val subtitle = if (ws.visited) stringResource(R.string.vis_row_visited, p.name) else p.name
+                        ListRow(ws.store.name, subtitle) {
+                            if (ws.visited) {
+                                VisitedBadge(true, partner = false)
+                            } else {
+                                AmarButton(stringResource(R.string.vis_check_in_short), { onCheckIn(ws.store) }, type = AmarButtonType.Primary, size = AmarButtonSize.Small, enabled = s.online && s.block == null)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
             SectionTitle(stringResource(R.string.vis_today))
             Text(s.date, color = c.content.secondary, style = AmarTheme.typography.bodySm)
         }
-        if (s.visits.isEmpty()) Text(stringResource(R.string.vis_empty), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        s.visits.forEach { item ->
-            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onOpen(item) }) {
-                item.visit.checkIn?.let { Text(stringResource(R.string.att_time, Fmt.timeLabel(it, item.visit.employeeId)), color = c.content.primary, style = AmarTheme.typography.headingSm) }
-                Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
-                    Text(item.store.name, color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
-                    Text(item.partner.name, color = c.content.secondary, style = AmarTheme.typography.bodySm)
-                }
-                Badges(item)
-            }
-        }
-        SectionTitle(stringResource(R.string.vis_stores))
-        if (s.groups.isEmpty()) Text(stringResource(R.string.vis_no_stores), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        s.groups.forEach { g ->
+        if (s.visits.isEmpty()) {
+            Text(stringResource(R.string.vis_empty), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        } else {
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                    Text(g.partner.name, Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
-                    VisitedBadge(g.visited, partner = true)
-                }
-                g.stores.forEach { ws ->
-                    Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
-                            Text(ws.store.name, Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
-                            VisitedBadge(ws.visited, partner = false)
-                        }
-                        Text(ws.store.address, color = c.content.tertiary, style = AmarTheme.typography.bodySm, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        // S12: one visit per toko per week; check-in opens again on Monday.
-                        if (ws.visited) Text(stringResource(R.string.vis_next_monday), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
-                        AmarButton(stringResource(R.string.vis_check_in), { onCheckIn(ws.store) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = s.online && s.block == null && !ws.visited)
+                Column {
+                    s.visits.forEachIndexed { i, item ->
+                        if (i > 0) AmarDivider()
+                        val time = item.visit.checkIn?.let { Fmt.timeLabel(it, item.visit.employeeId) }.orEmpty()
+                        val subtitle = if (item.pendingSync) stringResource(R.string.vis_row_pending, item.partner.name) else item.partner.name
+                        ListRow(stringResource(R.string.vis_row_title, time, item.store.name), subtitle, onClick = { onOpen(item) }) { VisitStatusBadge(item.status) }
                     }
                 }
             }
