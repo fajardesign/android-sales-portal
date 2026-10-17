@@ -139,7 +139,6 @@ fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Uni
                 InfoRow(stringResource(R.string.team_on_time), stringResource(R.string.team_days_value, pr.onTime))
                 InfoRow(stringResource(R.string.team_late), stringResource(R.string.team_days_value, pr.late))
                 InfoRow(stringResource(R.string.team_absent), stringResource(R.string.team_days_value, pr.absent))
-                InfoRow(stringResource(R.string.team_days_off), stringResource(R.string.team_days_value, pr.daysOff))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.team_week_visits), Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm)
                     VisitWeekBadge(pr.thisWeek)
@@ -227,12 +226,11 @@ private fun StoreRow(item: Pair<Partner, Store>, action: String, type: AmarButto
 }
 
 /** A workday of TL-04 with the visits done on it. */
-data class WeekDay(val date: LocalDate, val off: Boolean, val visits: List<VisitItem>)
+data class WeekDay(val date: LocalDate, val visits: List<VisitItem>)
 
 /**
  * Spec: TL-04 Jadwal Kunjungan (PRD v3 C7; stakeholder revision 2026-10-08: no hourly plan). Per SA/SR and week
- * (Monday–Saturday): progress against the weekly target, visits done per day, and `Tandai Libur` / `Batalkan Libur` for
- * today and later days.
+ * (Monday–Saturday): progress against the weekly target and visits done per day. No "Tandai Libur" (PRD Scope 2 S10).
  */
 @Composable
 fun ScheduleScreen(
@@ -247,7 +245,6 @@ fun ScheduleScreen(
     onBack: () -> Unit,
     onPrevWeek: () -> Unit,
     onNextWeek: () -> Unit,
-    onToggleOff: (LocalDate) -> Unit,
 ) {
     val c = AmarTheme.colors
     ScreenScaffold(stringResource(R.string.act_schedule), onBack) {
@@ -274,9 +271,8 @@ fun ScheduleScreen(
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(f.format(d.date), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
-                    if (d.off) AmarBadge(stringResource(R.string.sch_day_off), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
                 }
-                if (d.visits.isEmpty() && !d.off) Text(stringResource(R.string.sch_no_visit), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+                if (d.visits.isEmpty()) Text(stringResource(R.string.sch_no_visit), color = c.content.secondary, style = AmarTheme.typography.bodySm)
                 d.visits.forEach { v ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
                         Text(
@@ -285,12 +281,6 @@ fun ScheduleScreen(
                         )
                         VisitStatusBadge(v.status)
                     }
-                }
-                if (!d.date.isBefore(today)) {
-                    AmarButton(
-                        stringResource(if (d.off) R.string.sch_unmark_off else R.string.sch_mark_off), { onToggleOff(d.date) },
-                        type = AmarButtonType.Naked, size = AmarButtonSize.Small, leftIcon = painterResource(R.drawable.ds_ic_calendar_24),
-                    )
                 }
             }
         }

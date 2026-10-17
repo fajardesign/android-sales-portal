@@ -14,7 +14,7 @@ class ActivityRulesTest {
     private val today = LocalDate.of(2026, 10, 7)
     /** Local time of employee 11 (Makassar, WITA). */
     private fun at(time: String, date: LocalDate = today) = date.atTime(LocalTime.parse(time)).atZone(ActivityRules.zoneOf(11)).toInstant().toEpochMilli()
-    private fun punch(time: String) = Punch(at(time), 0.0, 0.0)
+    private fun punch(time: String, date: LocalDate = today) = Punch(at(time, date), 0.0, 0.0)
 
     @Test
     fun attendanceStatus() {
@@ -29,7 +29,15 @@ class ActivityRulesTest {
         val wib = today.atTime(LocalTime.of(10, 0)).atZone(java.time.ZoneId.of("Asia/Jakarta")).toInstant().toEpochMilli()
         assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(wib, 0.0, 0.0)), today, today))
         assertEquals("WITA", com.example.and_sales_portal.data.demo.DemoDirectory.area(1)?.zoneLabel)
-        assertEquals(AttendanceStatus.DAY_OFF, ActivityRules.attendanceStatus(null, today.minusDays(1), today, dayOff = true))
+        // PRD Scope 2 S13: check in without check out once the day is over = Absen; today it is still on time / late.
+        val yesterday = today.minusDays(1)
+        assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(Attendance(11, yesterday.toString(), punch("09:30", yesterday)), yesterday, today))
+        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, yesterday.toString(), punch("09:30", yesterday), punch("17:30", yesterday)), yesterday, today))
+        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("09:30")), today, today))
+        // S10: no Libur; Sunday is not a workday.
+        val sunday = today.plusDays(4)
+        assertEquals(java.time.DayOfWeek.SUNDAY, sunday.dayOfWeek)
+        assertEquals(AttendanceStatus.NOT_WORKDAY, ActivityRules.attendanceStatus(null, sunday, sunday))
     }
 
     @Test
@@ -53,27 +61,24 @@ class ActivityRulesTest {
     }
 
     @Test
-    fun deviceZoneIsSavedAndDecides() {
+    fun areaZoneDecidesNotTheDevice() {
         val original = ActivityRules.systemZone
         try {
-            // PRD alignment 2026-10-09: WIB, WITA, WIT from the device; another zone falls back to the area (Makassar WITA).
-            ActivityRules.systemZone = { java.time.ZoneId.of("Asia/Jayapura") }
-            assertEquals("Asia/Jayapura", ActivityRules.deviceZone(11).id)
-            assertEquals("WIT", ActivityRules.label(ActivityRules.deviceZone(11)))
-            ActivityRules.systemZone = { java.time.ZoneId.of("UTC") }
-            assertEquals("Asia/Makassar", ActivityRules.deviceZone(11).id)
-            // The zone saved with the check in decides on time: 09:30 WIB (10:30 WITA) is on time when checked in on WIB.
+            // PRD Scope 2 S8: the area zone (Makassar WITA for Siti) decides, whatever the device says.
+            ActivityRules.systemZone = { java.time.ZoneId.of("Asia/Jakarta") }
             val wib = java.time.ZoneId.of("Asia/Jakarta")
+            // 09:30 WIB is 10:30 WITA: late, even with a WIB device or a punch saved in WIB.
             val at = today.atTime(LocalTime.of(9, 30)).atZone(wib).toInstant().toEpochMilli()
-            assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, 0.0, 0.0, zone = "Asia/Jakarta")), today, today))
-            // Saved before zones existed: the area zone (WITA) decides, 10:30 WITA is late.
-            assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, 0.0, 0.0)), today, today))
-            // Visit check-in opens at 12:00 on the device zone: 11:30 WIB is 12:30 WITA but 11:30 on a WIB device.
-            ActivityRules.systemZone = { wib }
-            val noonWib = today.atTime(LocalTime.of(11, 30)).atZone(wib).toInstant()
-            assertTrue(!ActivityRules.visitOpen(noonWib, 11))
+            assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, 0.0, 0.0, zone = "Asia/Jakarta")), today, today))
+            // Visit check-in opens at 12:00 WITA: 11:30 WIB (12:30 WITA) is open on a WIB device.
+            assertTrue(ActivityRules.visitOpen(today.atTime(LocalTime.of(11, 30)).atZone(wib).toInstant(), 11))
+            assertTrue(!ActivityRules.visitOpen(today.atTime(LocalTime.of(10, 59)).atZone(wib).toInstant(), 11))
+            // The display zone is the area's, not the device's.
+            ActivityRules.useArea(1)
+            assertEquals("WITA", ActivityRules.ZONE_LABEL)
         } finally {
             ActivityRules.systemZone = original
+            ActivityRules.useArea(5)
         }
     }
 

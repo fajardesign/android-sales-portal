@@ -47,6 +47,7 @@ import com.example.and_sales_portal.ui.common.PersistentAction
 import com.example.and_sales_portal.ui.common.ScreenScaffold
 import com.example.and_sales_portal.ui.common.SectionTitle
 import kotlinx.coroutines.delay
+import java.time.LocalDate
 
 /** A visit with its toko and partner, as shown on ATT-03 … ATT-05. */
 data class VisitItem(val visit: Visit, val store: Store, val partner: Partner, val status: VisitStatus) {
@@ -86,19 +87,18 @@ data class VisitListUiState(
     val date: String,
     val week: VisitWeek,
     val visitedToday: Boolean,
-    val dayOff: Boolean,
-    /** Toko to visit this week (SA/SR: assigned; TL: own partners) by partner, with their status. */
+    /** Toko to visit this week (the user's kursi toko, held now) by partner, with their status. */
     val groups: List<WeekPartner>,
     val visits: List<VisitItem>,
     val online: Boolean,
-    /** Why check-in is not possible right now, if so. */
+    /** Why no check-in is possible right now (check in kerja first, before 12:00), if so. */
     val block: VisitCheckInBlock?,
 )
 
 /**
- * Spec: ATT-03 Kunjungan (PRD v3 D3; PRD alignment 2026-10-09): this week's progress (each assigned toko once a week),
- * today's visits, and the toko grouped by partner with "Sudah dikunjungi minggu ini" / "Belum dikunjungi" and
- * `Check-In Sekarang` (from 12:00 local, after check in kerja). SA/SR: tab Kunjungan (no back); TL: Aktivitas › Kunjungan
+ * Spec: ATT-03 Kunjungan (PRD v3 D3; PRD Scope 2): this week's progress (each toko once a week), today's visits, and the
+ * toko grouped by partner with "Sudah dikunjungi minggu ini" / "Belum dikunjungi" and `Check-In Sekarang` (from 12:00 in
+ * the area zone, after check in kerja); a toko visited this week cannot be checked in again until Monday (S12). SA/SR: tab Kunjungan (no back); TL: Aktivitas › Kunjungan
  * Saya.
  */
 @Composable
@@ -121,7 +121,6 @@ fun VisitListScreen(
             Text(
                 stringResource(
                     when {
-                        s.dayOff -> R.string.vis_today_off
                         s.visitedToday -> R.string.vis_today_done
                         else -> R.string.vis_today_not_yet
                     },
@@ -139,9 +138,7 @@ fun VisitListScreen(
                     buttonLabel = stringResource(R.string.att_clock_in), onButtonClick = onWorkCheckIn,
                 )
                 VisitCheckInBlock.BeforeStart -> AmarInfoBox(stringResource(R.string.vis_before_start, ActivityRules.ZONE_LABEL), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
-                VisitCheckInBlock.DayOff -> AmarInfoBox(stringResource(R.string.vis_day_off_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
-                VisitCheckInBlock.Ongoing -> AmarInfoBox(stringResource(R.string.vis_ongoing_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
-                VisitCheckInBlock.StoreNotAssigned, null -> Unit
+                VisitCheckInBlock.VisitedThisWeek, VisitCheckInBlock.StoreNotAssigned, null -> Unit
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
@@ -173,10 +170,10 @@ fun VisitListScreen(
                             Text(ws.store.name, Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                             VisitedBadge(ws.visited, partner = false)
                         }
-                        // Assigned mid-week (decision 2026-10-14): can be visited now, counts from next week.
-                        if (!ws.counted) Text(stringResource(R.string.vis_counted_next_week), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
                         Text(ws.store.address, color = c.content.tertiary, style = AmarTheme.typography.bodySm, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        AmarButton(stringResource(R.string.vis_check_in), { onCheckIn(ws.store) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = s.online && s.block == null)
+                        // S12: one visit per toko per week; check-in opens again on Monday.
+                        if (ws.visited) Text(stringResource(R.string.vis_next_monday), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+                        AmarButton(stringResource(R.string.vis_check_in), { onCheckIn(ws.store) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = s.online && s.block == null && !ws.visited)
                     }
                 }
             }
@@ -224,12 +221,17 @@ fun VisitDetailScreen(
             }
         }
         val checkOut = v.checkOut
-        if (item.status == VisitStatus.DONE && checkIn != null && checkOut != null) {
+        if (item.status == VisitStatus.DONE && checkIn != null) {
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
                 SectionTitle(stringResource(R.string.vis_summary))
                 InfoRow(stringResource(R.string.vis_check_in_at), stringResource(R.string.att_time, Fmt.timeLabel(checkIn, v.employeeId)))
-                InfoRow(stringResource(R.string.vis_check_out_at), stringResource(R.string.att_time, Fmt.timeLabel(checkOut, v.employeeId)))
-                InfoRow(stringResource(R.string.vis_duration), duration(checkOut.at - checkIn.at))
+                if (checkOut != null) {
+                    InfoRow(stringResource(R.string.vis_check_out_at), stringResource(R.string.att_time, Fmt.timeLabel(checkOut, v.employeeId)))
+                    InfoRow(stringResource(R.string.vis_duration), duration(checkOut.at - checkIn.at))
+                } else {
+                    // S13: check-out is optional; the toko counts as visited from the check-in.
+                    InfoRow(stringResource(R.string.vis_check_out_at), stringResource(R.string.vis_no_check_out))
+                }
                 v.note?.let { InfoRow(stringResource(R.string.vis_note), it) }
             }
         }
@@ -247,7 +249,8 @@ fun VisitDetailScreen(
 }
 
 /**
- * Spec: ATT-05 Check Out Kunjungan (PRD v3 D3: optional note → summary). Works offline: saved and sent later.
+ * Spec: ATT-05 Check Out Kunjungan (PRD v3 D3; PRD Scope 2 S13: optional, with an optional note, until 23:59 of the visit
+ * day). Works offline: saved and sent later.
  */
 @Composable
 fun VisitCheckOutScreen(item: VisitItem, note: String, online: Boolean, now: Long, onNote: (String) -> Unit, onBack: () -> Unit, onCheckOut: () -> Unit) {
@@ -276,10 +279,10 @@ fun duration(millis: Long): String {
     return stringResource(R.string.vis_duration_value, (minutes / 60).toInt(), (minutes % 60).toInt())
 }
 
-/** Visit with its toko, partner and status; `null` when the toko is no longer in the data. */
-fun visitItem(v: Visit, store: Store?, partner: Partner?): VisitItem? {
+/** Visit with its toko, partner and status on [today] (area zone); `null` when the toko is no longer in the data. */
+fun visitItem(v: Visit, store: Store?, partner: Partner?, today: LocalDate = LocalDate.now(ActivityRules.zoneOf(v.employeeId))): VisitItem? {
     if (store == null || partner == null) return null
-    return VisitItem(v, store, partner, ActivityRules.visitStatus(v))
+    return VisitItem(v, store, partner, ActivityRules.visitStatus(v, today))
 }
 
 private const val TICK_MILLIS = 1_000L

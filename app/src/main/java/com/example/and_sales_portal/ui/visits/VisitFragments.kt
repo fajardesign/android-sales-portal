@@ -44,16 +44,16 @@ abstract class VisitListFragment(private val asTab: Boolean) : ComposeFragment()
         val today = repo.today()
         val state = remember(data, partners, online) {
             val groups = repo.visitPartners(today)
-            val visits = repo.visitsOn(today).mapNotNull { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) }
+            val visits = repo.visitsOn(today).mapNotNull { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId), today) }
             VisitListUiState(
                 date = Fmt.longDate(today),
                 week = repo.visitWeek(today),
                 visitedToday = visits.isNotEmpty(),
-                dayOff = repo.isDayOff(today),
                 groups = groups,
                 visits = visits,
                 online = online,
-                block = groups.firstOrNull()?.stores?.firstOrNull()?.let { repo.checkInBlock(it.store.id) },
+                // The day's gate (check in kerja, 12:00); "visited this week" is shown per toko.
+                block = groups.flatMap { it.stores }.firstOrNull { !it.visited }?.let { repo.checkInBlock(it.store.id) },
             )
         }
         WithToast(incoming ?: synced, { clearIncoming(); synced = null }) {
@@ -85,7 +85,7 @@ class VisitDetailFragment : ComposeFragment() {
         val syncedMessage = SyncPending(repo, online)
         var synced by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(syncedMessage) { if (syncedMessage != null) synced = syncedMessage }
-        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) } }
+        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId), repo.today()) } }
         if (item == null) {
             LaunchedEffect(Unit) { back() }
             return
@@ -118,7 +118,7 @@ class VisitCheckOutFragment : ComposeFragment() {
         val online by container.connectivity.online.collectAsState()
         var note by rememberSaveable { mutableStateOf("") }
         var confirm by remember { mutableStateOf(false) }
-        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId)) } }
+        val item = remember(data) { repo.visit(visitId)?.let { visitItem(it, repo.store(it.storeId), repo.partnerOf(it.storeId), repo.today()) } }
         val checkIn = item?.visit?.checkIn
         if (item == null || checkIn == null) {
             LaunchedEffect(Unit) { back() }
@@ -134,10 +134,15 @@ class VisitCheckOutFragment : ComposeFragment() {
                     confirm = false
                     val at = repo.now().toEpochMilli()
                     // PRD D3: the check-out location is not recorded; the visit keeps the check-in location.
-                    repo.checkOut(visitId, Punch(at, checkIn.lat, checkIn.lng, checkIn.address, synced = online, zone = ActivityRules.deviceZone(repo.userId).id), note)
-                    val minutes = (at - checkIn.at) / 60_000
-                    val d = getString(R.string.vis_duration_value, (minutes / 60).toInt(), (minutes % 60).toInt())
-                    backWithToast(getString(R.string.vis_check_out_done, d))
+                    val punch = Punch(at, checkIn.lat, checkIn.lng, checkIn.address, synced = online, zone = ActivityRules.zoneOf(repo.userId).id, deviceZone = ActivityRules.systemZone().id)
+                    if (repo.checkOut(visitId, punch, note)) {
+                        val minutes = (at - checkIn.at) / 60_000
+                        val d = getString(R.string.vis_duration_value, (minutes / 60).toInt(), (minutes % 60).toInt())
+                        backWithToast(getString(R.string.vis_check_out_done, d))
+                    } else {
+                        // S13: check-out closes at 23:59 of the visit day.
+                        backWithToast(getString(R.string.vis_check_out_closed))
+                    }
                 },
                 onDismiss = { confirm = false },
             )

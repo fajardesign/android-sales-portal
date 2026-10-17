@@ -47,7 +47,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 | ATT-01 … ATT-05 | Absensi, Check In/Out Kerja, Kunjungan (target mingguan), Check-in/out | `ui/attendance/`, `ui/visits/`, `data/activity/` |
 | REG-01 … REG-12 | Tab Partner, pendaftaran, persetujuan (REG-12), Pengajuan, revisi | `ui/partner/`, `ui/partnerregistration/`, `data/partner/` |
 | PRT-01, PRT-02 | Detail Partner, Tambah Toko | `ui/partner/` |
-| TL-01 … TL-04 | Tim, Assign SA/SR (per toko), Jadwal Kunjungan (mingguan + libur; TL-05 dihapus) | `ui/team/`, `data/team/` |
+| TL-01 … TL-04 | Tim, Assign SA/SR (per toko), Jadwal Kunjungan (mingguan; TL-05 dihapus, Tandai Libur dihapus PRD Scope 2) | `ui/team/`, `data/team/` |
 | TL-06 … TL-10 | Beranda TL, Produktivitas, Kinerja Penjualan, Pinjaman, Insentif | `ui/dashboard/`, `data/sales/` |
 | SLS-01 … SLS-04 | Beranda SA/SR, tab Kinerja | `ui/dashboard/` |
 | AKN-01 | Akun | `ui/account/`, `ui/shell/TabFragments.kt` |
@@ -55,7 +55,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 ## Arsitektur singkat
 
 - `MainActivity` + `nav_main` (satu Fragment per Flow ID, isi Compose lewat `ComposeFragment`); bottom navigation per role (`ui/shell/Shell.kt`). Pendaftaran partner adalah nav graph `nav_partner_registration` yang di-include, ViewModel di-scope ke graph.
-- `SalesApp.AppContainer`: Supabase (akun), `PartnerRepository` (partner bersama di perangkat), `OperationsRepository` (absensi, kunjungan, libur semua SA/SR/TL), `TeamService`, `SalesRepository` (pinjaman, target, insentif), `LocationService`, `Connectivity`, `SimulationSettings`.
+- `SalesApp.AppContainer`: Supabase (akun), `PartnerRepository` (partner bersama di perangkat), `OperationsRepository` (absensi dan kunjungan semua SA/SR/TL, zona area), `TeamService`, `SalesRepository` (pinjaman, target, insentif), `LocationService`, `Connectivity`, `SimulationSettings`.
 - Data disimpan di `filesDir/demo/` (`partners.json`, `operations.json`, draf pendaftaran per akun, dokumen dan selfie). **Akun › Reset data demo** mengembalikan semuanya ke data contoh.
 - Design system: hanya komponen `designsystem/components/`; komponen baru di `components/extended/` (`AmarBottomNavigation`, `AmarProgressBar`), tercatat di `docs/design-system/components.md`.
 

@@ -48,7 +48,7 @@ class TeamScreensScreenshotTest {
     @Test
     fun teamAndDetail() {
         capture("01_team") { TeamListScreen(members) {} }
-        val pr = Productivity(6, 5, 4, 1, 1, 0, listOf(VisitWeek(today.minusDays(2), 2, 6)), VisitWeek(today.minusDays(2), 2, 6))
+        val pr = Productivity(6, 5, 4, 1, 1, listOf(VisitWeek(today.minusDays(2), 2, 6)), VisitWeek(today.minusDays(2), 2, 6))
         capture("02_detail") { MemberDetailScreen(members[0], pr, {}, {}, {}) }
     }
 
@@ -82,18 +82,17 @@ class TeamScreensScreenshotTest {
         val monday = today.minusDays(2)
         fun item(d: LocalDate, n: Int, t: String, done: Boolean = true) = visitItem(
             Visit("v$d$n", 11, stores[n % stores.size].id, d.toString(), if (done) VisitState.DONE else VisitState.IN_PROGRESS, checkIn = Punch(at(d, t), 0.0, 0.0), checkOut = if (done) Punch(at(d, "15:00"), 0.0, 0.0) else null),
-            stores[n % stores.size], partners.first { p -> p.stores.any { it.id == stores[n % stores.size].id } },
+            stores[n % stores.size], partners.first { p -> p.stores.any { it.id == stores[n % stores.size].id } }, today,
         )!!
         val days = (0L..5L).map { monday.plusDays(it) }.map { d ->
             when (d.dayOfWeek.value) {
-                1 -> WeekDay(d, false, listOf(item(d, 0, "12:10")))
-                2 -> WeekDay(d, false, listOf(item(d, 1, "13:40"), item(d, 2, "15:30")))
-                3 -> WeekDay(d, false, listOf(item(d, 2, "12:20", done = false)))
-                6 -> WeekDay(d, true, emptyList())
-                else -> WeekDay(d, false, emptyList())
+                1 -> WeekDay(d, listOf(item(d, 0, "12:10")))
+                2 -> WeekDay(d, listOf(item(d, 1, "13:40"), item(d, 2, "15:30")))
+                3 -> WeekDay(d, listOf(item(d, 2, "12:20", done = false)))
+                                else -> WeekDay(d, emptyList())
             }
         }
-        capture("04_schedule") { ScheduleScreen(listOf(person(11)), person(11), {}, monday, VisitWeek(monday, 3, 5), days, today, true, {}, {}, {}, {}) }
-        capture("04_schedule_no_store") { ScheduleScreen(listOf(person(11)), person(11), {}, monday, VisitWeek(monday, 0, 6), days.map { it.copy(visits = emptyList(), off = false) }, today, false, {}, {}, {}, {}) }
+        capture("04_schedule") { ScheduleScreen(listOf(person(11)), person(11), {}, monday, VisitWeek(monday, 3, 5), days, today, true, {}, {}, {}) }
+        capture("04_schedule_no_store") { ScheduleScreen(listOf(person(11)), person(11), {}, monday, VisitWeek(monday, 0, 6), days.map { it.copy(visits = emptyList()) }, today, false, {}, {}, {}) }
     }
 }

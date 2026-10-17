@@ -8,11 +8,13 @@ import com.example.and_sales_portal.data.activity.Punch
 import com.example.and_sales_portal.data.device.LocationResult
 import com.example.and_sales_portal.data.device.LocationService
 import com.example.and_sales_portal.data.device.Place
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /** What the capture flow records. */
@@ -109,9 +111,17 @@ class CaptureViewModel(
         return false
     }
 
+    /** S14: the photo gets the time (area zone) and GPS burned in before it is shown and sent. */
     fun selfieTaken(path: String) {
-        _state.value.selfie?.takeIf { it != path }?.let { File(it).delete() }
-        _state.update { it.copy(selfie = path, sheet = null) }
+        val found = _state.value.found
+        viewModelScope.launch {
+            if (found != null) {
+                val lines = SelfieWatermark.lines(repo.now().toEpochMilli(), ActivityRules.zoneOf(repo.userId), found.lat, found.lng)
+                withContext(Dispatchers.IO) { SelfieWatermark.burn(path, lines) }
+            }
+            _state.value.selfie?.takeIf { it != path }?.let { File(it).delete() }
+            _state.update { it.copy(selfie = path, sheet = null) }
+        }
     }
 
     fun submit() {
@@ -119,7 +129,9 @@ class CaptureViewModel(
         val found = s.found ?: return
         if (!s.online || s.selfie == null || !s.locationOk || _finished.value != null) return
         val at = repo.now().toEpochMilli()
-        val punch = Punch(at, found.lat, found.lng, found.address ?: s.nearest?.address, s.selfie, place = s.nearest?.name, distance = s.distance, zone = ActivityRules.deviceZone(repo.userId).id)
+        val punch = Punch(at, found.lat, found.lng, found.address ?: s.nearest?.address, s.selfie, place = s.nearest?.name, distance = s.distance,
+            // PRD Scope 2 S8: the area zone decides; the device zone is kept for audit only.
+            zone = ActivityRules.zoneOf(repo.userId).id, deviceZone = ActivityRules.systemZone().id)
         when (s.mode) {
             CaptureMode.CLOCK_IN -> repo.clockIn(punch)
             CaptureMode.CLOCK_OUT -> repo.clockOut(punch)

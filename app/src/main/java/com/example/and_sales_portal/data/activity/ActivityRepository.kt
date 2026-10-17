@@ -22,7 +22,8 @@ class ActivityRepository(
     val data: StateFlow<OpsData> get() = ops.data
 
     fun now(): Instant = ops.now()
-    fun today(): LocalDate = ops.today()
+    /** Today in the zone of the user's area (PRD Scope 2 S8). */
+    fun today(): LocalDate = ops.todayOf(userId)
 
     fun stores(): List<Store> = DemoSeed.storesOf(partners.partners.value, userId, role)
 
@@ -35,20 +36,19 @@ class ActivityRepository(
     fun partnerOf(storeId: String): Partner? = partners.partners.value.firstOrNull { p -> p.stores.any { it.id == storeId } }
 
     fun attendanceOf(date: LocalDate): Attendance? = ops.attendanceOf(userId, date)
-    fun isDayOff(date: LocalDate): Boolean = ops.isDayOff(userId, date)
     fun visit(id: String): Visit? = ops.visit(id)
     fun visitsOn(date: LocalDate): List<Visit> = ops.visitsOf(userId, date)
     fun visitWeek(date: LocalDate): VisitWeek = ops.visitWeek(userId, ActivityRules.weekStart(date))
     fun weekPartners(date: LocalDate): List<WeekPartner> = ops.weekPartners(userId, ActivityRules.weekStart(date))
     /** Toko held today, for check-in (see [OperationsRepository.visitPartners]). */
     fun visitPartners(date: LocalDate): List<WeekPartner> = ops.visitPartners(userId, date)
-    fun ongoingVisit(): Visit? = ops.ongoingVisit(userId)
+    fun ongoingVisits(): List<Visit> = ops.ongoingVisits(userId)
     fun checkInBlock(storeId: String): VisitCheckInBlock? = ops.checkInBlock(userId, storeId)
 
     fun clockIn(punch: Punch) = ops.clockIn(userId, punch)
     fun clockOut(punch: Punch) = ops.clockOut(userId, punch)
     fun checkIn(storeId: String, punch: Punch): Visit? = ops.checkIn(userId, storeId, punch)
-    fun checkOut(visitId: String, punch: Punch, note: String?) = ops.checkOut(visitId, punch, note)
+    fun checkOut(visitId: String, punch: Punch, note: String?): Boolean = ops.checkOut(visitId, punch, note)
 
     /** Number of check-outs saved offline. */
     fun pendingSync(): Int = ops.pendingSync(userId)
