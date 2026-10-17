@@ -443,3 +443,15 @@ Komponen di `designsystem/components/extended/` dibuat untuk aplikasi Sales (PRD
 - **Nilai**: tinggi 8 (`AmarProgressBarTokens.Height` = Space 8), radius penuh. Figma layar memakai warna mentah (#E6E8EA, #168B5B); dipetakan ke `Background/Subtle` (Secondary 100, sama dengan #E6E8EA) dan `Feedback/Success/Icon`.
 - **Kartu insentif**: tile "Earned/Pending" di Figma memakai warna mentah (#ECF8F2/#168B5B, #FFF7E6/#B54708); aplikasi memakai `Feedback/Success` dan `Feedback/Warning` (surface + text).
 - **Perlu dari desainer**: komponen Progress Bar di Figma DS dan token warna untuk tile insentif.
+
+## Tata letak layar (penyegaran UI 2026-10-17, bukan komponen DS)
+Pola tata letak yang disusun dari komponen dan token DS yang sudah ada untuk Beranda TL/SA/SR, Kunjungan dan Check-in, dengan referensi pola aplikasi perbankan (menu cepat, baris daftar). Kode: `ui/common/LayoutParts.kt`; token di `AmarActivityTokens` (`ScreenTokens.kt`). Tidak ada padanan di Figma DS; **perlu konfirmasi desainer** sebelum dijadikan komponen.
+
+| Pola | Dipakai di | Disusun dari | Token baru (tidak ada di Figma) |
+|---|---|---|---|
+| `QuickActions` (menu cepat: ikon dalam lingkaran + label di bawah, 4 per baris) | Beranda TL › Pintasan | ikon DS 24 (`icon.brand`), `background.brandSubtle`, `typography.captionSm` | `QuickActionBox` = Space 48, `QuickActionGap` = Space 8 |
+| `ListRow` (judul, subjudul ≤ 2 baris, isi kanan (badge/tombol), chevron bila bisa diketuk) | Beranda SA/SR (toko, partner), Kunjungan (toko, kunjungan hari ini) | `typography.labelMdSemibold` / `bodySm`, `ds_ic_chevron_right_24` (`icon.secondary`), `AmarDivider` antarbaris di dalam `AmarCard` Border/Shadow | `ListRowPadding` = Space 12 |
+| `ProgressSummary` (*"n dari m toko dikunjungi"* + bar) | Beranda SA/SR, Beranda TL, Kunjungan | `AmarProgressBar` (extended), `typography.bodyMd` | — |
+| Area foto Selfie lebih tinggi | Check-in langkah 2 | `background.brandSubtle`, `TileRadius` | `SelfiePreviewHeight` = Space 128 × 2 |
+
+- **Perlu dari desainer**: komponen Menu cepat dan List item di Figma DS (atau keputusan memakai Card + teks), serta pembaruan layar terkait di Figma *Sales - Partner Dashboard - Android* (Beranda TL/SA/SR, Kunjungan, Check-in).
