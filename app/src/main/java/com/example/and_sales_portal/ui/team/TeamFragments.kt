@@ -70,6 +70,7 @@ class MemberDetailFragment : ComposeFragment() {
                 member, productivity, ::back,
                 onSchedule = { navigate(R.id.schedule, bundleOf(ARG_EMPLOYEE to id)) },
                 onAssign = { navigate(R.id.assign, bundleOf(ARG_EMPLOYEE to id)) },
+                onAttendance = { navigate(R.id.evidence, bundleOf(ARG_EMPLOYEE to id)) },
             )
         }
     }
@@ -174,7 +175,7 @@ class ScheduleFragment : ComposeFragment() {
         val week = remember(ops, selectedId, weekStart) { person?.let { repo.visitWeek(it.id, weekStart) } }
         val days = remember(ops, partners, selectedId, weekStart) {
             person?.let { p ->
-                (0L..5L).map { weekStart.plusDays(it) }.map { d ->
+                (0L..6L).map { weekStart.plusDays(it) }.map { d ->
                     WeekDay(d, repo.visitsOf(p.id, d).mapNotNull { v ->
                         val partner = partners.firstOrNull { pt -> pt.stores.any { it.id == v.storeId } }
                         visitItem(v, partner?.stores?.firstOrNull { it.id == v.storeId }, partner, repo.todayOf(p.id))

@@ -53,15 +53,17 @@ class AttendanceFragment : ComposeFragment() {
     }
 
     companion object {
-        /** Days shown in the history (workdays only). */
+        /** Days shown in the history (every day is a workday, Q6). */
         private const val HISTORY_DAYS = 14L
 
         fun attendanceState(repo: ActivityRepository, online: Boolean): AttendanceUiState {
             val today = repo.today()
-            fun day(d: LocalDate) = repo.attendanceOf(d).let { AttendanceDay(d, it, ActivityRules.attendanceStatus(it, d, today, ActivityRules.zoneOf(repo.userId))) }
-            val history = (1..HISTORY_DAYS).map { today.minusDays(it) }.filter(ActivityRules::isWorkday).map(::day)
-            return AttendanceUiState(day(today), history, online)
+            val history = (1..HISTORY_DAYS).map { today.minusDays(it) }.map { attendanceDay(repo.attendanceOf(it), it, today) }
+            return AttendanceUiState(attendanceDay(repo.attendanceOf(today), today, today).copy(week = repo.attendanceWeek(today)), history, online)
         }
+
+        fun attendanceDay(a: com.example.and_sales_portal.data.activity.Attendance?, d: LocalDate, today: LocalDate) =
+            AttendanceDay(d, a, ActivityRules.attendanceStatus(a, d, today), ActivityRules.noCheckOut(a, d, today))
     }
 }
 
@@ -151,7 +153,7 @@ class CaptureFragment : ComposeFragment() {
                             }
                         }
                         CaptureSheet.GpsOff -> open(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                        CaptureSheet.Unavailable, CaptureSheet.Radius -> vm.locate()
+                        CaptureSheet.Unavailable, CaptureSheet.Radius, CaptureSheet.Accuracy -> vm.locate()
                     }
                 },
                 onSheetSecondary = { vm.locate() },

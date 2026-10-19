@@ -23,7 +23,7 @@ enum class CaptureMode { CLOCK_IN, CLOCK_OUT, CHECK_IN }
 enum class CaptureStep { Location, Selfie }
 
 /** Bottom sheets of the flow (the mock-location dialog is separate: it cannot be dismissed). */
-enum class CaptureSheet { Permission, GpsOff, Unavailable, Radius }
+enum class CaptureSheet { Permission, GpsOff, Unavailable, Radius, Accuracy }
 
 data class CaptureUiState(
     val mode: CaptureMode,
@@ -45,7 +45,9 @@ data class CaptureUiState(
 ) {
     val radius: Int get() = if (mode == CaptureMode.CHECK_IN) ActivityRules.VISIT_RADIUS_METERS else ActivityRules.ATTENDANCE_RADIUS_METERS
     val inRadius: Boolean get() = distance != null && distance <= radius
-    val locationOk: Boolean get() = found != null && !found.mock && inRadius
+    /** Decision 2026-10-19 (#13): a fix less accurate than 100 m is refused (try again, no override). */
+    val accuracyOk: Boolean get() = found?.accuracy?.let { it <= ActivityRules.MAX_ACCURACY_METERS } ?: true
+    val locationOk: Boolean get() = found != null && !found.mock && accuracyOk && inRadius
 }
 
 /**
@@ -82,7 +84,12 @@ class CaptureViewModel(
                     val nearest = ActivityRules.nearest(s.places, r.lat, r.lng)
                     _state.update {
                         val next = it.copy(locating = false, found = r, nearest = nearest?.first, distance = nearest?.second, mockDetected = r.mock)
-                        next.copy(sheet = if (!r.mock && !next.inRadius) CaptureSheet.Radius else null)
+                        next.copy(sheet = when {
+                            r.mock -> null
+                            !next.accuracyOk -> CaptureSheet.Accuracy
+                            !next.inRadius -> CaptureSheet.Radius
+                            else -> null
+                        })
                     }
                 }
                 LocationResult.PermissionDenied -> fail(CaptureSheet.Permission)
@@ -111,12 +118,12 @@ class CaptureViewModel(
         return false
     }
 
-    /** S14: the photo gets the time (area zone) and GPS burned in before it is shown and sent. */
+    /** S14: the photo gets the time (zone of the check-in location, Q6) and GPS burned in before it is shown and sent. */
     fun selfieTaken(path: String) {
         val found = _state.value.found
         viewModelScope.launch {
             if (found != null) {
-                val lines = SelfieWatermark.lines(repo.now().toEpochMilli(), ActivityRules.zoneOf(repo.userId), found.lat, found.lng)
+                val lines = SelfieWatermark.lines(repo.now().toEpochMilli(), ActivityRules.zoneAt(found.lat, found.lng), found.lat, found.lng)
                 withContext(Dispatchers.IO) { SelfieWatermark.burn(path, lines) }
             }
             _state.value.selfie?.takeIf { it != path }?.let { File(it).delete() }
@@ -130,8 +137,8 @@ class CaptureViewModel(
         if (!s.online || s.selfie == null || !s.locationOk || _finished.value != null) return
         val at = repo.now().toEpochMilli()
         val punch = Punch(at, found.lat, found.lng, found.address ?: s.nearest?.address, s.selfie, place = s.nearest?.name, distance = s.distance,
-            // PRD Scope 2 S8: the area zone decides; the device zone is kept for audit only.
-            zone = ActivityRules.zoneOf(repo.userId).id, deviceZone = ActivityRules.systemZone().id)
+            // Decision 2026-10-19 (Q6): the zone of the check-in location decides; the device zone is kept for audit only.
+            zone = ActivityRules.zoneAt(found.lat, found.lng).id, deviceZone = ActivityRules.systemZone().id)
         when (s.mode) {
             CaptureMode.CLOCK_IN -> repo.clockIn(punch)
             CaptureMode.CLOCK_OUT -> repo.clockOut(punch)

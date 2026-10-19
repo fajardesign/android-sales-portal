@@ -7,7 +7,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Dates and times in Indonesian, in the local zone of the signed-in user's area (WIB, WITA). */
+/** Dates and times in Indonesian; check in/out times in the zone of their location (WIB, WITA, WIT; Q6). */
 object Fmt {
     private val id = Locale("id", "ID")
     private val time = DateTimeFormatter.ofPattern("HH:mm", id)
@@ -16,6 +16,9 @@ object Fmt {
 
     fun time(millis: Long): String = time.format(Instant.ofEpochMilli(millis).atZone(ActivityRules.ZONE))
 
+    /** "08:30" in [zone]. */
+    fun time(millis: Long, zone: java.time.ZoneId): String = time.format(Instant.ofEpochMilli(millis).atZone(zone))
+
     /** "08:30 WITA": time with the zone of the signed-in user's area. */
     fun timeLabel(millis: Long): String = "${time(millis)} ${ActivityRules.ZONE_LABEL}"
 
@@ -23,6 +26,13 @@ object Fmt {
     fun timeLabel(p: Punch, employeeId: Long): String {
         val zone = ActivityRules.zoneOf(p, employeeId)
         return "${time.format(Instant.ofEpochMilli(p.at).atZone(zone))} ${ActivityRules.label(zone)}"
+    }
+
+    /** "08:30 WITA" of the check in that counts (a TL correction, else the punch), in the zone of its location. */
+    fun checkInLabel(a: com.example.and_sales_portal.data.activity.Attendance): String? {
+        val at = a.checkInAt ?: return null
+        val zone = a.clockIn?.let { ActivityRules.zoneOf(it, a.employeeId) } ?: ActivityRules.zoneOf(a.employeeId)
+        return "${time.format(Instant.ofEpochMilli(at).atZone(zone))} ${ActivityRules.label(zone)}"
     }
 
     /** "08:30" of a check in or check out, in the zone saved with it. */

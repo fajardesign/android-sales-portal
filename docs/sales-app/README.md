@@ -47,7 +47,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 | ATT-01 … ATT-05 | Absensi, Check In/Out Kerja, Kunjungan (target mingguan), Check-in/out | `ui/attendance/`, `ui/visits/`, `data/activity/` |
 | REG-01 … REG-12 | Tab Partner, pendaftaran, persetujuan (REG-12), Pengajuan, revisi | `ui/partner/`, `ui/partnerregistration/`, `data/partner/` |
 | PRT-01, PRT-02 | Detail Partner, Tambah Toko | `ui/partner/` |
-| TL-01 … TL-04 | Tim, Assign SA/SR (per toko), Jadwal Kunjungan (mingguan; TL-05 dihapus, Tandai Libur dihapus PRD Scope 2) | `ui/team/`, `data/team/` |
+| TL-01 … TL-04, TL-11 | Tim, Assign SA/SR (per toko), Jadwal Kunjungan (Senin–Minggu; TL-05 dihapus, Tandai Libur dihapus), Koreksi Absensi (TL-11, dari Bukti absensi) | `ui/team/`, `data/team/` |
 | TL-06 … TL-10 | Beranda TL, Produktivitas, Kinerja Penjualan, Pinjaman, Insentif | `ui/dashboard/`, `data/sales/` |
 | SLS-01 … SLS-04 | Beranda SA/SR, tab Kinerja | `ui/dashboard/` |
 | AKN-01 | Akun | `ui/account/`, `ui/shell/TabFragments.kt` |
@@ -61,7 +61,7 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 
 ## Simulasi (debug)
 
-**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km), lokasi palsu, mode offline. **Simulasi Admin dan APL** meniru web: Nonaktifkan TL Andi Pratama (kursi TL dan tim pindah ke Bagus Wicaksono), APL tugaskan TL Tamalanrea ke Bagus, APL lepas TL Andi dari Sudiang (Siti ikut dilepas), Pindahkan Bawahan Siti ke Bagus, dan Nonaktifkan SA Eko Saputra. Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Isi kode referral dan QR, Aktifkan yang terkunci sampai semua toko punya kode dan QR, Ubah area partner, Tolak, Batalkan, Nonaktifkan). Setiap toko punya kursi TL ("Belum ada TL" bila kosong) dan kursi SA/SR (PRD Scope 1 v1.1); toko baru menunggu kode referral dan QR, lalu menunggu APL menugaskan TL.
+**Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km / Akurasi GPS buruk 240 m), halaman persetujuan gagal dimuat, lokasi palsu, mode offline. **Simulasi Admin dan APL** meniru web: Nonaktifkan TL Andi Pratama (kursi TL dan tim pindah ke Bagus Wicaksono), APL tugaskan TL Tamalanrea ke Bagus, APL lepas TL Andi dari Sudiang (Siti ikut dilepas), Pindahkan Bawahan Siti ke Bagus, dan Nonaktifkan SA Eko Saputra. Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Isi kode referral dan QR, Aktifkan yang terkunci sampai semua toko punya kode dan QR, Ubah area partner, Tolak, Batalkan, Nonaktifkan). Setiap toko punya kursi TL ("Belum ada TL" bila kosong) dan kursi SA/SR (PRD Scope 1 v1.1); toko baru menunggu kode referral dan QR, lalu menunggu APL menugaskan TL.
 
 ## Batasan prototype
 

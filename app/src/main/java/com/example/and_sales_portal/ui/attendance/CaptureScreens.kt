@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.exifinterface.media.ExifInterface
 import com.example.and_sales_portal.R
+import com.example.and_sales_portal.data.activity.ActivityRules
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
@@ -155,6 +156,12 @@ private fun LocationStep(state: CaptureUiState, actions: CaptureActions) {
                 )
             }
             Text(stringResource(R.string.cap_radius_limit), color = c.content.tertiary, style = AmarTheme.typography.captionSm)
+            // Decision 2026-10-19 (#13): GPS accuracy worse than 100 m blocks the check in.
+            found.accuracy?.let { acc ->
+                if (!state.accuracyOk) {
+                    AmarInfoBox(stringResource(R.string.cap_accuracy_low, acc.toInt(), ActivityRules.MAX_ACCURACY_METERS), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Error)
+                }
+            }
         }
     }
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
@@ -220,6 +227,7 @@ internal fun CaptureSheetFor(sheet: CaptureSheet, actions: CaptureActions, atten
         CaptureSheet.Permission -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_permission_title, R.string.cap_err_permission, R.string.cap_err_permission_allow, null)
         CaptureSheet.GpsOff -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_gps_title, R.string.cap_err_gps, R.string.cap_err_gps_enable, R.string.common_retry)
         CaptureSheet.Unavailable -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_unavailable_title, R.string.cap_err_unavailable, R.string.common_retry, null)
+        CaptureSheet.Accuracy -> Spec(R.drawable.ds_ill_medium_permission_location, R.string.cap_err_accuracy_title, R.string.cap_err_accuracy, R.string.common_retry, null)
         CaptureSheet.Radius -> if (attendance) {
             Spec(R.drawable.ds_ill_medium_stopper, R.string.cap_err_radius_attendance_title, R.string.cap_err_radius_attendance, R.string.common_retry, null)
         } else {

@@ -84,7 +84,7 @@ class TeamScreensScreenshotTest {
             Visit("v$d$n", 11, stores[n % stores.size].id, d.toString(), if (done) VisitState.DONE else VisitState.IN_PROGRESS, checkIn = Punch(at(d, t), 0.0, 0.0), checkOut = if (done) Punch(at(d, "15:00"), 0.0, 0.0) else null),
             stores[n % stores.size], partners.first { p -> p.stores.any { it.id == stores[n % stores.size].id } }, today,
         )!!
-        val days = (0L..5L).map { monday.plusDays(it) }.map { d ->
+        val days = (0L..6L).map { monday.plusDays(it) }.map { d ->
             when (d.dayOfWeek.value) {
                 1 -> WeekDay(d, listOf(item(d, 0, "12:10")))
                 2 -> WeekDay(d, listOf(item(d, 1, "13:40"), item(d, 2, "15:30")))

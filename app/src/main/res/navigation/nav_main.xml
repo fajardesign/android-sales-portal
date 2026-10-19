@@ -40,6 +40,8 @@
     <!-- Laporan TL (TL-07 … TL-10; PRD v3 C9). -->
     <fragment android:id="@+id/team_productivity" android:name="com.example.and_sales_portal.ui.dashboard.TeamProductivityFragment" />
     <fragment android:id="@+id/evidence" android:name="com.example.and_sales_portal.ui.dashboard.EvidenceFragment" />
+    <!-- Spec: TL-11 Koreksi Absensi (decision 2026-10-19). -->
+    <fragment android:id="@+id/attendance_correction" android:name="com.example.and_sales_portal.ui.team.AttendanceCorrectionFragment" />
     <fragment android:id="@+id/team_sales" android:name="com.example.and_sales_portal.ui.dashboard.TeamSalesFragment" />
     <fragment android:id="@+id/team_loans" android:name="com.example.and_sales_portal.ui.dashboard.TeamLoansFragment" />
     <fragment android:id="@+id/team_incentive" android:name="com.example.and_sales_portal.ui.dashboard.TeamIncentiveFragment" />

@@ -57,9 +57,23 @@ object DemoSeed {
         val zone = ActivityRules.zoneOf(userId)
         val attendance = mutableListOf<Attendance>()
         val visits = mutableListOf<Visit>()
-        val days = (HISTORY_DAYS downTo 1).map { today.minusDays(it) }.filter(ActivityRules::isWorkday)
+        // Q6 (decision 2026-10-19): every day is a workday. Like the web sample, Sundays use a fixed pattern (some check
+        // ins at the office, the rest Absen) so the random Monday–Saturday days stay the same.
+        val days = (HISTORY_DAYS downTo 1).map { today.minusDays(it) }
         var visitSeq = 0
         days.forEach { d ->
+            if (d.dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+                val office = places.first()
+                if ((userId + d.dayOfMonth) % 4 == 0L) {
+                    val z = ActivityRules.zoneAt(office.lat, office.lng)
+                    attendance += Attendance(
+                        userId, d.toString(),
+                        clockIn = Punch(d.atTime(9, 15).atZone(z).toInstant().toEpochMilli(), office.lat, office.lng, place = office.name, distance = 0, zone = z.id),
+                        clockOut = Punch(d.atTime(15, 30).atZone(z).toInstant().toEpochMilli(), office.lat, office.lng, place = office.name, distance = 0, zone = z.id),
+                    )
+                }
+                return@forEach
+            }
             val rnd = seededRandom(userId * 1_000_003 + d.toEpochDay())
             val r = rnd.nextDouble()
             if (r < 0.05) return@forEach // absent: no attendance, no visit
@@ -71,13 +85,13 @@ object DemoSeed {
             val lat = round6(ref.lat + (rnd.nextDouble() - 0.5) * 0.006)
             val lng = round6(ref.lng + (rnd.nextDouble() - 0.5) * 0.006)
             val distance = ActivityRules.distanceMeters(lat, lng, ref.lat, ref.lng)
-            // Like the web sample: now and then a forgotten check out, so the day is Absen (PRD Scope 2 S13).
+            // Like the web sample: now and then a forgotten check out; the day stays present ("Tidak check out", Q6).
             val noOut = (userId * 7 + d.dayOfMonth) % 29 == 0L
             attendance += Attendance(
                 employeeId = userId,
                 date = d.toString(),
-                clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
-                clockOut = if (noOut) null else Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
+                clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = ActivityRules.zoneAt(lat, lng).id),
+                clockOut = if (noOut) null else Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = ActivityRules.zoneAt(lat, lng).id),
             )
             // PRD alignment 2026-10-09: each toko once a week, on its own weekday (a toko is missed about 1 week in 7),
             // 12:00–16:59 local, near the toko.
@@ -98,8 +112,47 @@ object DemoSeed {
                 )
             }
         }
-        return OpsData(attendance = attendance, visits = visits)
+        return OpsData(attendance = withCorrections(userId, today, attendance), visits = visits)
     }
+
+    /**
+     * Koreksi absensi oleh TL, same as the web sample (`admin-sales-portal/src/api/db.js`): SR Siti Rahmawati (11), last
+     * week, one Absen day corrected to Tepat Waktu and one Terlambat day corrected to Tepat Waktu by her TL, with reasons.
+     */
+    private fun withCorrections(userId: Long, today: LocalDate, list: List<Attendance>): List<Attendance> {
+        if (userId != SR_SITI) return list
+        val tl = DemoDirectory.person(userId)?.supervisorId ?: return list
+        val lastMon = ActivityRules.weekStart(today).minusWeeks(1)
+        val week = (0L..6L).map { lastMon.plusDays(it) }
+        val office = DemoDirectory.person(userId)?.areaId?.let { DemoDirectory.office(it) } ?: return list
+        val z = ActivityRules.zoneAt(office.lat, office.lng)
+        val wib = ActivityRules.LOCK_ZONE
+        val out = list.toMutableList()
+        week.firstOrNull { d -> out.none { it.date == d.toString() && it.hasCheckIn } }?.let { d ->
+            val inAt = d.atTime(8, 50).atZone(z).toInstant().toEpochMilli()
+            out.removeAll { it.date == d.toString() }
+            out += Attendance(
+                userId, d.toString(),
+                clockOut = Punch(d.atTime(17, 10).atZone(z).toInstant().toEpochMilli(), office.lat, office.lng, place = office.name, distance = 0, zone = z.id),
+                statusOverride = AttendanceStatus.ON_TIME, clockInOverride = inAt,
+                corrections = listOf(AttendanceCorrection(d.plusDays(2).atTime(9, 12).atZone(wib).toInstant().toEpochMilli(), tl, AttendanceStatus.ABSENT, null, AttendanceStatus.ON_TIME, inAt, REASON_ABSENT)),
+            )
+        }
+        out.indexOfFirst { a -> LocalDate.parse(a.date) in week && a.statusOverride == null && ActivityRules.attendanceStatus(a, LocalDate.parse(a.date), today) == AttendanceStatus.LATE }.takeIf { it >= 0 }?.let { i ->
+            val a = out[i]
+            val d = LocalDate.parse(a.date)
+            val inAt = d.atTime(9, 40).atZone(ActivityRules.zoneOf(a.clockIn!!, userId)).toInstant().toEpochMilli()
+            out[i] = a.copy(
+                statusOverride = AttendanceStatus.ON_TIME, clockInOverride = inAt,
+                corrections = listOf(AttendanceCorrection(d.plusDays(1).atTime(8, 30).atZone(wib).toInstant().toEpochMilli(), tl, AttendanceStatus.LATE, a.clockIn.at, AttendanceStatus.ON_TIME, inAt, REASON_LATE)),
+            )
+        }
+        return out.sortedBy { it.date }
+    }
+
+    private const val SR_SITI = 11L
+    const val REASON_ABSENT = "Ponsel rusak, hadir di kantor sesuai daftar hadir manual"
+    const val REASON_LATE = "Gangguan sinyal saat check in, sudah di lokasi sebelum 10:00"
 
     private fun round6(v: Double) = Math.round(v * 1e6) / 1e6
 }

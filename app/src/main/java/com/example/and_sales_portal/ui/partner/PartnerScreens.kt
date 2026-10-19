@@ -283,9 +283,8 @@ private fun StoreCard(s: Store, onOpenMaps: (Double, Double) -> Unit) {
         }
         Text(s.address, color = c.content.secondary, style = AmarTheme.typography.bodySm)
         InfoRow(stringResource(R.string.reg_revenue), rupiah(s.omzet))
-        // PRD Scope 1 v1.1: Kode Referral and QR per toko (read-only), kursi TL ("Belum ada TL") and kursi SA/SR.
+        // Kode Referral per toko as text only (Designer Q2, 2026-10-19: no QR graphic; no copy pattern in the app yet), kursi TL ("Belum ada TL") and kursi SA/SR.
         InfoRow(stringResource(R.string.reg_referral), s.referralCode ?: stringResource(R.string.prt_referral_empty))
-        if (s.referralCode != null && s.referralQr != null) ReferralQrImage(s.referralCode, stringResource(R.string.prt_qr))
         InfoRow(stringResource(R.string.account_role_tl), s.tlId?.let(::nameOf) ?: stringResource(R.string.prt_no_tl))
         InfoRow(stringResource(R.string.prt_assigned), s.assigned.map(::nameOf).ifEmpty { listOf(stringResource(R.string.ptn_unassigned)) }.joinToString())
         if (s.status == Store.WAITING_REFERRAL) AmarInfoBox(stringResource(R.string.prt_store_waiting_referral_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)

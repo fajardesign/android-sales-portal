@@ -39,6 +39,8 @@ class ActivityRepository(
     fun visit(id: String): Visit? = ops.visit(id)
     fun visitsOn(date: LocalDate): List<Visit> = ops.visitsOf(userId, date)
     fun visitWeek(date: LocalDate): VisitWeek = ops.visitWeek(userId, ActivityRules.weekStart(date))
+    /** This week's check ins over the target of 6 (Q6). */
+    fun attendanceWeek(date: LocalDate): AttendanceWeek = ops.attendanceWeek(userId, ActivityRules.weekStart(date))
     fun weekPartners(date: LocalDate): List<WeekPartner> = ops.weekPartners(userId, ActivityRules.weekStart(date))
     /** Toko held today, for check-in (see [OperationsRepository.visitPartners]). */
     fun visitPartners(date: LocalDate): List<WeekPartner> = ops.visitPartners(userId, date)

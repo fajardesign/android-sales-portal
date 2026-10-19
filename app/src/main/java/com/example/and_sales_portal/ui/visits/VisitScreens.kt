@@ -145,7 +145,12 @@ fun VisitListScreen(
                     stores.forEachIndexed { i, (p, ws) ->
                         if (i > 0) AmarDivider()
                         // S12: one visit per toko per week; check-in opens again on Monday.
-                        val subtitle = if (ws.visited) stringResource(R.string.vis_row_visited, p.name) else p.name
+                        // Q5: a toko that came after Monday 00:00 WIB counts from next week; it can be visited now.
+                        val subtitle = when {
+                            ws.visited -> stringResource(R.string.vis_row_visited, p.name)
+                            !ws.counted -> stringResource(R.string.vis_row_next_week, p.name)
+                            else -> p.name
+                        }
                         ListRow(ws.store.name, subtitle) {
                             if (ws.visited) {
                                 VisitedBadge(true, partner = false)

@@ -158,9 +158,13 @@ data class TlChange(
  * version of the page and who submitted.
  */
 @Serializable
-data class Consent(val at: Long, val version: String, val by: Long) {
+/** Proof of consent (PRD Scope 1 v2 C5; decision 2026-10-19 Q2: also the URL of the page shown). */
+data class Consent(val at: Long, val version: String, val by: Long, val url: String = URL) {
     companion object {
         const val VERSION = "1.0"
+
+        // TODO(OQ-PA-13): placeholder until the consent page URL is decided; the only place it is set.
+        const val URL = "https://placeholder.amarbank.co.id/persetujuan-pendaftaran-toko/v1.0"
     }
 }
 

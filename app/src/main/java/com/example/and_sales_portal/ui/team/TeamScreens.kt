@@ -102,7 +102,7 @@ fun TeamListScreen(members: List<Member>, onOpen: (Member) -> Unit) {
 
 /** Spec: TL-02 Detail Anggota (PRD v3 C5 "person detail with this month's … productivity"). */
 @Composable
-fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Unit, onSchedule: () -> Unit, onAssign: () -> Unit) {
+fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Unit, onSchedule: () -> Unit, onAssign: () -> Unit, onAttendance: () -> Unit = {}) {
     val c = AmarTheme.colors
     val p = m.person
     val action: (@Composable () -> Unit)? = if (m.active) { { PersistentAction(stringResource(R.string.team_schedule), onSchedule) } } else null
@@ -139,10 +139,15 @@ fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Uni
                 InfoRow(stringResource(R.string.team_on_time), stringResource(R.string.team_days_value, pr.onTime))
                 InfoRow(stringResource(R.string.team_late), stringResource(R.string.team_days_value, pr.late))
                 InfoRow(stringResource(R.string.team_absent), stringResource(R.string.team_days_value, pr.absent))
+                // Q6: a check in without check out stays present; 6 check ins a week.
+                if (pr.noCheckOut > 0) InfoRow(stringResource(R.string.att_no_check_out), stringResource(R.string.team_days_value, pr.noCheckOut))
+                pr.attendanceWeek?.let { w -> InfoRow(stringResource(R.string.team_week_checkins), stringResource(R.string.team_checkins_value, w.checkIns, w.target)) }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.team_week_visits), Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm)
                     VisitWeekBadge(pr.thisWeek)
                 }
+                // TL-11 (decision 2026-10-19): the day list with `Koreksi Absensi`.
+                AmarButton(stringResource(R.string.cor_see_attendance), onAttendance, Modifier.fillMaxWidth(), type = AmarButtonType.Naked, size = AmarButtonSize.Small)
             }
         }
         AmarInfoBox(stringResource(R.string.team_sales_wip), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
@@ -230,7 +235,7 @@ data class WeekDay(val date: LocalDate, val visits: List<VisitItem>)
 
 /**
  * Spec: TL-04 Jadwal Kunjungan (PRD v3 C7; stakeholder revision 2026-10-08: no hourly plan). Per SA/SR and week
- * (Monday–Saturday): progress against the weekly target and visits done per day. No "Tandai Libur" (PRD Scope 2 S10).
+ * (Monday–Sunday, decision 2026-10-19): progress against the weekly target and visits done per day. No "Tandai Libur" (PRD Scope 2 S10).
  */
 @Composable
 fun ScheduleScreen(
@@ -256,7 +261,7 @@ fun ScheduleScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             AmarButton(null, onPrevWeek, type = AmarButtonType.Naked, size = AmarButtonSize.Small, icon = painterResource(R.drawable.ds_ic_chevron_left_24), contentDescription = stringResource(R.string.sch_prev_week))
             val f = DateTimeFormatter.ofPattern("d MMM yyyy", ID)
-            Text("${weekStart.dayOfMonth} – ${f.format(weekStart.plusDays(5))}", Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold, textAlign = TextAlign.Center)
+            Text("${weekStart.dayOfMonth} – ${f.format(ActivityRules.weekEnd(weekStart))}", Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold, textAlign = TextAlign.Center)
             AmarButton(null, onNextWeek, type = AmarButtonType.Naked, size = AmarButtonSize.Small, icon = painterResource(R.drawable.ds_ic_chevron_right_24), contentDescription = stringResource(R.string.sch_next_week))
         }
         if (!hasStores) AmarInfoBox(stringResource(R.string.sch_no_store), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)

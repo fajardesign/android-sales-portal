@@ -3,7 +3,6 @@ package com.example.and_sales_portal.ui.notifications
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,6 +25,7 @@ import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.ui.common.ComposeFragment
 import com.example.and_sales_portal.ui.common.Fmt
 import com.example.and_sales_portal.ui.common.ScreenScaffold
+import com.example.and_sales_portal.ui.partner.PartnerDetailFragment
 import com.example.and_sales_portal.ui.partner.SubmissionDetailFragment
 import java.time.Instant
 
@@ -55,33 +55,39 @@ fun notificationText(n: AppNotification): String =
     n.event?.let { notificationText(it) } ?: n.revision?.let { stringResource(R.string.notif_revision, it.partnerName) }.orEmpty()
 
 /**
- * Spec: Notifikasi (FR-MP-004, decision 2026-10-09: in-app inbox; DD review point 2: revision requests to the TL/SR),
- * newest first. A revision notification opens the submission (REG-10).
+ * Spec: Notifikasi (FR-MP-004, decision 2026-10-09: in-app inbox; Designer Q3, 2026-10-19): the last 30 days, newest
+ * first. An unread one shows "Belum dibaca"; tapping it marks it read and opens the toko's partner (PRT-01) for an
+ * assignment, or the submission (REG-10) for a revision request (that is where it is fixed).
  */
 @Composable
-fun NotificationsScreen(items: List<AppNotification>, onBack: () -> Unit, onOpenSubmission: (String) -> Unit = {}) {
+fun NotificationsScreen(items: List<AppNotification>, onBack: () -> Unit, onOpen: (AppNotification) -> Unit = {}) {
     val c = AmarTheme.colors
     ScreenScaffold(stringResource(R.string.notif_title), onBack) {
         if (items.isEmpty()) AmarInfoBox(stringResource(R.string.notif_empty), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
+        Text(stringResource(R.string.notif_retention), color = c.content.tertiary, style = AmarTheme.typography.captionSm)
         items.forEach { n ->
-            val open = n.revision?.let { r -> { onOpenSubmission(r.partnerId) } }
-            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = open) {
-                if (!n.read) AmarBadge(stringResource(R.string.notif_new_badge), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
-                Text(notificationText(n), color = c.content.primary, style = AmarTheme.typography.bodyMd)
+            AmarCard(Modifier.fillMaxWidth(), style = if (n.read) AmarCardStyle.Border else AmarCardStyle.Shadow, onClick = { onOpen(n) }) {
+                if (!n.read) AmarBadge(stringResource(R.string.notif_unread), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
+                Text(notificationText(n), color = if (n.read) c.content.secondary else c.content.primary, style = AmarTheme.typography.bodyMd)
                 Text(eventTime(n.at), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
             }
         }
     }
 }
 
-/** Spec: Notifikasi. Opening the inbox marks the notifications as read (the list keeps the "Baru" badge until left). */
+/** Spec: Notifikasi. Read state per notification: tapping one marks it read and opens what it refers to. */
 class NotificationsFragment : ComposeFragment() {
     @Composable
     override fun ScreenContent() {
         val s = session ?: return
         val data by container.partners.assignments.collectAsState()
-        val items = remember { container.partners.notificationsOf(s.user.id) }
-        LaunchedEffect(data) { if (container.partners.notificationsOf(s.user.id).any { !it.read }) container.partners.markNotificationsRead(s.user.id) }
-        NotificationsScreen(items, ::back) { id -> navigate(R.id.submission_detail, SubmissionDetailFragment.args(id)) }
+        val items = remember(data) { container.partners.notificationsOf(s.user.id) }
+        NotificationsScreen(items, ::back) { n ->
+            container.partners.markNotificationRead(n.id)
+            when {
+                n.revision != null -> navigate(R.id.submission_detail, SubmissionDetailFragment.args(n.revision.partnerId))
+                n.event != null -> navigate(R.id.partner_detail, PartnerDetailFragment.args(n.event.partnerId))
+            }
+        }
     }
 }

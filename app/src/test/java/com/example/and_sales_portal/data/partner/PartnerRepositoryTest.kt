@@ -203,6 +203,22 @@ class PartnerRepositoryTest {
     }
 
     @Test
+    fun notificationsAreKeptThirtyDaysAndReadOneByOne() {
+        // Designer Q3 (2026-10-19): the sample has an unread one older than 30 days for Siti; it is not shown.
+        val all = repo.assignments.value.notifications.filter { it.employeeId == 11L }
+        assertTrue(all.any { now.toEpochMilli() - it.at > 30L * 86_400_000 })
+        val shown = repo.notificationsOf(11)
+        assertTrue(shown.all { now.toEpochMilli() - it.at <= 30L * 86_400_000 })
+        assertEquals(all.size - 1, shown.size)
+        // Tapping one marks only that one read.
+        assertNull(repo.assign(6, 11, newStore("REG2026-0139", "Cabang Baru").id))
+        val unread = repo.notificationsOf(11).filter { !it.read }
+        assertEquals(1, unread.size)
+        repo.markNotificationRead(unread.single().id)
+        assertTrue(repo.notificationsOf(11).all { it.read })
+    }
+
+    @Test
     fun partnerInactiveReleasesEveryKursi() {
         // C6 FR-013: kursi TL and SA/SR released, logged as the system; the TL is told who was released with them.
         repo.adminDeactivate("REG2026-0132")

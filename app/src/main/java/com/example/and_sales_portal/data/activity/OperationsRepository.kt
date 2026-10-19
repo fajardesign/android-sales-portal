@@ -17,6 +17,9 @@ import java.time.LocalDate
  */
 enum class VisitCheckInBlock { NotWorkCheckedIn, BeforeStart, VisitedThisWeek, StoreNotAssigned }
 
+/** Why the TL cannot save a correction (decision 2026-10-19, Q6). */
+enum class CorrectionError { NotLeader, Expired, Future, ReasonRequired, TimeRequired, TimeMismatch, NoChange }
+
 /**
  * Attendance and visits of every SA/SR/TL on the device (shared, so the TL sees the team's attendance and visits).
  * Spec: ATT-01 … ATT-05, TL-01 … TL-04 (PRD v3 C5, C7, C8, D2, D3; PRD Scope 2, 2.0: no days off, S10).
@@ -37,14 +40,21 @@ class OperationsRepository(
     fun now(): Instant = clock()
     fun today(): LocalDate = clock().atZone(ActivityRules.ZONE).toLocalDate()
 
-    /** Today for [employeeId]: the app clock in the zone of their area (PRD Scope 2 S8). */
+    /** Today for [employeeId] before any check in: the app clock in the zone of their area. */
     fun todayOf(employeeId: Long): LocalDate = clock().atZone(ActivityRules.zoneOf(employeeId)).toLocalDate()
 
     fun attendanceOf(employeeId: Long, date: LocalDate): Attendance? =
         _data.value.attendance.firstOrNull { it.employeeId == employeeId && it.date == date.toString() }
 
     fun attendanceStatus(employeeId: Long, date: LocalDate): AttendanceStatus =
-        ActivityRules.attendanceStatus(attendanceOf(employeeId, date), date, todayOf(employeeId), ActivityRules.zoneOf(employeeId))
+        ActivityRules.attendanceStatus(attendanceOf(employeeId, date), date, todayOf(employeeId))
+
+    /** Q6: days with a check in in the week of [weekStart] (Monday–Sunday) over the target of 6. */
+    fun attendanceWeek(employeeId: Long, weekStart: LocalDate): AttendanceWeek {
+        val end = ActivityRules.weekEnd(weekStart)
+        val n = _data.value.attendance.count { it.employeeId == employeeId && LocalDate.parse(it.date) in weekStart..end && it.hasCheckIn }
+        return AttendanceWeek(weekStart, n)
+    }
 
     fun visit(id: String): Visit? = _data.value.visits.firstOrNull { it.id == id }
 
@@ -55,27 +65,32 @@ class OperationsRepository(
         _data.value.visits.filter { it.employeeId == employeeId && LocalDate.parse(it.date) in from..to }
 
     /**
-     * Toko of [employeeId] to visit in the week of [weekStart], by partner, with whether each was visited (same as the
-     * web `visitWeekStores`). PRD Scope 2 S9/S11: the current week uses the toko held **now** (the target changes at once,
-     * no proration); a finished week stays frozen from the history (held on Monday and still held at its end).
+     * Toko of [employeeId] to visit in the week of [weekStart], by partner, with whether this person visited each (same
+     * as the web `visitWeekStores`). Decision 2026-10-19 (Q5, replacing S9 "changes at once"): the target is the toko held
+     * on Monday 00:00 WIB; a toko that moves mid-week stays in the old holder's target that week and the new holder's
+     * from the next week. A visit counts for the person who made it.
      */
     fun weekPartners(employeeId: Long, weekStart: LocalDate): List<WeekPartner> {
         val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
-        val weekEnd = ActivityRules.weekEnd(weekStart)
-        val targets = if (!weekEnd.isBefore(todayOf(employeeId))) {
-            val list = partners.partners.value
-            DemoSeed.storesOf(list, employeeId, role).mapNotNull { s -> list.firstOrNull { p -> p.stores.any { it.id == s.id } }?.let { it to s } }
-        } else {
-            val zone = ActivityRules.zoneOf(employeeId)
-            val endOf = { d: LocalDate -> d.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1 }
-            partners.weekStores(employeeId, role, endOf(weekStart), endOf(weekEnd))
-        }
-        val seen = visitsBetween(employeeId, weekStart, weekEnd).map { it.storeId }.toSet()
+        val lock = ActivityRules.weekLock(weekStart)
+        val targets = partners.weekStores(employeeId, role, lock, lock)
+        val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
         return ActivityRules.weekPartners(targets, seen)
     }
 
-    /** Toko [employeeId] can visit now (ATT-03, Beranda SA/SR), by partner: the toko held today, i.e. this week's target. */
-    fun visitPartners(employeeId: Long, date: LocalDate): List<WeekPartner> = weekPartners(employeeId, ActivityRules.weekStart(date))
+    /**
+     * Toko [employeeId] can visit now (ATT-03, Beranda SA/SR), by partner: the toko held today. A toko that came after
+     * Monday 00:00 WIB is not in this week's target ("Dihitung mulai minggu depan") but can be visited.
+     */
+    fun visitPartners(employeeId: Long, date: LocalDate): List<WeekPartner> {
+        val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
+        val weekStart = ActivityRules.weekStart(date)
+        val list = partners.partners.value
+        val current = DemoSeed.storesOf(list, employeeId, role).mapNotNull { s -> list.firstOrNull { p -> p.stores.any { it.id == s.id } }?.let { it to s } }
+        val counted = weekPartners(employeeId, weekStart).flatMap { g -> g.stores.map { it.store.id } }.toSet()
+        val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
+        return ActivityRules.weekPartners(current, seen, counted)
+    }
 
     /** Week of [weekStart] (Monday): toko visited over toko to visit. */
     fun visitWeek(employeeId: Long, weekStart: LocalDate): VisitWeek = ActivityRules.visitWeek(weekStart, weekPartners(employeeId, weekStart))
@@ -93,13 +108,16 @@ class OperationsRepository(
 
     // region Attendance and visit execution (ATT)
 
+    /** Date of a punch: in the zone of its location (Q6). */
+    private fun dateOf(punch: Punch, employeeId: Long): LocalDate = java.time.Instant.ofEpochMilli(punch.at).atZone(ActivityRules.zoneOf(punch, employeeId)).toLocalDate()
+
     fun clockIn(employeeId: Long, punch: Punch) = change { d ->
-        val date = todayOf(employeeId).toString()
+        val date = dateOf(punch, employeeId).toString()
         d.copy(attendance = d.attendance.filterNot { it.employeeId == employeeId && it.date == date } + Attendance(employeeId, date, clockIn = punch))
     }
 
     fun clockOut(employeeId: Long, punch: Punch) = change { d ->
-        val date = todayOf(employeeId).toString()
+        val date = dateOf(punch, employeeId).toString()
         d.copy(attendance = d.attendance.map { if (it.employeeId == employeeId && it.date == date) it.copy(clockOut = punch) else it })
     }
 
@@ -121,10 +139,13 @@ class OperationsRepository(
             DemoSeed.storesOf(partners.partners.value, employeeId, role).none { it.id == storeId } -> VisitCheckInBlock.StoreNotAssigned
             visitsBetween(employeeId, monday, ActivityRules.weekEnd(monday)).any { it.storeId == storeId } -> VisitCheckInBlock.VisitedThisWeek
             attendanceOf(employeeId, today)?.clockIn == null -> VisitCheckInBlock.NotWorkCheckedIn
-            !ActivityRules.visitOpen(clock(), employeeId) -> VisitCheckInBlock.BeforeStart
+            !ActivityRules.visitOpen(clock(), storeZone(storeId) ?: ActivityRules.zoneOf(employeeId)) -> VisitCheckInBlock.BeforeStart
             else -> null
         }
     }
+
+    /** Zone of a toko's location (Q6: 12:00 is read where the visit happens). */
+    private fun storeZone(storeId: String) = partners.partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId }?.let { ActivityRules.zoneAt(it.lat, it.lng) }
 
     /** Starts a visit at [storeId]; returns it, or `null` when [checkInBlock] refuses. */
     fun checkIn(employeeId: Long, storeId: String, punch: Punch): Visit? {
@@ -151,6 +172,49 @@ class OperationsRepository(
             d.copy(visits = d.visits.map { v -> v.checkOut?.takeIf { !it.synced && v.employeeId == employeeId }?.let { v.copy(checkOut = it.copy(synced = true)) } ?: v })
         }
         return n
+    }
+
+    // endregion
+
+    // region Koreksi absensi oleh TL (decision 2026-10-19, Q6)
+
+    /** The TL can correct a day up to the end (Sunday 23:59 WIB) of the following week. */
+    fun correctionDeadline(date: LocalDate): Long = ActivityRules.weekLock(ActivityRules.weekStart(date).plusWeeks(2)) - 1
+
+    fun canCorrect(employeeId: Long, date: LocalDate): Boolean = !date.isAfter(todayOf(employeeId)) && clock().toEpochMilli() <= correctionDeadline(date)
+
+    /**
+     * Corrects [employeeId]'s attendance of [date] (status Absen / Tepat Waktu / Terlambat and the check-in time) by the
+     * TL [tlId], with a required reason; old and new values are kept in [Attendance.corrections].
+     */
+    fun correct(tlId: Long, employeeId: Long, date: LocalDate, toStatus: AttendanceStatus, toTime: java.time.LocalTime?, reason: String): CorrectionError? {
+        if (DemoDirectory.person(employeeId)?.supervisorId != tlId) return CorrectionError.NotLeader
+        val today = todayOf(employeeId)
+        if (date.isAfter(today)) return CorrectionError.Future
+        if (clock().toEpochMilli() > correctionDeadline(date)) return CorrectionError.Expired
+        if (reason.isBlank()) return CorrectionError.ReasonRequired
+        val old = attendanceOf(employeeId, date) ?: Attendance(employeeId, date.toString())
+        val zone = old.clockIn?.let { ActivityRules.zoneOf(it, employeeId) } ?: ActivityRules.zoneOf(employeeId)
+        val newAt: Long? = when (toStatus) {
+            AttendanceStatus.ABSENT -> null
+            AttendanceStatus.ON_TIME, AttendanceStatus.LATE -> {
+                val t = toTime ?: return CorrectionError.TimeRequired
+                val onTime = !t.isAfter(ActivityRules.CLOCK_IN_LIMIT)
+                if (onTime != (toStatus == AttendanceStatus.ON_TIME)) return CorrectionError.TimeMismatch
+                date.atTime(t).atZone(zone).toInstant().toEpochMilli()
+            }
+            AttendanceStatus.NOT_YET -> return CorrectionError.NoChange
+        }
+        val fromStatus = ActivityRules.attendanceStatus(old, date, today)
+        if (fromStatus == toStatus && old.checkInAt == newAt) return CorrectionError.NoChange
+        val c = AttendanceCorrection(clock().toEpochMilli(), tlId, fromStatus, old.checkInAt, toStatus, newAt, reason.trim())
+        val next = old.copy(
+            statusOverride = toStatus,
+            clockInOverride = newAt?.takeIf { it != old.clockIn?.at },
+            corrections = old.corrections + c,
+        )
+        change { d -> d.copy(attendance = d.attendance.filterNot { it.employeeId == employeeId && it.date == date.toString() } + next) }
+        return null
     }
 
     // endregion

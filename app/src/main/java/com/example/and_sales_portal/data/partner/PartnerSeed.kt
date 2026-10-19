@@ -148,9 +148,13 @@ object PartnerSeed {
         val store = "REG2026-0132-2"
         val sales = AssignmentEvent(TAMALANREA_AT, AssignmentAction.RELEASE, 11, store, "PT Bintang Gadget Store Tamalanrea", "REG2026-0132", "PT Bintang Gadget Store", APL_HASAN, AssignmentEvent.TL_RELEASED, "TL dilepas")
         val tl = AssignmentEvent(TAMALANREA_AT, AssignmentAction.RELEASE, 6, store, sales.storeName, sales.partnerId, sales.partnerName, APL_HASAN, AssignmentEvent.TL_RELEASED, "dilepas APL", AssignmentEvent.TL, listOf("Siti Rahmawati"))
+        // Older than the 30 days kept (Designer Q3, 2026-10-19): in the data but not shown. Only a notification, so the
+        // holder history of the toko is not changed.
+        val old = AssignmentEvent(ago(24 * 40), AssignmentAction.ASSIGN, 11, "REG2026-0139-3", "Jaya Abadi Cellular Sudiang", "REG2026-0139", "Jaya Abadi Cellular", "6")
         return AssignmentData(
             events = listOf(sales, tl),
             notifications = listOf(
+                AppNotification("N-${old.at}-11-REG2026-0139-3-SALES-ASSIGN", 11, old),
                 AppNotification("N-$TAMALANREA_AT-11-$store-SALES-RELEASE", 11, sales, read = true),
                 AppNotification("N-$TAMALANREA_AT-6-$store-TL-RELEASE", 6, tl, read = true),
             ),
