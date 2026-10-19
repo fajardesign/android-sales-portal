@@ -24,7 +24,8 @@ import kotlin.coroutines.resume
 data class Place(val lat: Double, val lng: Double, val address: String?, val name: String? = null)
 
 sealed interface LocationResult {
-    data class Found(val lat: Double, val lng: Double, val address: String?, val mock: Boolean) : LocationResult
+    /** [accuracy]: GPS accuracy radius in metres (decision 2026-10-19: worse than 100 m is refused); `null` = unknown. */
+    data class Found(val lat: Double, val lng: Double, val address: String?, val mock: Boolean, val accuracy: Float? = null) : LocationResult
     /** Permission not granted (the screen asks for it first). */
     data object PermissionDenied : LocationResult
     /** Location (GPS) is switched off on the device. */
@@ -45,11 +46,12 @@ class LocationService(private val context: Context, private val simulation: Simu
         if (!isEnabled()) return LocationResult.GpsOff
         val sim = simulation.value
         return when (sim.location) {
-            LocationMode.AT_STORE -> LocationResult.Found(reference.lat + JITTER, reference.lng - JITTER, reference.address, sim.mockLocation)
-            LocationMode.OUT_OF_RADIUS -> LocationResult.Found(reference.lat + OUT_OF_RADIUS, reference.lng + OUT_OF_RADIUS, null, sim.mockLocation)
+            LocationMode.AT_STORE -> LocationResult.Found(reference.lat + JITTER, reference.lng - JITTER, reference.address, sim.mockLocation, GOOD_ACCURACY)
+            LocationMode.OUT_OF_RADIUS -> LocationResult.Found(reference.lat + OUT_OF_RADIUS, reference.lng + OUT_OF_RADIUS, null, sim.mockLocation, GOOD_ACCURACY)
+            LocationMode.LOW_ACCURACY -> LocationResult.Found(reference.lat + JITTER, reference.lng - JITTER, reference.address, sim.mockLocation, LOW_ACCURACY)
             LocationMode.DEVICE -> {
                 val fix = deviceLocation() ?: return LocationResult.Unavailable
-                LocationResult.Found(fix.latitude, fix.longitude, addressOf(fix.latitude, fix.longitude), sim.mockLocation || fix.isMockLocation())
+                LocationResult.Found(fix.latitude, fix.longitude, addressOf(fix.latitude, fix.longitude), sim.mockLocation || fix.isMockLocation(), fix.accuracy.takeIf { fix.hasAccuracy() })
             }
         }
     }
@@ -90,5 +92,8 @@ class LocationService(private val context: Context, private val simulation: Simu
         private const val JITTER = 0.00007
         /** About 9 km north-east: outside the 3 km radius of every office and toko of the area. */
         private const val OUT_OF_RADIUS = 0.06
+        /** Simulated accuracy radii: a good fix, and one worse than the 100 m limit. */
+        private const val GOOD_ACCURACY = 8f
+        private const val LOW_ACCURACY = 240f
     }
 }

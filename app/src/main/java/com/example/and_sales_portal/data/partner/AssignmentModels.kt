@@ -70,7 +70,7 @@ data class AssignmentData(
     val notifications: List<AppNotification> = emptyList(),
 ) {
     companion object {
-        /** 3: kursi TL events, sample release of Tamalanrea (PRD Scope 1 v1.1). */
-        const val VERSION = 3
+        /** 4: sample notification older than 30 days (decision 2026-10-19). */
+        const val VERSION = 4
     }
 }

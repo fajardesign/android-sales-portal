@@ -48,7 +48,7 @@ class ActivityScreensScreenshotTest {
 
     @Test
     fun attendance() {
-        val history = (1L..6L).map { today.minusDays(it) }.filter(ActivityRules::isWorkday).mapIndexed { i, d ->
+        val history = (1L..6L).map { today.minusDays(it) }.mapIndexed { i, d ->
             day(if (i == 2) null else Attendance(11, d.toString(), Punch(at(if (i == 1) "08:12" else "07:41", d), 0.0, 0.0), Punch(at("17:20", d), 0.0, 0.0)), d)
         }
         capture("01_not_yet") { AttendanceScreen(AttendanceUiState(day(null), history, online = true), {}, {}, {}) }

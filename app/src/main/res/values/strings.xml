@@ -197,9 +197,35 @@
     <string name="att_status_on_time">Tepat Waktu</string>
     <string name="att_status_late">Terlambat</string>
     <string name="att_status_absent">Absen</string>
+    <string name="team_week_checkins">Check-in minggu ini</string>
+    <string name="team_checkins_value">%1$d/%2$d check-in</string>
+    <string name="cor_title">Koreksi Absensi</string>
+    <string name="cor_open">Koreksi Absensi</string>
+    <string name="cor_see_attendance">Lihat Absensi</string>
+    <string name="cor_new_status">Status baru</string>
+    <string name="cor_time">Jam check in</string>
+    <string name="cor_time_placeholder">Contoh 09:30</string>
+    <string name="cor_time_hint">Format jam HH:mm, zona %1$s.</string>
+    <string name="cor_reason">Alasan koreksi</string>
+    <string name="cor_reason_placeholder">Tulis alasan koreksi</string>
+    <string name="cor_save">Simpan Koreksi</string>
+    <string name="cor_done">Koreksi absensi disimpan.</string>
+    <string name="cor_deadline">Koreksi bisa dilakukan sampai %1$s (akhir minggu berikutnya). Riwayat koreksi terlihat oleh SA/SR dan APL.</string>
+    <string name="cor_expired">Batas koreksi sudah lewat (%1$s). Absensi hanya bisa dikoreksi sampai akhir minggu berikutnya.</string>
+    <string name="cor_closed_short">Batas koreksi sudah lewat</string>
+    <string name="cor_err_time_format">Format jam tidak valid, contoh 09:30</string>
+    <string name="cor_err_on_time">Jam lewat 10:00 berarti Terlambat.</string>
+    <string name="cor_err_late">Jam sampai 10:00 berarti Tepat Waktu.</string>
+    <string name="cor_err_no_change">Tidak ada perubahan dari data saat ini.</string>
+    <string name="att_rule">Check in kerja setiap hari, termasuk akhir pekan, libur, dan cuti. Target 6 check-in per minggu (Senin–Minggu). Tepat Waktu sampai pukul 10:00; check out paling lambat pukul 23:59.</string>
+    <string name="att_week_progress">Minggu ini: %1$d/%2$d check-in</string>
+    <string name="att_no_check_out">Tidak check out</string>
+    <string name="att_corrected">Dikoreksi TL</string>
+    <string name="att_correction_line">Dikoreksi TL: %1$s → %2$s</string>
+    <string name="att_correction_reason">Alasan: %1$s</string>
+    <string name="att_correction_meta">oleh %1$s · %2$s, %3$s</string>
     <string name="att_status_checked_in">Sudah Check In</string>
     <string name="att_status_checked_out">Sudah Check Out</string>
-    <string name="att_status_not_workday">Bukan hari kerja</string>
     <string name="att_done">Absensi hari ini sudah lengkap.</string>
     <string name="att_see_history">Lihat riwayat</string>
     <string name="att_history">Riwayat absensi</string>
@@ -255,6 +281,9 @@
     <string name="cap_err_unavailable">Pastikan sinyal GPS baik, lalu coba lagi.</string>
     <string name="cap_err_mock_title">Lokasi palsu terdeteksi</string>
     <string name="cap_err_mock">Matikan aplikasi lokasi palsu (mock location) di perangkat Anda. Absensi dan kunjungan hanya bisa memakai lokasi asli.</string>
+    <string name="cap_err_accuracy_title">Lokasi kurang akurat</string>
+    <string name="cap_err_accuracy">Akurasi lokasi lebih dari 100 m. Pindah ke tempat terbuka atau tunggu sinyal GPS membaik, lalu coba lagi.</string>
+    <string name="cap_accuracy_low">Akurasi lokasi %1$d m, batas %2$d m. Check-in belum bisa dilakukan.</string>
     <string name="cap_err_radius_title">Di luar radius toko</string>
     <string name="cap_err_radius_attendance_title">Di luar radius</string>
     <string name="cap_err_radius_attendance">Lokasi Anda lebih dari 3 km dari titik lokasi kantor atau toko partner yang terdaftar. Pindah ke lokasi tersebut, lalu coba lagi.</string>
@@ -267,7 +296,7 @@
     <string name="vis_week">Kunjungan minggu ini</string>
     <string name="vis_week_complete">Lengkap %1$d/%2$d</string>
     <string name="vis_week_incomplete">Belum lengkap %1$d/%2$d</string>
-    <string name="vis_week_rule">Target: setiap toko yang ditugaskan dikunjungi sekali dalam minggu Senin–Sabtu, di hari apa saja.</string>
+    <string name="vis_week_rule">Target: setiap toko yang Anda pegang pada Senin 00:00 WIB dikunjungi sekali dalam minggu itu (Senin–Minggu), di hari apa saja, termasuk akhir pekan dan libur. Check-in kunjungan mulai pukul 12:00.</string>
     <string name="vis_week_no_store">Belum ada toko</string>
     <string name="vis_partner_visited">Sudah dikunjungi minggu ini</string>
     <string name="vis_store_visited">Sudah dikunjungi</string>
@@ -280,6 +309,7 @@
     <string name="vis_empty">Belum ada kunjungan hari ini.</string>
     <string name="vis_status_ongoing">Berlangsung</string>
     <string name="vis_check_in_short">Check-In</string>
+    <string name="vis_row_next_week">%1$s · dihitung mulai minggu depan</string>
     <string name="vis_row_visited">%1$s · check-in lagi mulai Senin</string>
     <string name="vis_row_pending">%1$s · menunggu sinkronisasi</string>
     <string name="vis_row_title">%1$s · %2$s</string>
@@ -338,6 +368,8 @@
     <string name="sim_location_store">Di kantor / toko</string>
     <string name="sim_location_device">GPS perangkat</string>
     <string name="sim_location_out">Di luar radius</string>
+    <string name="sim_location_low_accuracy">Akurasi GPS buruk (240 m)</string>
+    <string name="sim_consent_fails">Halaman persetujuan gagal dimuat</string>
     <string name="sim_mock">Lokasi palsu (mock location)</string>
     <string name="sim_offline">Mode offline</string>
 
@@ -348,6 +380,8 @@
     <string name="reg_err_email">Format email tidak valid</string>
     <string name="reg_err_digits3">Isi 3 digit angka, contoh 003</string>
     <string name="reg_consent_check">Saya telah membaca dan menyetujui %1$s.</string>
+    <string name="reg_consent_loading">Memuat halaman persetujuan…</string>
+    <string name="reg_consent_failed">Halaman tidak dapat dimuat. Coba lagi.</string>
     <string name="reg_consent_title">Konfirmasi dan Persetujuan Pendaftaran Toko</string>
     <string name="reg_consent_p1">Saya menyatakan bahwa proses pengisian data pendaftaran toko/merchant saya telah dibantu oleh Petugas Akuisisi Merchant. Saya telah memeriksa dan memastikan bahwa data yang disampaikan telah sesuai dengan informasi yang saya berikan.</string>
     <string name="reg_consent_p2">Dengan menekan tombol Kirim Pengajuan, saya menyetujui pengiriman data tersebut untuk keperluan pendaftaran toko/merchant saya.</string>
@@ -477,7 +511,6 @@
     <string name="prt_assigned">Ditugaskan</string>
     <string name="prt_primary">Toko utama</string>
     <string name="prt_no_tl">Belum ada TL</string>
-    <string name="prt_qr">QR kode referral</string>
     <string name="prt_add_store_blocked">Anda belum memegang toko di partner ini, jadi belum bisa menambah toko.</string>
     <string name="prt_referral_empty">Belum diisi</string>
     <string name="prt_store_waiting_referral">Menunggu kode referral</string>
@@ -509,7 +542,7 @@
     <string name="team_month">Produktivitas bulan ini</string>
     <string name="team_week_visits">Kunjungan minggu ini</string>
     <string name="team_present">Hadir</string>
-    <string name="team_present_value">%1$d dari %2$d hari kerja</string>
+    <string name="team_present_value">%1$d dari %2$d hari</string>
     <string name="team_on_time">Tepat waktu</string>
     <string name="team_late">Terlambat</string>
     <string name="team_absent">Absen</string>
@@ -544,7 +577,8 @@
     <string name="asg_history_meta">oleh %1$s · %2$s</string>
     <string name="notif_title">Notifikasi</string>
     <string name="notif_empty">Belum ada notifikasi.</string>
-    <string name="notif_new_badge">Baru</string>
+    <string name="notif_unread">Belum dibaca</string>
+    <string name="notif_retention">Notifikasi disimpan 30 hari.</string>
     <string name="notif_new">%1$d notifikasi baru. %2$s</string>
     <string name="notif_see">Lihat</string>
     <string name="notif_sales_released">Penugasan Anda di %1$s (%2$s) dicabut (%3$s).</string>
@@ -565,7 +599,7 @@
     <string name="sim_apl_release">APL lepas TL: Andi Pratama dari Jaya Abadi Cellular Sudiang</string>
     <string name="sim_apl_release_done">Andi Pratama dilepas dari toko Sudiang. %1$d SA/SR ikut dilepas.</string>
     <string name="sim_apl_release_failed">Toko Sudiang belum punya TL.</string>
-    <string name="sim_apl_note">Di portal web APL menugaskan dan melepas TL kapan saja di menu Mapping TL.</string>
+    <string name="sim_apl_note">Di portal web APL menugaskan dan melepas TL kapan saja di menu Toko Aktif.</string>
     <string name="sim_admin_change_area">Ubah area partner</string>
     <string name="sim_admin_disable_tl_done">Andi Pratama dinonaktifkan. %1$d toko pindah ke Bagus Wicaksono.</string>
     <string name="sim_admin_move">Pindahkan Bawahan: Siti Rahmawati ke Bagus Wicaksono</string>
@@ -648,6 +682,7 @@
     <string name="perf_tab_incentive">Insentif</string>
     <string name="perf_period_today">Hari ini</string>
     <string name="perf_period_week">Minggu ini</string>
+    <string name="perf_period_last_week">Minggu lalu</string>
     <string name="perf_period_month">Bulan ini</string>
     <string name="perf_period_last_month">Bulan lalu</string>
     <string name="perf_per_store">Per toko</string>

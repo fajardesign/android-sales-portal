@@ -84,6 +84,7 @@ class PartnerRegistrationViewModel(
     private var regionJob: Job? = null
 
     init {
+        loadConsentPage()
         viewModelScope.launch {
             val provinces = repository.provinces()
             _state.update { it.copy(regions = it.regions.copy(provinces = provinces)) }
@@ -129,7 +130,18 @@ class PartnerRegistrationViewModel(
         viewModelScope.launch { loadRegionsFor(_state.value.partner) }
     }
 
-    fun setConsent(value: Boolean) = _state.update { it.copy(consent = value) }
+    /** Only once the consent page is loaded (decision 2026-10-19 Q2). */
+    fun setConsent(value: Boolean) = _state.update { if (it.consentPage == ConsentPage.Loaded) it.copy(consent = value) else it }
+
+    /** Loads the REG-12 page; on failure the screens show "Halaman tidak dapat dimuat. Coba lagi." with a retry. */
+    fun loadConsentPage() {
+        if (_state.value.consentPage == ConsentPage.Loaded) return
+        _state.update { it.copy(consentPage = ConsentPage.Loading) }
+        viewModelScope.launch {
+            val ok = repository.loadConsentPage()
+            _state.update { it.copy(consentPage = if (ok) ConsentPage.Loaded else ConsentPage.Failed, consent = it.consent && ok) }
+        }
+    }
 
     /** "Mulai Baru". */
     fun discardDraft() {
@@ -282,7 +294,7 @@ class PartnerRegistrationViewModel(
         val s = _state.value
         val location = s.location ?: return
         // PRD Scope 1 v2 C5: consent is required and saved with the first submission only (not on Kirim Ulang).
-        if (s.submitting || s.submitted != null || location.mock || !s.consent) return
+        if (s.submitting || s.submitted != null || location.mock || !s.consent || s.consentPage != ConsentPage.Loaded) return
         _state.update { it.copy(submitting = true) }
         val p = partners.submit(s.toPartner(partners.now(), location).copy(consent = Consent(partners.now(), Consent.VERSION, user.id)))
         store.deleteDraft(user.id)

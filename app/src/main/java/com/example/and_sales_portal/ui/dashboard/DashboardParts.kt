@@ -56,6 +56,8 @@ import java.util.Locale
 enum class Period(val label: Int) {
     TODAY(R.string.perf_period_today),
     WEEK(R.string.perf_period_week),
+    /** Last Monday–Sunday: the TL can still correct it (decision 2026-10-19). */
+    LAST_WEEK(R.string.perf_period_last_week),
     MONTH(R.string.perf_period_month),
     LAST_MONTH(R.string.perf_period_last_month),
     ;
@@ -63,6 +65,7 @@ enum class Period(val label: Int) {
     fun range(today: LocalDate): ClosedRange<LocalDate> = when (this) {
         TODAY -> today..today
         WEEK -> today.with(DayOfWeek.MONDAY)..today
+        LAST_WEEK -> today.with(DayOfWeek.MONDAY).minusWeeks(1)..today.with(DayOfWeek.MONDAY).minusDays(1)
         MONTH -> today.withDayOfMonth(1)..today
         LAST_MONTH -> today.minusMonths(1).withDayOfMonth(1)..today.withDayOfMonth(1).minusDays(1)
     }

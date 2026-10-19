@@ -53,6 +53,10 @@ import com.example.and_sales_portal.ui.partner.rupiah
 import com.example.and_sales_portal.ui.visits.VisitItem
 import com.example.and_sales_portal.ui.visits.VisitWeekBadge
 import com.example.and_sales_portal.ui.visits.VisitStatusBadge
+import com.example.and_sales_portal.ui.attendance.CorrectionHistory
+import com.example.and_sales_portal.designsystem.components.feedback.AmarBadge
+import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeSize
+import com.example.and_sales_portal.designsystem.components.feedback.AmarBadgeType
 import java.time.LocalDate
 
 /** Screen with an App Bar and tabs above scrolling content (Kinerja SA/SR, Insentif TL, Kinerja Penjualan TL). */
@@ -197,15 +201,34 @@ fun TeamProductivityScreen(period: Period, onPeriod: (Period) -> Unit, rows: Lis
 }
 
 /** A day of attendance evidence. */
-data class EvidenceDay(val date: LocalDate, val status: AttendanceStatus, val attendance: Attendance?, val visits: List<VisitItem>)
+/** A day of TL-07 evidence. [canCorrect]: the TL can still correct it (until the end of the following week). */
+data class EvidenceDay(
+    val date: LocalDate,
+    val status: AttendanceStatus,
+    val attendance: Attendance?,
+    val visits: List<VisitItem>,
+    val noCheckOut: Boolean = false,
+    val canCorrect: Boolean = false,
+)
 
-/** Spec: TL-07 Bukti absensi & kunjungan of one SA/SR (PRD C9 "with selfie and map evidence"). */
+/**
+ * Spec: TL-07 Bukti absensi & kunjungan of one SA/SR (PRD C9 "with selfie and map evidence"); decisions 2026-10-19:
+ * "Tidak check out", "Dikoreksi TL" with the history, and `Koreksi Absensi` → TL-11 (disabled after the deadline).
+ */
 @Composable
-fun EvidenceScreen(name: String, period: Period, onPeriod: (Period) -> Unit, days: List<EvidenceDay>, onBack: () -> Unit, onMap: (Double, Double) -> Unit) {
+fun EvidenceScreen(
+    name: String,
+    period: Period,
+    onPeriod: (Period) -> Unit,
+    days: List<EvidenceDay>,
+    onBack: () -> Unit,
+    onMap: (Double, Double) -> Unit,
+    onCorrect: ((LocalDate) -> Unit)? = null,
+) {
     val c = AmarTheme.colors
     ScreenScaffold(name, onBack) {
         Text(stringResource(R.string.prod_evidence), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        PeriodChips(listOf(Period.TODAY, Period.WEEK, Period.MONTH), period, onPeriod)
+        PeriodChips(listOf(Period.TODAY, Period.WEEK, Period.LAST_WEEK, Period.MONTH), period, onPeriod)
         if (days.isEmpty()) AmarInfoBox(stringResource(R.string.perf_empty), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
         days.forEach { d ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
@@ -214,8 +237,9 @@ fun EvidenceScreen(name: String, period: Period, onPeriod: (Period) -> Unit, day
                     AttendanceBadge(d.status)
                 }
                 val inPunch = d.attendance?.clockIn
-                PresenceBadge(d.attendance)
-                Text(inPunch?.let { stringResource(R.string.prod_clock_in, Fmt.timeLabel(it, d.attendance!!.employeeId)) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+                if (d.noCheckOut) AmarBadge(stringResource(R.string.att_no_check_out), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small) else PresenceBadge(d.attendance)
+                if (d.attendance?.corrected == true) AmarBadge(stringResource(R.string.att_corrected), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
+                Text(d.attendance?.let { Fmt.checkInLabel(it) }?.let { stringResource(R.string.prod_clock_in, it) } ?: stringResource(R.string.prod_no_clock_in), color = c.content.secondary, style = AmarTheme.typography.bodySm)
                 if (inPunch != null) {
                     inPunch.place?.let { place -> Text(inPunch.distance?.let { stringResource(R.string.prod_place, place, distanceLabel(it)) } ?: place, color = c.content.secondary, style = AmarTheme.typography.bodySm) }
                     Text(if (inPunch.selfie != null) stringResource(R.string.prod_selfie) else stringResource(R.string.prod_selfie_missing), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
@@ -227,6 +251,11 @@ fun EvidenceScreen(name: String, period: Period, onPeriod: (Period) -> Unit, day
                         Text(v.store.name, Modifier.weight(1f), c.content.secondary, style = AmarTheme.typography.bodySm, maxLines = 1)
                         VisitStatusBadge(v.status)
                     }
+                }
+                d.attendance?.corrections?.takeIf { it.isNotEmpty() }?.let { CorrectionHistory(it, d.attendance.employeeId) }
+                onCorrect?.let { open ->
+                    AmarButton(stringResource(R.string.cor_open), { open(d.date) }, type = AmarButtonType.Secondary, size = AmarButtonSize.Small, enabled = d.canCorrect)
+                    if (!d.canCorrect) Text(stringResource(R.string.cor_closed_short), color = c.content.tertiary, style = AmarTheme.typography.captionSm)
                 }
             }
         }

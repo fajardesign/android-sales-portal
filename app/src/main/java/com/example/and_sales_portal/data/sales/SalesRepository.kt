@@ -187,7 +187,8 @@ class SalesRepository(private val partners: PartnerRepository, private val ops: 
             val rate = 0.9 + seededRandom(seed(s.id)).nextDouble() * 1.4
             var d = start
             while (d.isBefore(stop) && !d.isAfter(today())) {
-                if (ActivityRules.isWorkday(d)) {
+                // Sample loan pattern (not an attendance rule): no loans on Sundays.
+                if (d.dayOfWeek != java.time.DayOfWeek.SUNDAY) {
                     val rnd = seededRandom(seed(s.id) * 1_000_003 + d.toEpochDay())
                     val n = kotlin.math.floor(rate + rnd.nextDouble() - 0.5 + if (rnd.nextDouble() < 0.15) 1 else 0).toInt()
                     repeat(n) { i ->

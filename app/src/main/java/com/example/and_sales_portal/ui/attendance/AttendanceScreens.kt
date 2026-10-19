@@ -35,10 +35,23 @@ import com.example.and_sales_portal.ui.common.Fmt
 import com.example.and_sales_portal.ui.common.LayeredIcon
 import com.example.and_sales_portal.ui.common.ScreenScaffold
 import com.example.and_sales_portal.ui.common.SectionTitle
+import com.example.and_sales_portal.data.activity.AttendanceWeek
+import com.example.and_sales_portal.data.activity.AttendanceCorrection
+import com.example.and_sales_portal.data.demo.DemoDirectory
+import com.example.and_sales_portal.ui.common.ProgressSummary
 import java.time.LocalDate
 
-/** A day in the attendance history. */
-data class AttendanceDay(val date: LocalDate, val attendance: Attendance?, val status: AttendanceStatus)
+/**
+ * A day in the attendance history. [noCheckOut] = a past day with check in and no check out (still present, Q6);
+ * [week] = this week's check ins over the target of 6 (shown on today's card).
+ */
+data class AttendanceDay(
+    val date: LocalDate,
+    val attendance: Attendance?,
+    val status: AttendanceStatus,
+    val noCheckOut: Boolean = false,
+    val week: AttendanceWeek? = null,
+)
 
 /** What ATT-01 shows: today, the history (newest first) and whether the device is online. */
 data class AttendanceUiState(
@@ -79,10 +92,12 @@ fun AttendanceCard(
                 TimeTile(stringResource(R.string.att_clock_in), a?.clockIn, a?.employeeId, c.background.brandSubtle)
                 TimeTile(stringResource(R.string.att_clock_out), a?.clockOut, a?.employeeId, c.background.canvas)
             }
+            // Q6: 6 check ins a week (Monday–Sunday), any day.
+            day.week?.let { w -> ProgressSummary(stringResource(R.string.att_week_progress, w.checkIns, w.target), minOf(w.checkIns, w.target), w.target) }
         }
         when {
-            // Sunday is not a workday (Monday–Saturday, PRD Scope 2 S10): no check in kerja.
-            a?.clockIn == null -> AmarButton(stringResource(R.string.att_clock_in), onClockIn, Modifier.fillMaxWidth(), size = AmarButtonSize.Medium, enabled = online && day.status != AttendanceStatus.NOT_WORKDAY)
+            // Q6: every day is a workday, weekends, holidays and leave included.
+            a?.clockIn == null -> AmarButton(stringResource(R.string.att_clock_in), onClockIn, Modifier.fillMaxWidth(), size = AmarButtonSize.Medium, enabled = online)
             a.clockOut == null -> AmarButton(stringResource(R.string.att_clock_out), onClockOut, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium, enabled = online)
             else -> Text(stringResource(R.string.att_done), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         }
@@ -113,7 +128,7 @@ private fun RowScope.TimeTile(label: String, punch: Punch?, employeeId: Long?, b
 
 /**
  * Figma `Attendance status`: Badge Small; labels from the revision 2026-10-08: "Belum Check In" Warning, "Tepat Waktu"
- * Success, "Terlambat" Warning, "Absen" Error (also check in without check out, S13), "Bukan hari kerja" Info (Sunday).
+ * Success, "Terlambat" Warning, "Absen" Error (a day without check in, Q6).
  */
 @Composable
 fun AttendanceBadge(status: AttendanceStatus) {
@@ -122,7 +137,6 @@ fun AttendanceBadge(status: AttendanceStatus) {
         AttendanceStatus.ON_TIME -> R.string.att_status_on_time to AmarBadgeType.Success
         AttendanceStatus.LATE -> R.string.att_status_late to AmarBadgeType.Warning
         AttendanceStatus.ABSENT -> R.string.att_status_absent to AmarBadgeType.Error
-        AttendanceStatus.NOT_WORKDAY -> R.string.att_status_not_workday to AmarBadgeType.Info
     }
     AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small)
 }
@@ -138,36 +152,74 @@ fun PresenceBadge(a: Attendance?) {
     AmarBadge(stringResource(label), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
 }
 
-/** Spec: ATT-01 Absensi (PRD v3 D2: clock in/out and history with dates, times and status). */
+/**
+ * Spec: ATT-01 Absensi (PRD v3 D2: clock in/out and history with dates, times and status; decisions 2026-10-19: this
+ * week's "n/6 check-in", "Tidak check out", and the TL's corrections with "Dikoreksi TL").
+ */
 @Composable
 fun AttendanceScreen(state: AttendanceUiState, onBack: () -> Unit, onClockIn: () -> Unit, onClockOut: () -> Unit) {
     ScreenScaffold(stringResource(R.string.att_title), onBack) {
         if (!state.online) AmarInfoBox(stringResource(R.string.att_offline), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
         Text(Fmt.longDate(state.today.date), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
         AttendanceCard(state.today, state.online, onClockIn, onClockOut)
+        Text(stringResource(R.string.att_rule), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.captionSm)
         SectionTitle(stringResource(R.string.att_history))
         state.history.forEach { HistoryRow(it) }
     }
 }
 
 @Composable
-private fun HistoryRow(day: AttendanceDay) {
+fun HistoryRow(day: AttendanceDay, onClick: (() -> Unit)? = null) {
     val c = AmarTheme.colors
     val a = day.attendance
-    AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+    AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = onClick) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                 Text(Fmt.shortDate(day.date), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                 Text(
-                    stringResource(R.string.att_history_row, a?.clockIn?.let { Fmt.timeLabel(it, a.employeeId) } ?: "--:--", a?.clockOut?.let { Fmt.timeLabel(it, a.employeeId) } ?: "--:--"),
+                    stringResource(R.string.att_history_row, a?.let { Fmt.checkInLabel(it) } ?: "--:--", a?.clockOut?.let { Fmt.timeLabel(it, a.employeeId) } ?: "--:--"),
                     color = c.content.secondary,
                     style = AmarTheme.typography.bodySm,
                 )
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
                 AttendanceBadge(day.status)
-                PresenceBadge(a)
+                if (day.noCheckOut) AmarBadge(stringResource(R.string.att_no_check_out), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small) else PresenceBadge(a)
+                if (a?.corrected == true) AmarBadge(stringResource(R.string.att_corrected), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
             }
         }
+        a?.corrections?.takeIf { it.isNotEmpty() }?.let { CorrectionHistory(it, a.employeeId) }
     }
+}
+
+/** "Dikoreksi TL" history: who and when, old → new status and check-in time, and the reason (decision 2026-10-19). */
+@Composable
+fun CorrectionHistory(corrections: List<AttendanceCorrection>, employeeId: Long) {
+    val c = AmarTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileTextGap)) {
+        corrections.asReversed().forEach { k ->
+            val from = statusText(k.fromStatus, k.fromClockIn, employeeId)
+            val to = statusText(k.toStatus, k.toClockIn, employeeId)
+            Text(stringResource(R.string.att_correction_line, from, to), color = c.content.primary, style = AmarTheme.typography.bodySm)
+            Text(stringResource(R.string.att_correction_reason, k.reason), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            Text(
+                stringResource(R.string.att_correction_meta, DemoDirectory.person(k.by)?.fullName.orEmpty(), Fmt.shortDate(java.time.Instant.ofEpochMilli(k.at).atZone(ActivityRules.LOCK_ZONE).toLocalDate()), Fmt.timeLabel(k.at)),
+                color = c.content.tertiary, style = AmarTheme.typography.captionSm,
+            )
+        }
+    }
+}
+
+@Composable
+private fun statusText(status: AttendanceStatus, at: Long?, employeeId: Long): String {
+    val label = stringResource(statusLabel(status))
+    val zone = ActivityRules.zoneOf(employeeId)
+    return at?.let { "$label ${Fmt.time(it, zone)} ${ActivityRules.label(zone)}" } ?: label
+}
+
+fun statusLabel(status: AttendanceStatus): Int = when (status) {
+    AttendanceStatus.NOT_YET -> R.string.att_status_not_yet
+    AttendanceStatus.ON_TIME -> R.string.att_status_on_time
+    AttendanceStatus.LATE -> R.string.att_status_late
+    AttendanceStatus.ABSENT -> R.string.att_status_absent
 }

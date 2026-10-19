@@ -65,15 +65,16 @@ class StoreHolderHistoryTest {
 
         partners.unassign(11, toko, 6)
         assertEquals(past, ops.visitWeek(11, lastWeek))
-        // Released on Wednesday: gone from this week (Siti can no longer check in there; Tamalanrea left on Monday).
-        assertEquals(1, ops.visitWeek(11, thisWeek).target)
+        // Released on Wednesday: still Siti's target this week, locked on Monday 00:00 WIB (Q5).
+        assertEquals(3, ops.visitWeek(11, thisWeek).target)
 
-        // Assigned on Wednesday to Nurul (SA 16): this week at once (S9/S11), never in a past week.
+        // Assigned on Wednesday to Nurul (SA 16): from next week, never in a past week.
         val nurulPast = ops.visitWeek(16, lastWeek).target
         val nurulNow = ops.visitWeek(16, thisWeek).target
         assertEquals(null, partners.assign(6, 16, toko))
         assertEquals(nurulPast, ops.visitWeek(16, lastWeek).target)
-        assertEquals(nurulNow + 1, ops.visitWeek(16, thisWeek).target)
+        assertEquals(nurulNow, ops.visitWeek(16, thisWeek).target)
+        assertEquals(nurulNow + 1, ops.visitWeek(16, thisWeek.plusWeeks(1)).target)
     }
 
     @Test
@@ -88,17 +89,16 @@ class StoreHolderHistoryTest {
     }
 
     @Test
-    fun tokoAssignedMidWeekCountsThisWeekAtOnce() {
-        // PRD Scope 2 S9/S11 (replaces decision 2026-10-14): this week's target follows the toko held now.
+    fun tokoAssignedMidWeekCountsFromNextWeek() {
+        // Q5 (2026-10-19, replacing S9): the old holder keeps it in this week's target; the new one from next week.
         val toko = "REG2026-0139-1" // Eko (SA 15) since the sample
-        val ekoLast = ops.visitWeek(15, lastWeek)
         partners.unassign(15, toko, 6)
         assertEquals(null, partners.assign(6, 16, toko)) // Nurul gets it on Wednesday
         assertEquals(setOf("REG2026-0132-1", toko), ops.visitPartners(16, wednesday).flatMap { it.stores }.map { it.store.id }.toSet())
-        assertEquals(2, ops.visitWeek(16, thisWeek).target)
-        // Eko: gone from this week at once; his closed week keeps it.
-        assertEquals(0, ops.visitWeek(15, thisWeek).target)
-        assertEquals(ekoLast, ops.visitWeek(15, lastWeek))
+        assertEquals(1, ops.visitWeek(16, thisWeek).target)
+        assertEquals(2, ops.visitWeek(16, thisWeek.plusWeeks(1)).target)
+        assertEquals(1, ops.visitWeek(15, thisWeek).target)
+        assertEquals(0, ops.visitWeek(15, thisWeek.plusWeeks(1)).target)
         assertTrue(ops.visitPartners(15, wednesday).none { g -> g.stores.any { it.store.id == toko } })
     }
 }

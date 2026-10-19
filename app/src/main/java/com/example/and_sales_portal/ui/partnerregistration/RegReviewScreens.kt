@@ -17,6 +17,10 @@ import androidx.compose.ui.text.withLink
 import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.designsystem.components.inputs.AmarSelectionControl
+import com.example.and_sales_portal.designsystem.components.feedback.AmarInfoBox
+import com.example.and_sales_portal.designsystem.components.feedback.AmarInfoBoxType
+import com.example.and_sales_portal.designsystem.components.feedback.AmarSpinner
+import com.example.and_sales_portal.designsystem.theme.AmarActivityTokens
 import com.example.and_sales_portal.designsystem.theme.AmarSpace
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.ui.attendance.CaptureActions
@@ -60,13 +64,16 @@ fun RegLocationScreen(
     consent: Boolean = false,
     onConsent: (Boolean) -> Unit = {},
     onOpenConsent: () -> Unit = {},
+    /** Decision 2026-10-19 Q2: the checkbox and "Kirim Pengajuan" wait until the consent page is loaded. */
+    consentPage: ConsentPage = ConsentPage.Loaded,
+    onRetryConsent: () -> Unit = {},
 ) {
     ScreenScaffold(
         stringResource(R.string.reg_app_bar_title),
         onBack,
         action = {
             if (location.found != null) {
-                PersistentAction(stringResource(R.string.reg_location_cta), onSubmit, enabled = consent, loading = submitting)
+                PersistentAction(stringResource(R.string.reg_location_cta), onSubmit, enabled = consent && consentPage == ConsentPage.Loaded, loading = submitting)
             } else {
                 PersistentAction(stringResource(R.string.ts_take_location), actions.onLocate, loading = location.locating)
             }
@@ -74,13 +81,20 @@ fun RegLocationScreen(
     ) {
         StepIntro(null, RegStep.count, stringResource(R.string.reg_location_title), stringResource(R.string.reg_location_description))
         LocationCaptureContent(location, actions)
-        if (location.found != null) ConsentCheck(consent, onConsent, onOpenConsent)
+        if (location.found != null) {
+            when (consentPage) {
+                ConsentPage.Loading -> Text(stringResource(R.string.reg_consent_loading), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
+                ConsentPage.Failed -> ConsentFailed(onRetryConsent)
+                ConsentPage.Loaded -> Unit
+            }
+            ConsentCheck(consent, onConsent, onOpenConsent, enabled = consentPage == ConsentPage.Loaded)
+        }
     }
 }
 
 /** "Saya telah membaca dan menyetujui [Konfirmasi dan Persetujuan Pendaftaran Toko]." with the title as a link. */
 @Composable
-private fun ConsentCheck(checked: Boolean, onChecked: (Boolean) -> Unit, onOpen: () -> Unit) {
+private fun ConsentCheck(checked: Boolean, onChecked: (Boolean) -> Unit, onOpen: () -> Unit, enabled: Boolean = true) {
     val title = stringResource(R.string.reg_consent_title)
     val full = stringResource(R.string.reg_consent_check, title)
     val start = full.indexOf(title)
@@ -91,16 +105,37 @@ private fun ConsentCheck(checked: Boolean, onChecked: (Boolean) -> Unit, onOpen:
         append(full.substring(start + title.length))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AmarSpace.S8), verticalAlignment = Alignment.Top) {
-        AmarSelectionControl(checked, onChecked)
+        AmarSelectionControl(checked, onChecked, enabled = enabled)
         Text(text, style = AmarTheme.typography.bodyMd, color = AmarTheme.colors.content.primary)
     }
 }
 
-/** Spec: REG-12 Konfirmasi dan Persetujuan Pendaftaran Toko (PRD Scope 1 v2 C5), opened from the REG-08 checkbox. */
+/** "Halaman tidak dapat dimuat. Coba lagi." with a retry (decision 2026-10-19 Q2). */
 @Composable
-fun RegConsentScreen(onBack: () -> Unit) {
+private fun ConsentFailed(onRetry: () -> Unit) {
+    AmarInfoBox(
+        stringResource(R.string.reg_consent_failed), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Error,
+        buttonLabel = stringResource(R.string.common_retry), onButtonClick = onRetry,
+    )
+}
+
+/**
+ * Spec: REG-12 Konfirmasi dan Persetujuan Pendaftaran Toko (PRD Scope 1 v2 C5), opened from the REG-08 checkbox. Decision
+ * 2026-10-19 (Q2): the page is loaded (spinner), and may fail with "Halaman tidak dapat dimuat. Coba lagi." + retry.
+ */
+@Composable
+fun RegConsentScreen(page: ConsentPage = ConsentPage.Loaded, onBack: () -> Unit, onRetry: () -> Unit = {}) {
     ScreenScaffold(stringResource(R.string.reg_consent_title), onBack) {
-        Text(stringResource(R.string.reg_consent_p1), style = AmarTheme.typography.bodyMd, color = AmarTheme.colors.content.primary)
-        Text(stringResource(R.string.reg_consent_p2), style = AmarTheme.typography.bodyMd, color = AmarTheme.colors.content.primary)
+        when (page) {
+            ConsentPage.Loading -> Row(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.SequenceGap), verticalAlignment = Alignment.CenterVertically) {
+                AmarSpinner(AmarTheme.colors.icon.brand)
+                Text(stringResource(R.string.reg_consent_loading), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodyMd)
+            }
+            ConsentPage.Failed -> ConsentFailed(onRetry)
+            ConsentPage.Loaded -> {
+                Text(stringResource(R.string.reg_consent_p1), style = AmarTheme.typography.bodyMd, color = AmarTheme.colors.content.primary)
+                Text(stringResource(R.string.reg_consent_p2), style = AmarTheme.typography.bodyMd, color = AmarTheme.colors.content.primary)
+            }
+        }
     }
 }

@@ -115,4 +115,22 @@ class FullScreensScreenshotTest {
         capture("att_02_location") { CaptureScreen(base, CaptureActions()) }
         capture("att_02_selfie") { CaptureScreen(base.copy(step = CaptureStep.Selfie), CaptureActions()) }
     }
+
+    @Test
+    fun handoverAdjustments() {
+        // Decisions 2026-10-19: attendance history with "Tidak check out" and "Dikoreksi TL"; TL-11 Koreksi Absensi.
+        val repo = com.example.and_sales_portal.data.activity.ActivityRepository(ops, partners, 11, SalesRole.SR)
+        capture("att_01_absensi") {
+            com.example.and_sales_portal.ui.attendance.AttendanceScreen(com.example.and_sales_portal.ui.attendance.AttendanceFragment.attendanceState(repo, true), {}, {}, {})
+        }
+        val day = ActivityRules.weekStart(today).minusWeeks(1).let { mon -> (0L..6L).map { mon.plusDays(it) }.first { ops.attendanceOf(11, it)?.corrected == true } }
+        val a = ops.attendanceOf(11, day)
+        val st = com.example.and_sales_portal.ui.team.CorrectionUiState("Siti Rahmawati", com.example.and_sales_portal.ui.attendance.AttendanceFragment.attendanceDay(a, day, today), true, today.plusDays(4))
+        capture("tl_11_correction") {
+            com.example.and_sales_portal.ui.team.AttendanceCorrectionScreen(st, com.example.and_sales_portal.ui.team.CorrectionForm(AttendanceStatus.ON_TIME, "08:50", ""), {}, {}, {})
+        }
+        capture("tl_11_correction_expired") {
+            com.example.and_sales_portal.ui.team.AttendanceCorrectionScreen(st.copy(canCorrect = false), com.example.and_sales_portal.ui.team.CorrectionForm(), {}, {}, {})
+        }
+    }
 }

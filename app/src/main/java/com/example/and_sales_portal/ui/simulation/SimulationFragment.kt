@@ -127,12 +127,14 @@ fun SimulationScreen(
                     LocationMode.AT_STORE to R.string.sim_location_store,
                     LocationMode.DEVICE to R.string.sim_location_device,
                     LocationMode.OUT_OF_RADIUS to R.string.sim_location_out,
+                    LocationMode.LOW_ACCURACY to R.string.sim_location_low_accuracy,
                 ).forEach { (mode, label) ->
                     AmarChip(stringResource(label), selected = sim.location == mode, onClick = { onChange { it.copy(location = mode) } })
                 }
             }
             Switch(R.string.sim_mock, sim.mockLocation) { v -> onChange { it.copy(mockLocation = v) } }
             Switch(R.string.sim_offline, sim.offline) { v -> onChange { it.copy(offline = v) } }
+            Switch(R.string.sim_consent_fails, sim.consentFails) { v -> onChange { it.copy(consentFails = v) } }
         }
         admin?.let { a ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {

@@ -217,12 +217,17 @@ class EvidenceFragment : ComposeFragment() {
         val today = o.today()
         val days = remember(ops, period) {
             val r = period.range(today)
-            generateSequence(r.endInclusive) { it.minusDays(1) }.takeWhile { !it.isBefore(r.start) }.filter(ActivityRules::isWorkday).map { d ->
+            generateSequence(r.endInclusive) { it.minusDays(1) }.takeWhile { !it.isBefore(r.start) }.map { d ->
                 val a = o.attendanceOf(id, d)
-                EvidenceDay(d, o.attendanceStatus(id, d), a, o.visitsOf(id, d).mapNotNull { container.item(it) })
+                EvidenceDay(d, o.attendanceStatus(id, d), a, o.visitsOf(id, d).mapNotNull { container.item(it) }, ActivityRules.noCheckOut(a, d, o.todayOf(id)), o.canCorrect(id, d))
             }.toList()
         }
-        EvidenceScreen(person.fullName, period, { period = it }, days, ::back) { lat, lng -> openMaps(lat, lng) }
+        // TL-11 (decision 2026-10-19): the TL corrects a subordinate's day from here.
+        val leads = person.supervisorId == session?.user?.id
+        EvidenceScreen(
+            person.fullName, period, { period = it }, days, ::back, { lat, lng -> openMaps(lat, lng) },
+            onCorrect = if (leads) { d -> navigate(R.id.attendance_correction, com.example.and_sales_portal.ui.team.AttendanceCorrectionFragment.args(id, d)) } else null,
+        )
     }
 }
 

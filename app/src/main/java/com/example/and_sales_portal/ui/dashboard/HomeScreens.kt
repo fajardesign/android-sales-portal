@@ -170,7 +170,8 @@ private fun WeekVisitsCard(week: VisitWeek, visitedToday: Boolean, groups: List<
         Column {
             stores.take(MAX_STORES).forEachIndexed { i, (p, ws) ->
                 if (i > 0) AmarDivider()
-                ListRow(ws.store.name, p.name, onClick = onVisits) { VisitedBadge(ws.visited, partner = false) }
+                val subtitle = if (!ws.counted) stringResource(R.string.vis_row_next_week, p.name) else p.name
+                ListRow(ws.store.name, subtitle, onClick = onVisits) { VisitedBadge(ws.visited, partner = false) }
             }
         }
         if (stores.size > MAX_STORES) {

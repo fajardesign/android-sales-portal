@@ -37,7 +37,10 @@ abstract class RegFragment : ComposeFragment() {
 
     protected val viewModel: PartnerRegistrationViewModel by navGraphViewModels(R.id.nav_partner_registration) {
         viewModelFactory {
-            initializer { PartnerRegistrationViewModel(FakePartnerRegistrationRepository(), container.partners, container.demo, requireNotNull(session).user) }
+            initializer {
+                val sim = container.simulation
+                PartnerRegistrationViewModel(FakePartnerRegistrationRepository(consentFails = { sim.value.consentFails }), container.partners, container.demo, requireNotNull(session).user)
+            }
         }
     }
 
@@ -231,6 +234,8 @@ class RegLocationFragment : RegFragment() {
             consent = state.consent,
             onConsent = viewModel::setConsent,
             onOpenConsent = { navigate(R.id.action_reg08_to_consent) },
+            consentPage = state.consentPage,
+            onRetryConsent = viewModel::loadConsentPage,
         )
         if (confirm) {
             ConfirmDialog(
@@ -252,7 +257,7 @@ class RegLocationFragment : RegFragment() {
 class RegConsentFragment : RegFragment() {
     @Composable
     override fun Content(state: PartnerRegistrationState) {
-        RegConsentScreen(::back)
+        RegConsentScreen(state.consentPage, ::back, viewModel::loadConsentPage)
     }
 }
 

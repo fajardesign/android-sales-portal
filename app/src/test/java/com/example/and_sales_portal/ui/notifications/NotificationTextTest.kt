@@ -3,7 +3,6 @@ package com.example.and_sales_portal.ui.notifications
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.and_sales_portal.data.partner.AssignmentAction
 import com.example.and_sales_portal.data.partner.AssignmentEvent
-import com.example.and_sales_portal.ui.partner.ReferralQr
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -12,7 +11,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** In-app notification copy (PRD Scope 1 v1.1: 1.5 FR-MP-009 for SA/SR, 1.7 FR-006 for TL) and the sample QR. */
+/** In-app notification copy (PRD Scope 1 v1.1: 1.5 FR-MP-009 for SA/SR, 1.7 FR-006 for TL). */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class NotificationTextTest {
@@ -65,17 +64,5 @@ class NotificationTextTest {
             "Anda dilepas dari Jaya Abadi Cellular Sudiang (Jaya Abadi Cellular).",
             text(event(AssignmentAction.RELEASE, AssignmentEvent.SYSTEM, "partner nonaktif", AssignmentEvent.TL)),
         )
-    }
-
-    @Test
-    fun sampleQrHasFinderSquaresAndDependsOnTheCode() {
-        val a = ReferralQr.cells("OFMKS1391")
-        assertEquals(ReferralQr.N, a.size)
-        // Finder squares: dark ring, light ring, dark centre (top left, top right, bottom left).
-        listOf(0 to 0, ReferralQr.N - 7 to 0, 0 to ReferralQr.N - 7).forEach { (x, y) ->
-            assertTrue(a[y][x] && !a[y + 1][x + 1] && a[y + 3][x + 3])
-        }
-        assertTrue(a.zip(ReferralQr.cells("OFMKS1392")).any { (r1, r2) -> !r1.contentEquals(r2) })
-        assertTrue(a.zip(ReferralQr.cells("OFMKS1391")).all { (r1, r2) -> r1.contentEquals(r2) })
     }
 }

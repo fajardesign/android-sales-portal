@@ -312,8 +312,16 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         _assignments.value.events.filter { it.employeeId == employeeId && it.seat == AssignmentEvent.SALES }.asReversed().sortedByDescending { it.at }
 
     /** Notifications of [employeeId], newest first. */
-    fun notificationsOf(employeeId: Long): List<AppNotification> =
-        _assignments.value.notifications.filter { it.employeeId == employeeId }.asReversed().sortedByDescending { it.at }
+    /** Notifications of [employeeId] of the last [NOTIFICATION_DAYS] days (Designer Q3, 2026-10-19), newest first. */
+    fun notificationsOf(employeeId: Long): List<AppNotification> {
+        val from = now() - NOTIFICATION_DAYS * DAY_MS
+        return _assignments.value.notifications.filter { it.employeeId == employeeId && it.at >= from }.asReversed().sortedByDescending { it.at }
+    }
+
+    /** Opening one notification marks it read (Designer Q3: read / unread per notification). */
+    fun markNotificationRead(id: String) = changeAssignments { d ->
+        d.copy(notifications = d.notifications.map { if (it.id == id) it.copy(read = true) else it })
+    }
 
     fun markNotificationsRead(employeeId: Long) = changeAssignments { d ->
         d.copy(notifications = d.notifications.map { if (it.employeeId == employeeId) it.copy(read = true) else it })
@@ -478,6 +486,10 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     companion object {
         private val ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
         const val ADMIN = "Rina Saraswati (Admin)"
+        /** Notifications are kept 30 days (Designer Q3, 2026-10-19); older ones are not shown. */
+        const val NOTIFICATION_DAYS = 30L
+        private const val DAY_MS = 86_400_000L
+
         /** FR-021: Ubah Area from Under Review up to Active. */
         private val AREA_EDITABLE = setOf(PartnerStatus.UNDER_REVIEW, PartnerStatus.REVISION_REQUIRED, PartnerStatus.VERIFIED, PartnerStatus.WAITING_PKS, PartnerStatus.ACTIVE)
 

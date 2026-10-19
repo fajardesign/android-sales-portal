@@ -11,6 +11,7 @@ import com.example.and_sales_portal.ui.partnerregistration.data.FakePartnerRegis
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +36,8 @@ class RegConsentTest {
 
     @Test
     fun kirimPengajuanNeedsTheConsentAndSavesIt() {
-        val vm = PartnerRegistrationViewModel(FakePartnerRegistrationRepository(), partners, store, siti)
+        val vm = PartnerRegistrationViewModel(FakePartnerRegistrationRepository(latencyMillis = 0), partners, store, siti)
+        assertEquals(ConsentPage.Loaded, vm.state.value.consentPage)
         vm.setLocation(LocationResult.Found(-5.1478, 119.4326, "Panakkukang, Kota Makassar", false))
         val before = partners.partners.value.size
         vm.submit()
@@ -45,7 +47,26 @@ class RegConsentTest {
         vm.setConsent(true)
         vm.submit()
         val id = requireNotNull(vm.state.value.submitted).registrationNumber
-        assertEquals(Consent(now.toEpochMilli(), "1.0", 11), partners.get(id)!!.consent)
+        // Decision 2026-10-19 (Q2): the proof keeps the URL of the page too (placeholder until OQ-PA-13).
+        assertEquals(Consent(now.toEpochMilli(), "1.0", 11, Consent.URL), partners.get(id)!!.consent)
+    }
+
+    @Test
+    fun consentPageThatFailsBlocksTheCheckboxUntilRetried() {
+        var fails = true
+        val vm = PartnerRegistrationViewModel(FakePartnerRegistrationRepository(latencyMillis = 0, consentFails = { fails }), partners, store, siti)
+        assertEquals(ConsentPage.Failed, vm.state.value.consentPage)
+        vm.setLocation(LocationResult.Found(-5.1478, 119.4326, "Panakkukang, Kota Makassar", false))
+        vm.setConsent(true)
+        assertTrue(!vm.state.value.consent)
+        vm.submit()
+        assertNull(vm.state.value.submitted)
+        fails = false
+        vm.loadConsentPage()
+        assertEquals(ConsentPage.Loaded, vm.state.value.consentPage)
+        vm.setConsent(true)
+        vm.submit()
+        assertNotNull(vm.state.value.submitted)
     }
 
     @Test
