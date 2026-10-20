@@ -133,8 +133,8 @@ class ActivityRepositoryTest {
         assertTrue(!r.checkOut(w.id, Punch(now.toEpochMilli(), 0.0, 0.0), null))
         assertNull(r.visit(w.id)?.checkOut)
         assertEquals(2, ops.visitWeek(11, ActivityRules.weekStart(next)).visited)
-        // Attendance is independent: a work check in without check out stays present ("Tidak check out", Q6).
-        assertEquals(AttendanceStatus.LATE, ops.attendanceStatus(11, next))
+        // Attendance: a work check in without check out before 23:59 is Absen once the day is over (S13, 2026-10-20).
+        assertEquals(AttendanceStatus.ABSENT, ops.attendanceStatus(11, next))
         assertTrue(ActivityRules.noCheckOut(ops.attendanceOf(11, next), next, next.plusDays(1)))
     }
 
@@ -146,23 +146,31 @@ class ActivityRepositoryTest {
         assertEquals(listOf(LocalDate.of(2026, 9, 21), LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 5)), ops.visitWeeks(11, LocalDate.of(2026, 9, 21)..wednesday.plusDays(10)).map { it.start })
         // "Hari ini" on a Wednesday has no week of its own; the current week is shown separately.
         assertTrue(ops.visitWeeks(11, wednesday..wednesday).isEmpty())
-        // Target = Siti's 3 toko held on Monday 00:00 WIB (Q5): Tamalanrea left on Monday 10:30, after the lock.
-        assertEquals(3, ops.visitWeek(11, wednesday.minusDays(2)).target)
+        // Target = Siti's toko held on Monday 00:00 WIB (Q5). Tamalanrea left on Monday 10:30 without a visit: it leaves
+        // her target (S20, decision 2026-10-20); last week it still counts.
+        assertEquals(2, ops.visitWeek(11, wednesday.minusDays(2)).target)
         assertEquals(3, ops.visitWeek(11, wednesday.minusDays(9)).target)
     }
 
     @Test
     fun weekTargetIsLockedOnMondayWib() {
-        // Q5 (2026-10-19, replacing S9): the target is the toko held on Monday 00:00 WIB; the week runs Monday–Sunday.
+        // Q5 / S20: the target is the toko held on Monday 00:00 WIB; the week runs Monday–Sunday.
         val monday = wednesday.minusDays(2)
         assertEquals(monday.plusDays(6), ActivityRules.weekEnd(monday))
         assertEquals(java.time.Instant.parse("2026-10-04T17:00:00Z").toEpochMilli(), ActivityRules.weekLock(monday))
-        assertEquals(3, ops.visitWeek(11, monday).target)
+        val target = ops.visitWeek(11, monday).target
         val lastWeek = ops.visitWeek(11, monday.minusWeeks(1))
-        // Released on Wednesday: still in Siti's target this week (she can no longer check in there), gone next week.
+        // In the sample Siti already visited toko -3 this week, not toko -2; then the TL releases both on Wednesday.
+        val rows = ops.visitPartners(11, wednesday).flatMap { it.stores }.filter { it.counted }
+        assertEquals(target, rows.size)
+        assertEquals(mapOf("REG2026-0139-2" to false, "REG2026-0139-3" to true), rows.associate { it.store.id to it.visited })
         partners.unassign(11, "REG2026-0139-2", 6)
-        assertEquals(3, ops.visitWeek(11, monday).target)
-        assertEquals(1, ops.visitWeek(11, monday.plusWeeks(1)).target)
+        partners.unassign(11, "REG2026-0139-3", 6)
+        // S20 (decision 2026-10-20): the visited one still counts, the unvisited one leaves her target without penalty.
+        val week = ops.visitWeek(11, monday)
+        assertEquals(target - 1, week.target)
+        assertEquals(1, week.visited)
+        assertEquals(0, ops.visitWeek(11, monday.plusWeeks(1)).target)
         assertEquals(lastWeek, ops.visitWeek(11, monday.minusWeeks(1)))
         // The new holder can visit it now, but it counts for her from next week ("Dihitung mulai minggu depan").
         val nurulNow = ops.visitWeek(16, monday).target
@@ -190,22 +198,28 @@ class ActivityRepositoryTest {
 
     @Test
     fun sixCheckInsAWeekAndAbsentWithoutCheckIn() {
-        // Q6: every day is a workday; 6 check ins a week (Monday–Sunday) on any days; Absen = a day without check in.
+        // Q6 / S13: every day is a workday; 6 check ins a week (Monday–Sunday) on any days; Absen = a day without check in
+        // or without check out before 23:59, and it does not count.
         val week = next.with(java.time.DayOfWeek.MONDAY)
         val r = siti()
         assertEquals(AttendanceWeek(week, 0), ops.attendanceWeek(11, week))
         (0L..6L).filter { it != 2L }.forEach { d ->
             now = at(week.plusDays(d), "09:00")
-            r.clockIn(Punch(now.toEpochMilli(), -5.15, 119.43, zone = "Asia/Makassar")) // no check out
+            r.clockIn(Punch(now.toEpochMilli(), -5.15, 119.43, zone = "Asia/Makassar"))
+            if (d != 6L) r.clockOut(Punch(now.plusSeconds(8 * 3600).toEpochMilli(), -5.15, 119.43)) // Sunday: no check out
         }
-        val w = ops.attendanceWeek(11, week)
-        assertEquals(6, w.checkIns)
-        assertTrue(w.met)
-        // Saturday and Sunday count like any day; Wednesday without check in is Absen.
+        // Still Sunday: the day is not over, 6 check ins.
+        assertEquals(6, ops.attendanceWeek(11, week).checkIns)
+        assertTrue(ops.attendanceWeek(11, week).met)
+        // Monday: Wednesday without check in and Sunday without check out are Absen; Saturday counts like any day.
         now = at(week.plusDays(7), "09:00")
         assertEquals(AttendanceStatus.ABSENT, ops.attendanceStatus(11, week.plusDays(2)))
-        assertEquals(AttendanceStatus.ON_TIME, ops.attendanceStatus(11, week.plusDays(6)))
+        assertEquals(AttendanceStatus.ABSENT, ops.attendanceStatus(11, week.plusDays(6)))
+        assertEquals(AttendanceStatus.ON_TIME, ops.attendanceStatus(11, week.plusDays(5)))
         assertTrue(ActivityRules.noCheckOut(ops.attendanceOf(11, week.plusDays(6)), week.plusDays(6), week.plusDays(7)))
+        val w = ops.attendanceWeek(11, week)
+        assertEquals(5, w.checkIns)
+        assertTrue(!w.met)
         assertTrue(!ops.attendanceWeek(11, week.plusWeeks(1)).met)
     }
 

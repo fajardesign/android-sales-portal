@@ -64,15 +64,20 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
 
     /** Toko of [p] where [userId] holds the kursi of their [role] (PRT-01 shows only these, FR-PA-012). */
     fun storesOf(p: Partner, userId: Long, role: SalesRole): List<Store> = p.stores.filter { s ->
-        when (role) {
-            SalesRole.TL -> s.tlId == userId
-            SalesRole.SR, SalesRole.SA -> userId in s.assigned
-        }
+        holds(s, userId, role) ||
+            // C7 (decision 2026-10-20): the TL/SR who asked for a toko sees it while it waits, and as history once cancelled.
+            (s.addedBy == userId && (s.status == Store.WAITING_REFERRAL || s.status == Store.CANCELLED))
+    }
+
+    /** [userId] holds the kursi of their [role] on [s]. */
+    fun holds(s: Store, userId: Long, role: SalesRole): Boolean = when (role) {
+        SalesRole.TL -> s.tlId == userId
+        SalesRole.SR, SalesRole.SA -> userId in s.assigned
     }
 
     /** FR-PA-013: a TL adds toko to a partner where they hold ≥ 1 kursi TL, an SR where they hold ≥ 1 kursi SA/SR. */
     fun canAddStore(p: Partner, userId: Long, role: SalesRole): Boolean =
-        p.status == PartnerStatus.ACTIVE && role != SalesRole.SA && storesOf(p, userId, role).isNotEmpty()
+        p.status == PartnerStatus.ACTIVE && role != SalesRole.SA && p.stores.any { holds(it, userId, role) }
 
     /** Active toko of Active partners (for visits). */
     fun activeStores(): List<Pair<Partner, Store>> =
@@ -318,11 +323,7 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         return _assignments.value.notifications.filter { it.employeeId == employeeId && it.at >= from }.asReversed().sortedByDescending { it.at }
     }
 
-    /** Opening one notification marks it read (Designer Q3: read / unread per notification). */
-    fun markNotificationRead(id: String) = changeAssignments { d ->
-        d.copy(notifications = d.notifications.map { if (it.id == id) it.copy(read = true) else it })
-    }
-
+    /** Opening the Notifikasi list marks every notification read (PRD 1.1 §1.7 AC-014, decision 2026-10-20). */
     fun markNotificationsRead(employeeId: Long) = changeAssignments { d ->
         d.copy(notifications = d.notifications.map { if (it.employeeId == employeeId) it.copy(read = true) else it })
     }
@@ -440,8 +441,32 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
     fun adminDeactivate(id: String) {
         val p = get(id) ?: return
         p.stores.forEach { releaseTlSeat(it.id, AssignmentEvent.SYSTEM, "partner nonaktif") }
+        // C7 (decision 2026-10-20): a toko still waiting for its code is cancelled with the partner.
+        p.stores.filter { it.status == Store.WAITING_REFERRAL }.forEach { adminCancelStoreRequest(it.id, "partner nonaktif", "Sistem") }
         adminMove(id, PartnerStatus.INACTIVE, "Partner berhenti bekerja sama") { it }
     }
+
+    /**
+     * Admin "Batalkan permintaan" (PRD 1.1 C7 FR-023, decision 2026-10-20): a toko waiting for its Kode Referral becomes
+     * Dibatalkan (history, never assigned or visited) and the TL/SR who added it is notified "Permintaan tambah toko
+     * {toko} ({partner}) dibatalkan: {alasan}." `false` when the toko is not waiting.
+     */
+    fun adminCancelStoreRequest(storeId: String, reason: String, by: String = ADMIN): Boolean {
+        val p = _partners.value.firstOrNull { pt -> pt.stores.any { it.id == storeId } } ?: return false
+        val s = p.stores.first { it.id == storeId }
+        if (s.status != Store.WAITING_REFERRAL || reason.isBlank()) return false
+        val at = now()
+        replace(p.copy(
+            stores = p.stores.map { if (it.id == storeId) it.copy(status = Store.CANCELLED, cancelReason = reason.trim()) else it },
+            history = p.history + StatusEvent(at, null, p.status, by, "Permintaan tambah toko ${s.name} dibatalkan: ${reason.trim()}"),
+        ))
+        val notice = StoreCancelNotice(at, s.id, s.name, p.id, p.name, reason.trim())
+        changeAssignments { d -> d.copy(notifications = d.notifications + AppNotification("N-$at-${s.addedBy}-${s.id}-CANCELLED", s.addedBy, storeCancelled = notice)) }
+        return true
+    }
+
+    /** Simulasi: the most recent toko waiting for its Kode Referral, if any. */
+    fun latestStoreRequest(): Store? = _partners.value.flatMap { it.stores }.filter { it.status == Store.WAITING_REFERRAL }.maxByOrNull { it.addedAt }
 
     /** Statuses where the Admin can change the partner's area (FR-021: Under Review up to Active). */
     fun canChangeArea(id: String): Boolean = get(id)?.status in AREA_EDITABLE

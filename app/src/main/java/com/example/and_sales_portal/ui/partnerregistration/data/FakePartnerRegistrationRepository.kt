@@ -11,13 +11,7 @@ import kotlinx.coroutines.delay
  *   return clearly marked samples.
  * - Upload: progress in 10 steps over about one second.
  */
-class FakePartnerRegistrationRepository(
-    private val latencyMillis: Long = 400,
-    /** Simulasi (debug) "Halaman persetujuan gagal dimuat". */
-    private val consentFails: () -> Boolean = { false },
-) : PartnerRegistrationRepository {
-
-    override suspend fun loadConsentPage(): Boolean = respond(!consentFails())
+class FakePartnerRegistrationRepository(private val latencyMillis: Long = 400) : PartnerRegistrationRepository {
 
     override suspend fun provinces(): List<Region> = respond(PROVINCES.mapIndexed { i, name -> Region("p$i", name) })
 

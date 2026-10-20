@@ -1,8 +1,10 @@
 package com.example.and_sales_portal.ui.notifications
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.example.and_sales_portal.data.partner.AppNotification
 import com.example.and_sales_portal.data.partner.AssignmentAction
 import com.example.and_sales_portal.data.partner.AssignmentEvent
+import com.example.and_sales_portal.data.partner.StoreCancelNotice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -64,5 +66,15 @@ class NotificationTextTest {
             "Anda dilepas dari Jaya Abadi Cellular Sudiang (Jaya Abadi Cellular).",
             text(event(AssignmentAction.RELEASE, AssignmentEvent.SYSTEM, "partner nonaktif", AssignmentEvent.TL)),
         )
+    }
+
+    @Test
+    fun storeRequestCancelled() {
+        // C7 FR-023 (decision 2026-10-20): the TL/SR who added the toko learns the Admin cancelled it, with the reason.
+        val n = AppNotification("n", 11, storeCancelled = StoreCancelNotice(0, "REG2026-0139-5", "Jaya Abadi Cellular Daya", "REG2026-0139", "Jaya Abadi Cellular", "Lokasi toko tidak sesuai"))
+        var out = ""
+        compose.setContent { out = notificationText(n) }
+        compose.waitForIdle()
+        assertEquals("Permintaan tambah toko Jaya Abadi Cellular Daya (Jaya Abadi Cellular) dibatalkan: Lokasi toko tidak sesuai.", out)
     }
 }

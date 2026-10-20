@@ -30,8 +30,8 @@ data class OpsData(
     val visits: List<Visit> = emptyList(),
 ) {
     companion object {
-        /** 8: every day a workday, zone of the check-in location, TL corrections (decisions 2026-10-19). */
-        const val VERSION = 8
+        /** 9: area zone (S8) and Absen without check out (S13) again, decisions 2026-10-20. */
+        const val VERSION = 9
         fun key(employeeId: Long, date: LocalDate) = "$employeeId:$date"
     }
 }
@@ -52,8 +52,8 @@ data class Punch(
     /** Metres to [place]. */
     val distance: Int? = null,
     /**
-     * Zone of the check-in location (`Asia/Makassar`, …; decision 2026-10-19, Q6, replacing the area zone of S8): the
-     * status (10:00, 12:00) and the time shown use it.
+     * Zone of the user's area at the punch (`Asia/Makassar`, …; PRD Scope 2 S8: server time in the area zone, confirmed
+     * 2026-10-20); times are shown in it.
      */
     val zone: String? = null,
     /** Device zone at the punch, kept for audit only (never decides a status). */
@@ -63,7 +63,7 @@ data class Punch(
 @Serializable
 data class Attendance(
     val employeeId: Long,
-    /** Work date (ISO), in the zone of the check-in location. */
+    /** Work date (ISO), in the zone of the user's area (S8). */
     val date: String,
     val clockIn: Punch? = null,
     val clockOut: Punch? = null,
@@ -113,15 +113,14 @@ data class Visit(
 )
 
 /**
- * Attendance status (decisions 2026-10-19, Q6): Belum Check In, Tepat Waktu (≤ 10:00 in the zone of the check-in
- * location), Terlambat, Absen (a day without check in). Every day is a workday, weekends, holidays and leave included;
- * a check in without check out still counts as present ("Tidak check out"). "Sudah Check In" / "Sudah Check Out" come
- * from [Attendance] itself.
+ * Attendance status: Belum Check In, Tepat Waktu (≤ 10:00 in the zone of the user's area, S8), Terlambat, Absen (PRD
+ * Scope 2 S13, decision 2026-10-20: no check in, or a check in without check out before 23:59 that day). Every day is a
+ * workday, weekends, holidays and leave included (Q6). "Sudah Check In" / "Sudah Check Out" come from [Attendance].
  */
 @Serializable
 enum class AttendanceStatus { NOT_YET, ON_TIME, LATE, ABSENT }
 
-/** Attendance of one week (Monday–Sunday): days with a check in over the target of 6 (Q6). */
+/** Attendance of one week (Monday–Sunday): days present (not Absen, S13) over the target of 6 (Q6). */
 data class AttendanceWeek(val start: LocalDate, val checkIns: Int, val target: Int = ActivityRules.WEEKLY_CHECKINS) {
     val met: Boolean get() = checkIns >= target
 }
@@ -150,9 +149,10 @@ data class WeekPartner(val partner: Partner, val stores: List<WeekStore>) {
 }
 
 /**
- * Time and place rules (decisions 2026-10-19): the zone of the **check-in location** (WIB/WITA/WIT, Q6) decides Tepat
- * Waktu (≤ 10:00) and the 12:00 visit start; every day is a workday; 6 check-ins a week; the visit week runs Monday–
- * Sunday and its target is locked on Monday 00:00 WIB (Q5). Visit check-in within 3 km of the toko, once per toko a week.
+ * Time and place rules: the server time in the **zone of the user's area** (WIB/WITA/WIT, PRD Scope 2 S8, decision
+ * 2026-10-20) decides Tepat Waktu (≤ 10:00), the 12:00 visit start, 23:59, dates and weeks; every day is a workday; 6
+ * days present a week; the visit week runs Monday–Sunday and its target is locked on Monday 00:00 WIB. Visit check-in
+ * within 3 km of the toko, once per toko a week.
  */
 object ActivityRules {
     /** Indonesian zones and their labels (WIB, WITA, WIT). */
@@ -180,25 +180,11 @@ object ActivityRules {
         ZONE_LABEL = label(ZONE)
     }
 
-    /** Zone of a person's area: screens before any check in ("hari ini", empty times). */
+    /** Zone of a person's area (S8): decides every status, date and week. */
     fun zoneOf(employeeId: Long): ZoneId = DemoDirectory.person(employeeId)?.let { DemoDirectory.area(it.areaId) }?.zone ?: ZONE
 
-    /** Zone saved with a punch (its location's zone); punches saved before it carry none and use the person's area. */
+    /** Zone saved with a punch (the area zone); punches saved before it carry none and use the person's area. */
     fun zoneOf(punch: Punch, employeeId: Long): ZoneId = punch.zone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: zoneOf(employeeId)
-
-    /**
-     * Zone of a location (decision 2026-10-19, Q6: the check-in location decides WIB/WITA/WIT). Prototype: by longitude —
-     * west of 114.5° E WIB (Sumatra, Java, West/Central Kalimantan), up to 125.5° E WITA (Bali, Nusa Tenggara, South/East/
-     * North Kalimantan, Sulawesi), east of it WIT (Maluku, Papua). Production takes it from the server.
-     */
-    fun zoneAt(@Suppress("UNUSED_PARAMETER") lat: Double, lng: Double): ZoneId = when {
-        lng < WITA_FROM -> ZoneId.of("Asia/Jakarta")
-        lng < WIT_FROM -> ZoneId.of("Asia/Makassar")
-        else -> ZoneId.of("Asia/Jayapura")
-    }
-
-    private const val WITA_FROM = 114.5
-    private const val WIT_FROM = 125.5
 
     /** Q6: 6 check-ins a week (Monday–Sunday), any day. */
     const val WEEKLY_CHECKINS = 6
@@ -212,11 +198,11 @@ object ActivityRules {
     /** "WIB" / "WITA" / "WIT"; another zone shows its offset ("UTC+08:00"). */
     fun label(zone: ZoneId): String = ZONE_LABELS[zone.id] ?: "UTC${zone.rules.getOffset(Instant.now())}"
 
-    /** Check in kerja on time up to 10:00 in the zone of the check-in location, by the minute like the web portal. */
+    /** Check in kerja on time up to 10:00 in the zone of the user's area (S8), by the minute like the web portal. */
     val CLOCK_IN_LIMIT: LocalTime = LocalTime.of(10, 0)
     /** Revision 2026-10-08: check in and check out kerja within 3 km of an office of the area or a toko. */
     const val ATTENDANCE_RADIUS_METERS = 3_000
-    /** Revision 2026-10-08: visit check-in opens at 12:00 in the zone of the toko's location. */
+    /** Revision 2026-10-08: visit check-in opens at 12:00 in the zone of the user's area (S8). */
     val VISIT_START: LocalTime = LocalTime.of(12, 0)
     /** Revision 2026-10-08: visit check-in within 3 km of the toko (was 50 m). */
     const val VISIT_RADIUS_METERS = 3_000
@@ -235,26 +221,27 @@ object ActivityRules {
         places.map { it to distanceMeters(lat, lng, it.lat, it.lng) }.minByOrNull { it.second }
 
     /**
-     * Status of [date] (Q6): the TL's correction first; else Tepat Waktu / Terlambat from the check-in time in the zone of
-     * its location; a day over without check in is Absen. A check in without check out stays present ([noCheckOut]).
+     * Status of [date]: the TL's correction first; else, once the day is over, Absen without check in or without check
+     * out (S13, decision 2026-10-20); else Tepat Waktu / Terlambat from the check-in time in the zone of the user's area.
      */
     fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate): AttendanceStatus {
         a?.statusOverride?.let { return it }
         val inAt = a?.checkInAt
         return when {
-            inAt != null -> {
-                val zone = a.clockIn?.let { zoneOf(it, a.employeeId) } ?: zoneOf(a.employeeId)
-                if (Instant.ofEpochMilli(inAt).atZone(zone).toLocalTime().truncatedTo(ChronoUnit.MINUTES) <= CLOCK_IN_LIMIT) AttendanceStatus.ON_TIME else AttendanceStatus.LATE
-            }
-            date < today -> AttendanceStatus.ABSENT
-            else -> AttendanceStatus.NOT_YET
+            inAt == null -> if (date < today) AttendanceStatus.ABSENT else AttendanceStatus.NOT_YET
+            a.clockOut == null && date < today -> AttendanceStatus.ABSENT
+            Instant.ofEpochMilli(inAt).atZone(zoneOf(a.employeeId)).toLocalTime().truncatedTo(ChronoUnit.MINUTES) <= CLOCK_IN_LIMIT -> AttendanceStatus.ON_TIME
+            else -> AttendanceStatus.LATE
         }
     }
 
-    /** "Tidak check out": a past day with a check in and no check out (still present, Q6). */
+    /** "Tidak check out": a past day with a check in and no check out, shown next to Absen (S13). */
     fun noCheckOut(a: Attendance?, date: LocalDate, today: LocalDate): Boolean = a != null && a.hasCheckIn && a.clockOut == null && date < today
 
-    /** Visit check-in is open from [VISIT_START] in the zone of the toko's location (Q6). */
+    /** A day that counts toward the 6 check-ins of the week: present, not Absen (S13). */
+    fun present(a: Attendance?, date: LocalDate, today: LocalDate): Boolean = attendanceStatus(a, date, today).let { it == AttendanceStatus.ON_TIME || it == AttendanceStatus.LATE }
+
+    /** Visit check-in is open from [VISIT_START] in the zone of the user's area (S8). */
     fun visitOpen(now: Instant, zone: ZoneId): Boolean = !now.atZone(zone).toLocalTime().isBefore(VISIT_START)
 
     /** Check-out is optional (S13): a visit of an earlier day without check-out is Selesai ("Tanpa check-out"). */

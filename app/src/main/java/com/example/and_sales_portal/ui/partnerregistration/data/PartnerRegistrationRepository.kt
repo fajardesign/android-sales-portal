@@ -30,7 +30,4 @@ interface PartnerRegistrationRepository {
 
     /** Uploads one document, reporting [UploadEvent.Progress] then [UploadEvent.Done]. */
     suspend fun uploadDocument(path: String, onEvent: (UploadEvent) -> Unit)
-
-    /** REG-12 consent page (decision 2026-10-19 Q2: it is loaded and can fail); `false` = could not be loaded. */
-    suspend fun loadConsentPage(): Boolean
 }

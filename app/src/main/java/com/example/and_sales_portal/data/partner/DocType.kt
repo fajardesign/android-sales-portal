@@ -29,6 +29,8 @@ enum class DocType(
     DOMISILI(R.string.doc_domisili, "Keterangan Domisili", false, null, Need.M),
     IJIN(R.string.doc_ijin, "Ijin Lokasi & Ijin Usaha", false, null, Need.M),
     BUKU_REKENING(R.string.doc_buku_rekening, "Halaman Depan Buku Rekening / Rekening Koran", false, Need.M, Need.M),
+    /** Decision 2026-10-20: replaces the consent of PRD 1.1 C5; mandatory for every entity (web `DOC_TYPES` key `PDP`). */
+    PDP(R.string.doc_pdp, "Formulir Persetujuan PDP", false, Need.M, Need.M),
     FOTO_DEPAN(R.string.doc_foto_depan, "Foto Toko – Tampak Depan", true, Need.M, Need.M),
     FOTO_SAMPING(R.string.doc_foto_samping, "Foto Toko – Tampak Samping", true, Need.M, Need.M),
     ;

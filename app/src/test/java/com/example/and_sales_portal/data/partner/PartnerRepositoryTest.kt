@@ -77,8 +77,8 @@ class PartnerRepositoryTest {
         assertEquals(listOf("REG2026-0139-1", "REG2026-0139-2", "REG2026-0139-3"), mine[0].stores.map { it.id })
         assertEquals(listOf("REG2026-0132-1"), mine[1].stores.map { it.id })
         assertEquals(listOf("REG2026-0139-1"), repo.myPartners(15, SalesRole.SA).single().stores.map { it.id })
-        // Bagus (22) holds no kursi: Antang waits for its code and has no TL.
-        assertTrue(repo.myPartners(22, SalesRole.TL).isEmpty())
+        // Bagus (22) holds no kursi; he sees Antang, the toko he asked for, while it waits for its code (C7).
+        assertEquals(listOf("REG2026-0139-4"), repo.myPartners(22, SalesRole.TL).single().stores.map { it.id })
     }
 
     @Test
@@ -203,19 +203,54 @@ class PartnerRepositoryTest {
     }
 
     @Test
-    fun notificationsAreKeptThirtyDaysAndReadOneByOne() {
-        // Designer Q3 (2026-10-19): the sample has an unread one older than 30 days for Siti; it is not shown.
+    fun notificationsAreKeptThirtyDaysAndAllReadWhenTheListOpens() {
+        // Designer Q3 / PRD 1.1 AC-014: the sample has an unread one older than 30 days for Siti; it is not shown.
         val all = repo.assignments.value.notifications.filter { it.employeeId == 11L }
         assertTrue(all.any { now.toEpochMilli() - it.at > 30L * 86_400_000 })
         val shown = repo.notificationsOf(11)
         assertTrue(shown.all { now.toEpochMilli() - it.at <= 30L * 86_400_000 })
         assertEquals(all.size - 1, shown.size)
-        // Tapping one marks only that one read.
+        // Two new ones ("Baru"); opening the list marks them all read.
         assertNull(repo.assign(6, 11, newStore("REG2026-0139", "Cabang Baru").id))
-        val unread = repo.notificationsOf(11).filter { !it.read }
-        assertEquals(1, unread.size)
-        repo.markNotificationRead(unread.single().id)
+        assertNull(repo.assign(6, 11, newStore("REG2026-0139", "Cabang Baru 2").id))
+        assertEquals(2, repo.notificationsOf(11).count { !it.read })
+        repo.markNotificationsRead(11)
         assertTrue(repo.notificationsOf(11).all { it.read })
+    }
+
+    @Test
+    fun cancelledStoreRequestNotifiesTheAdderAndStaysAsHistory() {
+        // C7 FR-023 (decision 2026-10-20): Siti adds a toko; the Admin cancels it with a reason.
+        val p = repo.get("REG2026-0139")!!
+        val s = repo.addStore(p.id, p.stores[2].copy(name = "Cabang Baru", primary = false, addedBy = 11))
+        assertTrue(s.id in repo.storesOf(repo.get(p.id)!!, 11, SalesRole.SR).map { it.id }) // her request, while it waits
+        assertTrue(!repo.adminCancelStoreRequest(s.id, " "))
+        assertTrue(repo.adminCancelStoreRequest(s.id, "Lokasi toko tidak sesuai"))
+        val cancelled = store(s.id)
+        assertEquals(Store.CANCELLED, cancelled.status)
+        assertEquals("Lokasi toko tidak sesuai", cancelled.cancelReason)
+        val n = repo.notificationsOf(11).first().storeCancelled!!
+        assertEquals(s.name, n.storeName)
+        assertEquals("Lokasi toko tidak sesuai", n.reason)
+        // History in her Partner saya, never assigned or visited; cannot be cancelled twice or filled.
+        assertTrue(s.id in repo.myPartners(11, SalesRole.SR).first { it.id == p.id }.stores.map { it.id })
+        assertTrue(repo.activeStores().none { it.second.id == s.id })
+        assertEquals(AssignError.NotActive, repo.assignmentError(6, 11, s.id))
+        assertTrue(!repo.adminCancelStoreRequest(s.id, "lagi"))
+        // A partner going Inactive cancels the toko still waiting (Antang), source "partner nonaktif".
+        repo.adminDeactivate(p.id)
+        assertEquals(Store.CANCELLED, store("REG2026-0139-4").status)
+        assertEquals("partner nonaktif", store("REG2026-0139-4").cancelReason)
+    }
+
+    @Test
+    fun aStoreNoLongerHeldIsKnown() {
+        // AC-014: tapping a notification about a toko Siti no longer holds opens the partner with "Anda tidak lagi ditugaskan".
+        val sudiang = store("REG2026-0139-3")
+        assertTrue(repo.holds(sudiang, 11, SalesRole.SR))
+        repo.unassign(11, sudiang.id, 6)
+        assertTrue(!repo.holds(store(sudiang.id), 11, SalesRole.SR))
+        assertTrue(repo.notificationsOf(11).first().event!!.storeId == sudiang.id)
     }
 
     @Test

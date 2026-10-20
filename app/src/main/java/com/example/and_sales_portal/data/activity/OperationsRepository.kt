@@ -49,10 +49,11 @@ class OperationsRepository(
     fun attendanceStatus(employeeId: Long, date: LocalDate): AttendanceStatus =
         ActivityRules.attendanceStatus(attendanceOf(employeeId, date), date, todayOf(employeeId))
 
-    /** Q6: days with a check in in the week of [weekStart] (Monday–Sunday) over the target of 6. */
+    /** Q6: days present in the week of [weekStart] (Monday–Sunday) over the target of 6; Absen days do not count (S13). */
     fun attendanceWeek(employeeId: Long, weekStart: LocalDate): AttendanceWeek {
         val end = ActivityRules.weekEnd(weekStart)
-        val n = _data.value.attendance.count { it.employeeId == employeeId && LocalDate.parse(it.date) in weekStart..end && it.hasCheckIn }
+        val today = todayOf(employeeId)
+        val n = _data.value.attendance.count { it.employeeId == employeeId && LocalDate.parse(it.date) in weekStart..end && ActivityRules.present(it, LocalDate.parse(it.date), today) }
         return AttendanceWeek(weekStart, n)
     }
 
@@ -66,15 +67,18 @@ class OperationsRepository(
 
     /**
      * Toko of [employeeId] to visit in the week of [weekStart], by partner, with whether this person visited each (same
-     * as the web `visitWeekStores`). Decision 2026-10-19 (Q5, replacing S9 "changes at once"): the target is the toko held
-     * on Monday 00:00 WIB; a toko that moves mid-week stays in the old holder's target that week and the new holder's
-     * from the next week. A visit counts for the person who made it.
+     * as the web `visitWeekStores`). The target is the toko held on Monday 00:00 WIB (PRD Scope 2 S9); a new holder counts
+     * from the next week; a visit counts for the person who made it. PRD S20 (decision 2026-10-20): a toko released
+     * mid-week that the old holder has not visited leaves their target without penalty; once visited it still counts.
      */
     fun weekPartners(employeeId: Long, weekStart: LocalDate): List<WeekPartner> {
         val role = DemoDirectory.person(employeeId)?.role?.let { SalesRole.valueOf(it) } ?: return emptyList()
         val lock = ActivityRules.weekLock(weekStart)
-        val targets = partners.weekStores(employeeId, role, lock, lock)
+        val end = ActivityRules.weekLock(weekStart.plusWeeks(1)) - 1
+        val at = minOf(clock().toEpochMilli(), end)
+        val stillHeld = partners.weekStores(employeeId, role, at, at).map { it.second.id }.toSet()
         val seen = visitsBetween(employeeId, weekStart, ActivityRules.weekEnd(weekStart)).map { it.storeId }.toSet()
+        val targets = partners.weekStores(employeeId, role, lock, lock).filter { (_, s) -> s.id in stillHeld || s.id in seen }
         return ActivityRules.weekPartners(targets, seen)
     }
 
@@ -108,7 +112,7 @@ class OperationsRepository(
 
     // region Attendance and visit execution (ATT)
 
-    /** Date of a punch: in the zone of its location (Q6). */
+    /** Date of a punch in the zone of the user's area (S8). */
     private fun dateOf(punch: Punch, employeeId: Long): LocalDate = java.time.Instant.ofEpochMilli(punch.at).atZone(ActivityRules.zoneOf(punch, employeeId)).toLocalDate()
 
     fun clockIn(employeeId: Long, punch: Punch) = change { d ->
@@ -139,13 +143,10 @@ class OperationsRepository(
             DemoSeed.storesOf(partners.partners.value, employeeId, role).none { it.id == storeId } -> VisitCheckInBlock.StoreNotAssigned
             visitsBetween(employeeId, monday, ActivityRules.weekEnd(monday)).any { it.storeId == storeId } -> VisitCheckInBlock.VisitedThisWeek
             attendanceOf(employeeId, today)?.clockIn == null -> VisitCheckInBlock.NotWorkCheckedIn
-            !ActivityRules.visitOpen(clock(), storeZone(storeId) ?: ActivityRules.zoneOf(employeeId)) -> VisitCheckInBlock.BeforeStart
+            !ActivityRules.visitOpen(clock(), ActivityRules.zoneOf(employeeId)) -> VisitCheckInBlock.BeforeStart
             else -> null
         }
     }
-
-    /** Zone of a toko's location (Q6: 12:00 is read where the visit happens). */
-    private fun storeZone(storeId: String) = partners.partners.value.flatMap { it.stores }.firstOrNull { it.id == storeId }?.let { ActivityRules.zoneAt(it.lat, it.lng) }
 
     /** Starts a visit at [storeId]; returns it, or `null` when [checkInBlock] refuses. */
     fun checkIn(employeeId: Long, storeId: String, punch: Punch): Visit? {
@@ -194,7 +195,7 @@ class OperationsRepository(
         if (clock().toEpochMilli() > correctionDeadline(date)) return CorrectionError.Expired
         if (reason.isBlank()) return CorrectionError.ReasonRequired
         val old = attendanceOf(employeeId, date) ?: Attendance(employeeId, date.toString())
-        val zone = old.clockIn?.let { ActivityRules.zoneOf(it, employeeId) } ?: ActivityRules.zoneOf(employeeId)
+        val zone = ActivityRules.zoneOf(employeeId)
         val newAt: Long? = when (toStatus) {
             AttendanceStatus.ABSENT -> null
             AttendanceStatus.ON_TIME, AttendanceStatus.LATE -> {

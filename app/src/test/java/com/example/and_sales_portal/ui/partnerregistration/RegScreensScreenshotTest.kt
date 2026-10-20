@@ -81,14 +81,8 @@ class RegScreensScreenshotTest {
         capture("07_review") { RegReviewScreen(p, {}, {}, {}) }
         capture("08_locating") { RegLocationScreen(LocationCaptureState(locating = true), false, {}, CaptureActions(), {}) }
         val found = LocationResult.Found(-5.1478, 119.4326, "Panakkukang, Kota Makassar, Sulawesi Selatan", false)
-        // PRD Scope 1 v2 C5: the consent checkbox above "Kirim Pengajuan", which stays disabled until it is ticked.
+        // PRD Scope 1 v1.1 (decision 2026-10-20): no consent; "Kirim Pengajuan" is enabled once the location is found.
         capture("08_found") { RegLocationScreen(LocationCaptureState(found = found), false, {}, CaptureActions(), {}) }
-        capture("08_consent_ticked") { RegLocationScreen(LocationCaptureState(found = found), false, {}, CaptureActions(), {}, consent = true) }
-        capture("12_consent") { RegConsentScreen(onBack = {}) }
-        // Decision 2026-10-19 (Q2): loading and failure of the consent page; the checkbox waits for it.
-        capture("12_consent_loading") { RegConsentScreen(ConsentPage.Loading, {}) }
-        capture("12_consent_failed") { RegConsentScreen(ConsentPage.Failed, {}) }
-        capture("08_consent_failed") { RegLocationScreen(LocationCaptureState(found = found), false, {}, CaptureActions(), {}, consentPage = ConsentPage.Failed) }
         capture("09_success") { RegSuccessScreen("Toko Sinar Baru", "REG2026-0149", 1_791_400_000_000, {}) }
     }
 

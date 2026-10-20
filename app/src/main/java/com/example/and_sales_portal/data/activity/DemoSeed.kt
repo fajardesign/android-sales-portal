@@ -65,7 +65,7 @@ object DemoSeed {
             if (d.dayOfWeek == java.time.DayOfWeek.SUNDAY) {
                 val office = places.first()
                 if ((userId + d.dayOfMonth) % 4 == 0L) {
-                    val z = ActivityRules.zoneAt(office.lat, office.lng)
+                    val z = zone
                     attendance += Attendance(
                         userId, d.toString(),
                         clockIn = Punch(d.atTime(9, 15).atZone(z).toInstant().toEpochMilli(), office.lat, office.lng, place = office.name, distance = 0, zone = z.id),
@@ -85,13 +85,13 @@ object DemoSeed {
             val lat = round6(ref.lat + (rnd.nextDouble() - 0.5) * 0.006)
             val lng = round6(ref.lng + (rnd.nextDouble() - 0.5) * 0.006)
             val distance = ActivityRules.distanceMeters(lat, lng, ref.lat, ref.lng)
-            // Like the web sample: now and then a forgotten check out; the day stays present ("Tidak check out", Q6).
+            // Like the web sample: now and then a forgotten check out, so the day is Absen (S13, decision 2026-10-20).
             val noOut = (userId * 7 + d.dayOfMonth) % 29 == 0L
             attendance += Attendance(
                 employeeId = userId,
                 date = d.toString(),
-                clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = ActivityRules.zoneAt(lat, lng).id),
-                clockOut = if (noOut) null else Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = ActivityRules.zoneAt(lat, lng).id),
+                clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
+                clockOut = if (noOut) null else Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
             )
             // PRD alignment 2026-10-09: each toko once a week, on its own weekday (a toko is missed about 1 week in 7),
             // 12:00–16:59 local, near the toko.
@@ -125,7 +125,7 @@ object DemoSeed {
         val lastMon = ActivityRules.weekStart(today).minusWeeks(1)
         val week = (0L..6L).map { lastMon.plusDays(it) }
         val office = DemoDirectory.person(userId)?.areaId?.let { DemoDirectory.office(it) } ?: return list
-        val z = ActivityRules.zoneAt(office.lat, office.lng)
+        val z = ActivityRules.zoneOf(userId)
         val wib = ActivityRules.LOCK_ZONE
         val out = list.toMutableList()
         week.firstOrNull { d -> out.none { it.date == d.toString() && it.hasCheckIn } }?.let { d ->
@@ -141,10 +141,10 @@ object DemoSeed {
         out.indexOfFirst { a -> LocalDate.parse(a.date) in week && a.statusOverride == null && ActivityRules.attendanceStatus(a, LocalDate.parse(a.date), today) == AttendanceStatus.LATE }.takeIf { it >= 0 }?.let { i ->
             val a = out[i]
             val d = LocalDate.parse(a.date)
-            val inAt = d.atTime(9, 40).atZone(ActivityRules.zoneOf(a.clockIn!!, userId)).toInstant().toEpochMilli()
+            val inAt = d.atTime(9, 40).atZone(z).toInstant().toEpochMilli()
             out[i] = a.copy(
                 statusOverride = AttendanceStatus.ON_TIME, clockInOverride = inAt,
-                corrections = listOf(AttendanceCorrection(d.plusDays(1).atTime(8, 30).atZone(wib).toInstant().toEpochMilli(), tl, AttendanceStatus.LATE, a.clockIn.at, AttendanceStatus.ON_TIME, inAt, REASON_LATE)),
+                corrections = listOf(AttendanceCorrection(d.plusDays(1).atTime(8, 30).atZone(wib).toInstant().toEpochMilli(), tl, AttendanceStatus.LATE, a.clockIn?.at, AttendanceStatus.ON_TIME, inAt, REASON_LATE)),
             )
         }
         return out.sortedBy { it.date }

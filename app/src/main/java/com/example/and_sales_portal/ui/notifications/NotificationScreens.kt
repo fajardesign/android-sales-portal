@@ -3,8 +3,7 @@ package com.example.and_sales_portal.ui.notifications
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -52,12 +51,14 @@ fun notificationText(e: AssignmentEvent): String = when {
 /** Assignment or revision message (DD review point 2: "Pengajuan <partner> perlu diperbaiki."). */
 @Composable
 fun notificationText(n: AppNotification): String =
-    n.event?.let { notificationText(it) } ?: n.revision?.let { stringResource(R.string.notif_revision, it.partnerName) }.orEmpty()
+    n.event?.let { notificationText(it) }
+        ?: n.revision?.let { stringResource(R.string.notif_revision, it.partnerName) }
+        ?: n.storeCancelled?.let { stringResource(R.string.notif_store_cancelled, it.storeName, it.partnerName, it.reason) }.orEmpty()
 
 /**
- * Spec: Notifikasi (FR-MP-004, decision 2026-10-09: in-app inbox; Designer Q3, 2026-10-19): the last 30 days, newest
- * first. An unread one shows "Belum dibaca"; tapping it marks it read and opens the toko's partner (PRT-01) for an
- * assignment, or the submission (REG-10) for a revision request (that is where it is fixed).
+ * Spec: Notifikasi (FR-MP-004; PRD 1.1 §1.7 FR-006, AC-014, decision 2026-10-20): the last 30 days, newest first; an
+ * unread one shows "Baru". Opening the list marks them all read (the badges stay until the list is left). Tapping an
+ * assignment or a cancelled request opens the partner (PRT-01) at that toko; a revision request opens REG-10.
  */
 @Composable
 fun NotificationsScreen(items: List<AppNotification>, onBack: () -> Unit, onOpen: (AppNotification) -> Unit = {}) {
@@ -66,27 +67,27 @@ fun NotificationsScreen(items: List<AppNotification>, onBack: () -> Unit, onOpen
         if (items.isEmpty()) AmarInfoBox(stringResource(R.string.notif_empty), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
         Text(stringResource(R.string.notif_retention), color = c.content.tertiary, style = AmarTheme.typography.captionSm)
         items.forEach { n ->
-            AmarCard(Modifier.fillMaxWidth(), style = if (n.read) AmarCardStyle.Border else AmarCardStyle.Shadow, onClick = { onOpen(n) }) {
-                if (!n.read) AmarBadge(stringResource(R.string.notif_unread), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
-                Text(notificationText(n), color = if (n.read) c.content.secondary else c.content.primary, style = AmarTheme.typography.bodyMd)
+            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onOpen(n) }) {
+                if (!n.read) AmarBadge(stringResource(R.string.notif_new_badge), type = AmarBadgeType.Info, size = AmarBadgeSize.Small)
+                Text(notificationText(n), color = c.content.primary, style = AmarTheme.typography.bodyMd)
                 Text(eventTime(n.at), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
             }
         }
     }
 }
 
-/** Spec: Notifikasi. Read state per notification: tapping one marks it read and opens what it refers to. */
+/** Spec: Notifikasi. Opening the list marks every notification read (AC-014); the list keeps the "Baru" badges until left. */
 class NotificationsFragment : ComposeFragment() {
     @Composable
     override fun ScreenContent() {
         val s = session ?: return
-        val data by container.partners.assignments.collectAsState()
-        val items = remember(data) { container.partners.notificationsOf(s.user.id) }
+        val items = remember { container.partners.notificationsOf(s.user.id) }
+        LaunchedEffect(Unit) { container.partners.markNotificationsRead(s.user.id) }
         NotificationsScreen(items, ::back) { n ->
-            container.partners.markNotificationRead(n.id)
             when {
                 n.revision != null -> navigate(R.id.submission_detail, SubmissionDetailFragment.args(n.revision.partnerId))
-                n.event != null -> navigate(R.id.partner_detail, PartnerDetailFragment.args(n.event.partnerId))
+                n.event != null -> navigate(R.id.partner_detail, PartnerDetailFragment.args(n.event.partnerId, n.event.storeId))
+                n.storeCancelled != null -> navigate(R.id.partner_detail, PartnerDetailFragment.args(n.storeCancelled.partnerId, n.storeCancelled.storeId))
             }
         }
     }

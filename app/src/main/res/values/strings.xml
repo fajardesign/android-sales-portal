@@ -217,7 +217,7 @@
     <string name="cor_err_on_time">Jam lewat 10:00 berarti Terlambat.</string>
     <string name="cor_err_late">Jam sampai 10:00 berarti Tepat Waktu.</string>
     <string name="cor_err_no_change">Tidak ada perubahan dari data saat ini.</string>
-    <string name="att_rule">Check in kerja setiap hari, termasuk akhir pekan, libur, dan cuti. Target 6 check-in per minggu (Senin–Minggu). Tepat Waktu sampai pukul 10:00; check out paling lambat pukul 23:59.</string>
+    <string name="att_rule">Check in kerja setiap hari, termasuk akhir pekan, libur, dan cuti. Target 6 check-in per minggu (Senin–Minggu). Tepat Waktu sampai pukul 10:00. Check out paling lambat pukul 23:59; tanpa check out, hari itu dihitung Absen. Jam memakai zona waktu area Anda.</string>
     <string name="att_week_progress">Minggu ini: %1$d/%2$d check-in</string>
     <string name="att_no_check_out">Tidak check out</string>
     <string name="att_corrected">Dikoreksi TL</string>
@@ -369,7 +369,6 @@
     <string name="sim_location_device">GPS perangkat</string>
     <string name="sim_location_out">Di luar radius</string>
     <string name="sim_location_low_accuracy">Akurasi GPS buruk (240 m)</string>
-    <string name="sim_consent_fails">Halaman persetujuan gagal dimuat</string>
     <string name="sim_mock">Lokasi palsu (mock location)</string>
     <string name="sim_offline">Mode offline</string>
 
@@ -379,12 +378,6 @@
     <string name="reg_err_max">Maksimal %1$d karakter</string>
     <string name="reg_err_email">Format email tidak valid</string>
     <string name="reg_err_digits3">Isi 3 digit angka, contoh 003</string>
-    <string name="reg_consent_check">Saya telah membaca dan menyetujui %1$s.</string>
-    <string name="reg_consent_loading">Memuat halaman persetujuan…</string>
-    <string name="reg_consent_failed">Halaman tidak dapat dimuat. Coba lagi.</string>
-    <string name="reg_consent_title">Konfirmasi dan Persetujuan Pendaftaran Toko</string>
-    <string name="reg_consent_p1">Saya menyatakan bahwa proses pengisian data pendaftaran toko/merchant saya telah dibantu oleh Petugas Akuisisi Merchant. Saya telah memeriksa dan memastikan bahwa data yang disampaikan telah sesuai dengan informasi yang saya berikan.</string>
-    <string name="reg_consent_p2">Dengan menekan tombol Kirim Pengajuan, saya menyetujui pengiriman data tersebut untuk keperluan pendaftaran toko/merchant saya.</string>
     <string name="reg_pks_info">PKS akan dikirim ke Email PIC atau Privy ID (jika diisi).</string>
     <string name="reg_err_phone_taken">Nomor telepon sudah terdaftar</string>
     <string name="reg_err_revenue">Omzet harus lebih dari Rp 0</string>
@@ -443,6 +436,7 @@
     <string name="doc_domisili">Keterangan Domisili</string>
     <string name="doc_ijin">Ijin Lokasi &amp; Ijin Usaha</string>
     <string name="doc_buku_rekening">Halaman Depan Buku Rekening / Rekening Koran</string>
+    <string name="doc_pdp">Formulir Persetujuan PDP</string>
     <string name="doc_foto_depan">Foto Toko – Tampak Depan</string>
     <string name="doc_foto_samping">Foto Toko – Tampak Samping</string>
     <string name="doc_unverified">Belum Dicek</string>
@@ -510,6 +504,9 @@
     <string name="prt_add_store">Tambah Toko</string>
     <string name="prt_assigned">Ditugaskan</string>
     <string name="prt_primary">Toko utama</string>
+    <string name="prt_not_held">Anda tidak lagi ditugaskan ke toko ini.</string>
+    <string name="prt_store_cancelled">Dibatalkan</string>
+    <string name="prt_store_cancelled_reason">Permintaan dibatalkan Admin: %1$s</string>
     <string name="prt_no_tl">Belum ada TL</string>
     <string name="prt_add_store_blocked">Anda belum memegang toko di partner ini, jadi belum bisa menambah toko.</string>
     <string name="prt_referral_empty">Belum diisi</string>
@@ -577,7 +574,8 @@
     <string name="asg_history_meta">oleh %1$s · %2$s</string>
     <string name="notif_title">Notifikasi</string>
     <string name="notif_empty">Belum ada notifikasi.</string>
-    <string name="notif_unread">Belum dibaca</string>
+    <string name="notif_new_badge">Baru</string>
+    <string name="notif_store_cancelled">Permintaan tambah toko %1$s (%2$s) dibatalkan: %3$s.</string>
     <string name="notif_retention">Notifikasi disimpan 30 hari.</string>
     <string name="notif_new">%1$d notifikasi baru. %2$s</string>
     <string name="notif_see">Lihat</string>
@@ -600,6 +598,10 @@
     <string name="sim_apl_release_done">Andi Pratama dilepas dari toko Sudiang. %1$d SA/SR ikut dilepas.</string>
     <string name="sim_apl_release_failed">Toko Sudiang belum punya TL.</string>
     <string name="sim_apl_note">Di portal web APL menugaskan dan melepas TL kapan saja di menu Toko Aktif.</string>
+    <string name="sim_admin_cancel_store">Admin batalkan permintaan tambah toko terbaru</string>
+    <string name="sim_admin_cancel_store_done">Permintaan tambah toko %1$s dibatalkan.</string>
+    <string name="sim_admin_cancel_store_none">Tidak ada permintaan tambah toko yang menunggu kode referral.</string>
+    <string name="sim_cancel_store_reason">Lokasi toko tidak sesuai dengan data pendaftaran</string>
     <string name="sim_admin_change_area">Ubah area partner</string>
     <string name="sim_admin_disable_tl_done">Andi Pratama dinonaktifkan. %1$d toko pindah ke Bagus Wicaksono.</string>
     <string name="sim_admin_move">Pindahkan Bawahan: Siti Rahmawati ke Bagus Wicaksono</string>

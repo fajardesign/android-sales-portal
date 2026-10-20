@@ -9,7 +9,7 @@ object PartnerActions {
             val code = p.id.takeLast(4)
             stores = stores.mapIndexed { i, s -> s.copy(status = "ACTIVE", code = s.code ?: "TK$code-${(i + 1).toString().padStart(2, '0')}") }
         }
-        if (to == PartnerStatus.INACTIVE) stores = stores.map { it.copy(status = "INACTIVE", assigned = emptyList()) }
+        if (to == PartnerStatus.INACTIVE) stores = stores.map { if (it.status == Store.CANCELLED) it else it.copy(status = "INACTIVE", assigned = emptyList()) }
         return p.copy(
             status = to,
             statusUpdatedAt = at,

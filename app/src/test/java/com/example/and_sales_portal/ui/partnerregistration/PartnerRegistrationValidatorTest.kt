@@ -60,10 +60,10 @@ class PartnerRegistrationValidatorTest {
     @Test
     fun documentTable() {
         val individu = DocType.forEntity(Keys.ENTITY_INDIVIDU, Keys.PIC_OWNER).map { it.first }
-        assertEquals(listOf(DocType.KTP_PIC, DocType.NPWP, DocType.NIB, DocType.BUKU_REKENING, DocType.FOTO_DEPAN, DocType.FOTO_SAMPING), individu)
+        assertEquals(listOf(DocType.KTP_PIC, DocType.NPWP, DocType.NIB, DocType.BUKU_REKENING, DocType.PDP, DocType.FOTO_DEPAN, DocType.FOTO_SAMPING), individu)
         assertTrue(DocType.KTP_OWNER in DocType.forEntity(Keys.ENTITY_INDIVIDU, Keys.PIC_KARYAWAN).map { it.first })
         val company = DocType.forEntity(Keys.ENTITY_PT, Keys.PIC_KARYAWAN)
-        assertEquals(11, company.size)
+        assertEquals(12, company.size)
         assertFalse(company.first { it.first == DocType.NIB }.second)
         assertTrue(DocType.forEntity(null, null).isEmpty())
     }

@@ -65,8 +65,9 @@ class StoreHolderHistoryTest {
 
         partners.unassign(11, toko, 6)
         assertEquals(past, ops.visitWeek(11, lastWeek))
-        // Released on Wednesday: still Siti's target this week, locked on Monday 00:00 WIB (Q5).
-        assertEquals(3, ops.visitWeek(11, thisWeek).target)
+        // Released on Wednesday without a visit: it leaves Siti's target this week (S20, decision 2026-10-20).
+        val visited = ops.visitsBetween(11, thisWeek, wednesday).any { it.storeId == toko }
+        assertEquals(if (visited) 2 else 1, ops.visitWeek(11, thisWeek).target)
 
         // Assigned on Wednesday to Nurul (SA 16): from next week, never in a past week.
         val nurulPast = ops.visitWeek(16, lastWeek).target
@@ -90,14 +91,15 @@ class StoreHolderHistoryTest {
 
     @Test
     fun tokoAssignedMidWeekCountsFromNextWeek() {
-        // Q5 (2026-10-19, replacing S9): the old holder keeps it in this week's target; the new one from next week.
+        // Q5 / S20: the old holder keeps it in this week's target only if already visited; the new one from next week.
         val toko = "REG2026-0139-1" // Eko (SA 15) since the sample
         partners.unassign(15, toko, 6)
         assertEquals(null, partners.assign(6, 16, toko)) // Nurul gets it on Wednesday
         assertEquals(setOf("REG2026-0132-1", toko), ops.visitPartners(16, wednesday).flatMap { it.stores }.map { it.store.id }.toSet())
         assertEquals(1, ops.visitWeek(16, thisWeek).target)
         assertEquals(2, ops.visitWeek(16, thisWeek.plusWeeks(1)).target)
-        assertEquals(1, ops.visitWeek(15, thisWeek).target)
+        val ekoVisited = ops.visitsBetween(15, thisWeek, wednesday).any { it.storeId == toko }
+        assertEquals(if (ekoVisited) 1 else 0, ops.visitWeek(15, thisWeek).target)
         assertEquals(0, ops.visitWeek(15, thisWeek.plusWeeks(1)).target)
         assertTrue(ops.visitPartners(15, wednesday).none { g -> g.stores.any { it.store.id == toko } })
     }
