@@ -21,10 +21,10 @@ class ActivityRulesTest {
         assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:00")), today, today))
         assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:00:59")), today, today))
         assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("10:01")), today, today))
-        // Late check in is still allowed and recorded; no check in by the end of the day = Absen.
+        // Late check in is still allowed and recorded; no check in by the end of the day = "Tidak check in" (OQ-S2-03).
         assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), punch("15:30")), today, today))
         assertEquals(AttendanceStatus.NOT_YET, ActivityRules.attendanceStatus(null, today, today))
-        assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(null, today.minusDays(1), today))
+        assertEquals(AttendanceStatus.NO_CHECKIN, ActivityRules.attendanceStatus(null, today.minusDays(1), today))
         // A punch saved without zone falls back to the area: 10:00 WIB is 11:00 WITA in Makassar, so late.
         val wib = today.atTime(LocalTime.of(10, 0)).atZone(java.time.ZoneId.of("Asia/Jakarta")).toInstant().toEpochMilli()
         assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(wib, 0.0, 0.0)), today, today))
@@ -38,11 +38,16 @@ class ActivityRulesTest {
         assertTrue(ActivityRules.noCheckOut(noOut, yesterday, today))
         assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(noOut.copy(date = today.toString()), today, today))
         assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(noOut.copy(clockOut = punch("17:30", yesterday)), yesterday, today))
-        assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(Attendance(11, yesterday.toString()), yesterday, today))
-        // Every day is a workday, Sunday included: no check in on a past Sunday = Absen.
+        // OQ-S2-03 (decision 2026-10-20): a past day without check in is "Tidak check in" (neutral), not Absen; it does
+        // not count either.
+        val none = Attendance(11, yesterday.toString())
+        assertEquals(AttendanceStatus.NO_CHECKIN, ActivityRules.attendanceStatus(none, yesterday, today))
+        assertTrue(!ActivityRules.present(none, yesterday, today))
+        assertTrue(!ActivityRules.noCheckOut(none, yesterday, today))
+        // Every day is a workday, Sunday included: no check in on a past Sunday = "Tidak check in".
         val sunday = today.minusDays(3)
         assertEquals(java.time.DayOfWeek.SUNDAY, sunday.dayOfWeek)
-        assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(null, sunday, today))
+        assertEquals(AttendanceStatus.NO_CHECKIN, ActivityRules.attendanceStatus(null, sunday, today))
         assertEquals(AttendanceStatus.NOT_YET, ActivityRules.attendanceStatus(null, today.plusDays(4), today.plusDays(4)))
     }
 

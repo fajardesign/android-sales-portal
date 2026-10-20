@@ -139,7 +139,8 @@ fun MemberDetailScreen(m: Member, productivity: Productivity?, onBack: () -> Uni
                 InfoRow(stringResource(R.string.team_on_time), stringResource(R.string.team_days_value, pr.onTime))
                 InfoRow(stringResource(R.string.team_late), stringResource(R.string.team_days_value, pr.late))
                 InfoRow(stringResource(R.string.team_absent), stringResource(R.string.team_days_value, pr.absent))
-                // Q6: a check in without check out stays present; 6 check ins a week.
+                InfoRow(stringResource(R.string.att_status_no_check_in), stringResource(R.string.team_days_value, pr.noCheckIn))
+                // S13: "Tidak check out" explains the Absen days; 6 check ins a week.
                 if (pr.noCheckOut > 0) InfoRow(stringResource(R.string.att_no_check_out), stringResource(R.string.team_days_value, pr.noCheckOut))
                 pr.attendanceWeek?.let { w -> InfoRow(stringResource(R.string.team_week_checkins), stringResource(R.string.team_checkins_value, w.checkIns, w.target)) }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

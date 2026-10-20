@@ -197,6 +197,7 @@
     <string name="att_status_on_time">Tepat Waktu</string>
     <string name="att_status_late">Terlambat</string>
     <string name="att_status_absent">Absen</string>
+    <string name="att_status_no_check_in">Tidak check in</string>
     <string name="team_week_checkins">Check-in minggu ini</string>
     <string name="team_checkins_value">%1$d/%2$d check-in</string>
     <string name="cor_title">Koreksi Absensi</string>
@@ -217,7 +218,7 @@
     <string name="cor_err_on_time">Jam lewat 10:00 berarti Terlambat.</string>
     <string name="cor_err_late">Jam sampai 10:00 berarti Tepat Waktu.</string>
     <string name="cor_err_no_change">Tidak ada perubahan dari data saat ini.</string>
-    <string name="att_rule">Check in kerja setiap hari, termasuk akhir pekan, libur, dan cuti. Target 6 check-in per minggu (Senin–Minggu). Tepat Waktu sampai pukul 10:00. Check out paling lambat pukul 23:59; tanpa check out, hari itu dihitung Absen. Jam memakai zona waktu area Anda.</string>
+    <string name="att_rule">Check in kerja setiap hari, termasuk akhir pekan, libur, dan cuti. Target 6 check-in per minggu (Senin–Minggu). Tepat Waktu sampai pukul 10:00. Check out paling lambat pukul 23:59; check in tanpa check out sebelum 23:59 dihitung Absen. Hari tanpa check in ditandai Tidak check in. Jam memakai zona waktu area Anda.</string>
     <string name="att_week_progress">Minggu ini: %1$d/%2$d check-in</string>
     <string name="att_no_check_out">Tidak check out</string>
     <string name="att_corrected">Dikoreksi TL</string>
@@ -713,7 +714,7 @@
     <string name="loan_readonly">Data dari Tunaiku CRM, hanya untuk dilihat.</string>
     <string name="prod_title">Produktivitas Tim</string>
     <string name="prod_attendance">Hadir %1$d/%2$d · tepat waktu %3$d · terlambat %4$d</string>
-    <string name="prod_absent_avg">Absen %1$d · rata-rata check in %2$s</string>
+    <string name="prod_absent_avg">Absen %1$d · Tidak check in %2$d · rata-rata check in %3$s</string>
     <string name="prod_week_label">Minggu %1$s</string>
     <string name="prod_evidence">Bukti absensi &amp; kunjungan</string>
     <string name="prod_clock_in">Masuk %1$s</string>

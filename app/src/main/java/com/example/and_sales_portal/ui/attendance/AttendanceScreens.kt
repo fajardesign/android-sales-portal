@@ -128,15 +128,21 @@ private fun RowScope.TimeTile(label: String, punch: Punch?, employeeId: Long?, b
 
 /**
  * Figma `Attendance status`: Badge Small; labels from the revision 2026-10-08: "Belum Check In" Warning, "Tepat Waktu"
- * Success, "Terlambat" Warning, "Absen" Error (a day without check in, Q6).
+ * Success, "Terlambat" Warning, "Absen" Error (a check in without check out, S13). "Tidak check in" (OQ-S2-03) is neutral:
+ * the DS Badge has no grey type, so it is plain tertiary text (user decision 2026-10-20).
  */
 @Composable
 fun AttendanceBadge(status: AttendanceStatus) {
+    if (status == AttendanceStatus.NO_CHECKIN) {
+        Text(stringResource(R.string.att_status_no_check_in), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.labelButtonSm)
+        return
+    }
     val (label, type) = when (status) {
         AttendanceStatus.NOT_YET -> R.string.att_status_not_yet to AmarBadgeType.Warning
         AttendanceStatus.ON_TIME -> R.string.att_status_on_time to AmarBadgeType.Success
         AttendanceStatus.LATE -> R.string.att_status_late to AmarBadgeType.Warning
         AttendanceStatus.ABSENT -> R.string.att_status_absent to AmarBadgeType.Error
+        AttendanceStatus.NO_CHECKIN -> return
     }
     AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small)
 }
@@ -222,4 +228,5 @@ fun statusLabel(status: AttendanceStatus): Int = when (status) {
     AttendanceStatus.ON_TIME -> R.string.att_status_on_time
     AttendanceStatus.LATE -> R.string.att_status_late
     AttendanceStatus.ABSENT -> R.string.att_status_absent
+    AttendanceStatus.NO_CHECKIN -> R.string.att_status_no_check_in
 }

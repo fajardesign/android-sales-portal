@@ -21,8 +21,10 @@ data class Productivity(
     val present: Int,
     val onTime: Int,
     val late: Int,
-    /** Days without check in (Q6; a check in without check out is present). */
+    /** Absen: days with a check in but no check out before 23:59 (S13). */
     val absent: Int,
+    /** "Tidak check in": days without check in (OQ-S2-03, decision 2026-10-20). */
+    val noCheckIn: Int,
     /** Weeks of the period: Monday in the period, up to today (same as the web portal). */
     val weeks: List<VisitWeek>,
     /** The current week (Monday–Sunday), always shown ("Kunjungan minggu ini"). */
@@ -69,6 +71,7 @@ class TeamService(private val partners: PartnerRepository, private val ops: Oper
             onTime = statuses.count { it == AttendanceStatus.ON_TIME },
             late = statuses.count { it == AttendanceStatus.LATE },
             absent = statuses.count { it == AttendanceStatus.ABSENT },
+            noCheckIn = statuses.count { it == AttendanceStatus.NO_CHECKIN },
             weeks = ops.visitWeeks(employeeId, range.start..range.endInclusive),
             thisWeek = ops.visitWeek(employeeId, ActivityRules.weekStart(today)),
             attendanceWeek = ops.attendanceWeek(employeeId, ActivityRules.weekStart(today)),

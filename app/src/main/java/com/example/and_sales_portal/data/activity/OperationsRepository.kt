@@ -204,7 +204,7 @@ class OperationsRepository(
                 if (onTime != (toStatus == AttendanceStatus.ON_TIME)) return CorrectionError.TimeMismatch
                 date.atTime(t).atZone(zone).toInstant().toEpochMilli()
             }
-            AttendanceStatus.NOT_YET -> return CorrectionError.NoChange
+            AttendanceStatus.NOT_YET, AttendanceStatus.NO_CHECKIN -> return CorrectionError.NoChange
         }
         val fromStatus = ActivityRules.attendanceStatus(old, date, today)
         if (fromStatus == toStatus && old.checkInAt == newAt) return CorrectionError.NoChange
