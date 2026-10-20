@@ -25,8 +25,6 @@ data class Simulation(
     val location: LocationMode = LocationMode.AT_STORE,
     val mockLocation: Boolean = false,
     val offline: Boolean = false,
-    /** REG-12 consent page fails to load (decision 2026-10-19, #11). */
-    val consentFails: Boolean = false,
 )
 
 class SimulationSettings(context: Context) {
@@ -43,7 +41,6 @@ class SimulationSettings(context: Context) {
             .putString(KEY_LOCATION, s.location.name)
             .putBoolean(KEY_MOCK, s.mockLocation)
             .putBoolean(KEY_OFFLINE, s.offline)
-            .putBoolean(KEY_CONSENT_FAILS, s.consentFails)
             .apply()
         _state.value = s
     }
@@ -52,13 +49,11 @@ class SimulationSettings(context: Context) {
         location = prefs.getString(KEY_LOCATION, null)?.let { runCatching { LocationMode.valueOf(it) }.getOrNull() } ?: LocationMode.AT_STORE,
         mockLocation = prefs.getBoolean(KEY_MOCK, false),
         offline = prefs.getBoolean(KEY_OFFLINE, false),
-        consentFails = prefs.getBoolean(KEY_CONSENT_FAILS, false),
     )
 
     private companion object {
         const val KEY_LOCATION = "location"
         const val KEY_MOCK = "mock_location"
         const val KEY_OFFLINE = "offline"
-        const val KEY_CONSENT_FAILS = "consent_fails"
     }
 }

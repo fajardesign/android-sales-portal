@@ -116,9 +116,6 @@ data class BankForm(
 @Serializable
 enum class UploadStatus { Uploading, Uploaded, Failed }
 
-/** State of the REG-12 consent page. */
-enum class ConsentPage { Loading, Loaded, Failed }
-
 /** A document picked for upload: a local copy of the file (kept with the draft). */
 @Serializable
 data class DocumentUpload(
@@ -174,10 +171,6 @@ data class PartnerRegistrationState(
     /** Name of a saved draft offered when the flow opens; `null` when there is none or it was answered. */
     val draftOffer: String? = null,
     val submitting: Boolean = false,
-    /** REG-08 "Konfirmasi dan Persetujuan Pendaftaran Toko" checkbox (PRD Scope 1 v2 C5), kept while REG-12 is open. */
-    val consent: Boolean = false,
-    /** REG-12 consent page (decision 2026-10-19 Q2): the checkbox and "Kirim Pengajuan" wait until it is loaded. */
-    val consentPage: ConsentPage = ConsentPage.Loading,
     val submitted: Submitted? = null,
 ) {
     val entityType: String? get() = choices[RegChoice.EntityType]

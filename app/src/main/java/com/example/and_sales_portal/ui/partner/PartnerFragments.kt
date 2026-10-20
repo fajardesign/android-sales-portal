@@ -31,6 +31,7 @@ import com.example.and_sales_portal.data.device.Place
 import com.example.and_sales_portal.data.partner.DocType
 import com.example.and_sales_portal.data.partner.PartnerRepository
 import com.example.and_sales_portal.data.partner.PartnerStatus
+import com.example.and_sales_portal.data.partner.Store
 import com.example.and_sales_portal.data.partner.RevisionItem
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
@@ -257,6 +258,7 @@ class RevisionFragment : ComposeFragment() {
 /** Spec: PRT-01 Detail Partner. */
 class PartnerDetailFragment : ComposeFragment() {
     private val id by lazy { requireArguments().getString(ARG_ID)!! }
+    private val store by lazy { requireArguments().getString(ARG_STORE) }
 
     @Composable
     override fun ScreenContent() {
@@ -264,10 +266,13 @@ class PartnerDetailFragment : ComposeFragment() {
         val partners by container.partners.partners.collectAsState()
         val (toast, clearToast) = incomingToast()
         val p = remember(partners) { container.partners.get(id) } ?: return
+        // From a notification (AC-014): a toko the user no longer holds shows "Anda tidak lagi ditugaskan ke toko ini."
+        val notHeld = store?.let { sid -> p.stores.firstOrNull { it.id == sid }?.let { st -> st.status != Store.CANCELLED && !container.partners.holds(st, user.user.id, user.role) } } ?: false
         WithToast(toast, clearToast) {
             PartnerDetailScreen(
-                // FR-PA-012 (PRD Scope 1 v1.1 C6): everyone sees only the toko of their kursi.
+                // FR-PA-012 (PRD Scope 1 v1.1 C6): everyone sees only the toko of their kursi (and their own requests).
                 p.copy(stores = container.partners.storesOf(p, user.user.id, user.role)),
+                notHeld = notHeld,
                 // PRD C4 / D4: TL and SR add toko; SA does not. FR-PA-013: only with a kursi in this partner.
                 canAddStore = user.role != SalesRole.SA,
                 addStoreBlocked = !container.partners.canAddStore(p, user.user.id, user.role),
@@ -280,7 +285,8 @@ class PartnerDetailFragment : ComposeFragment() {
 
     companion object {
         private const val ARG_ID = "partner_id"
-        fun args(id: String) = bundleOf(ARG_ID to id)
+        private const val ARG_STORE = "store_id"
+        fun args(id: String, storeId: String? = null) = bundleOf(ARG_ID to id, ARG_STORE to storeId)
     }
 }
 

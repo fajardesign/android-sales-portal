@@ -244,6 +244,8 @@ fun PartnerDetailScreen(
     onAddStore: () -> Unit,
     /** FR-PA-013: TL/SR without a kursi in this partner see "Tambah Toko" disabled with the reason. */
     addStoreBlocked: Boolean = false,
+    /** Opened from a notification about a toko the user no longer holds (AC-014). */
+    notHeld: Boolean = false,
 ) {
     val c = AmarTheme.colors
     val action: (@Composable () -> Unit)? = if (canAddStore && p.status == PartnerStatus.ACTIVE) {
@@ -262,6 +264,7 @@ fun PartnerDetailScreen(
             InfoRow(stringResource(R.string.reg_pic_email), p.picEmail)
             InfoRow(stringResource(R.string.reg_address), "${p.address}, ${p.village}, ${p.district}, ${p.regency}")
         }
+        if (notHeld) AmarInfoBox(stringResource(R.string.prt_not_held), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
         if (canAddStore && addStoreBlocked && p.status == PartnerStatus.ACTIVE) {
             AmarInfoBox(stringResource(R.string.prt_add_store_blocked), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Info)
         }
@@ -280,6 +283,7 @@ private fun StoreCard(s: Store, onOpenMaps: (Double, Double) -> Unit) {
             s.code?.let { AmarBadge(it, type = AmarBadgeType.Info, size = AmarBadgeSize.Small) }
             if (s.primary) AmarBadge(stringResource(R.string.prt_primary), type = AmarBadgeType.Success, size = AmarBadgeSize.Small)
             if (s.status == Store.WAITING_REFERRAL) AmarBadge(stringResource(R.string.prt_store_waiting_referral), type = AmarBadgeType.Warning, size = AmarBadgeSize.Small)
+            if (s.status == Store.CANCELLED) AmarBadge(stringResource(R.string.prt_store_cancelled), type = AmarBadgeType.Error, size = AmarBadgeSize.Small)
         }
         Text(s.address, color = c.content.secondary, style = AmarTheme.typography.bodySm)
         InfoRow(stringResource(R.string.reg_revenue), rupiah(s.omzet))
@@ -288,6 +292,8 @@ private fun StoreCard(s: Store, onOpenMaps: (Double, Double) -> Unit) {
         InfoRow(stringResource(R.string.account_role_tl), s.tlId?.let(::nameOf) ?: stringResource(R.string.prt_no_tl))
         InfoRow(stringResource(R.string.prt_assigned), s.assigned.map(::nameOf).ifEmpty { listOf(stringResource(R.string.ptn_unassigned)) }.joinToString())
         if (s.status == Store.WAITING_REFERRAL) AmarInfoBox(stringResource(R.string.prt_store_waiting_referral_info), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
+        // C7 (decision 2026-10-20): a cancelled request stays as history; it is never assigned or visited.
+        if (s.status == Store.CANCELLED) AmarInfoBox(stringResource(R.string.prt_store_cancelled_reason, s.cancelReason.orEmpty()), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Error)
         MapPreview(s.lat, s.lng, { onOpenMaps(s.lat, s.lng) })
     }
 }

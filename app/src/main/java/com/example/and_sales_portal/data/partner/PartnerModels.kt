@@ -123,8 +123,10 @@ data class Store(
     val tlLog: List<TlChange> = emptyList(),
     /** Kode Referral, filled by the Admin per toko (PRD Scope 1 v1.1 C2); read-only here. */
     val referralCode: String? = null,
-    /** File name of the toko's QR, uploaded by the Admin with the code (FR-019); the prototype draws a sample QR from the code. */
+    /** File name of the toko's QR, uploaded by the Admin with the code (FR-019). */
     val referralQr: String? = null,
+    /** Why the Admin cancelled the Permintaan tambah toko ([CANCELLED]). */
+    val cancelReason: String? = null,
 ) {
     val active: Boolean get() = status == ACTIVE
 
@@ -137,6 +139,8 @@ data class Store(
     companion object {
         const val ACTIVE = "ACTIVE"
         const val WAITING_REFERRAL = "WAITING_REFERRAL"
+        /** Permintaan tambah toko cancelled by the Admin (PRD 1.1 C7 FR-023, decision 2026-10-20): history only. */
+        const val CANCELLED = "CANCELLED"
     }
 }
 
@@ -152,21 +156,6 @@ data class TlChange(
     /** Why: "aktivasi", "APL", "dilepas APL", "TL dinonaktifkan", "partner nonaktif", "ubah area". */
     val source: String,
 )
-
-/**
- * "Konfirmasi dan Persetujuan Pendaftaran Toko" accepted before the first submission (PRD Scope 1 v2 C5): when, the
- * version of the page and who submitted.
- */
-@Serializable
-/** Proof of consent (PRD Scope 1 v2 C5; decision 2026-10-19 Q2: also the URL of the page shown). */
-data class Consent(val at: Long, val version: String, val by: Long, val url: String = URL) {
-    companion object {
-        const val VERSION = "1.0"
-
-        // TODO(OQ-PA-13): placeholder until the consent page URL is decided; the only place it is set.
-        const val URL = "https://placeholder.amarbank.co.id/persetujuan-pendaftaran-toko/v1.0"
-    }
-}
 
 @Serializable
 data class Partner(
@@ -208,8 +197,6 @@ data class Partner(
     val revision: RevisionRequest? = null,
     /** Reason of a Rejected, Cancelled or Inactive status. */
     val statusReason: String? = null,
-    /** Consent of the first submission (C5); resubmitting a revision does not ask again. */
-    val consent: Consent? = null,
 ) {
     val registrationNumber: String get() = id
     val primaryStore: Store? get() = stores.firstOrNull { it.primary } ?: stores.firstOrNull()

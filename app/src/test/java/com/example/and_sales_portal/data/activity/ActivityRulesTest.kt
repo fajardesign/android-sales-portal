@@ -29,12 +29,15 @@ class ActivityRulesTest {
         val wib = today.atTime(LocalTime.of(10, 0)).atZone(java.time.ZoneId.of("Asia/Jakarta")).toInstant().toEpochMilli()
         assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(wib, 0.0, 0.0)), today, today))
         assertEquals("WITA", com.example.and_sales_portal.data.demo.DemoDirectory.area(1)?.zoneLabel)
-        // Q6 (2026-10-19): Absen = a day without check in; a check in without check out stays present ("Tidak check out").
+        // S13 (decision 2026-10-20): a check in without check out before 23:59 is Absen once the day is over; today it
+        // is still on time; "Tidak check out" stays as a note.
         val yesterday = today.minusDays(1)
         val noOut = Attendance(11, yesterday.toString(), punch("09:30", yesterday))
-        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(noOut, yesterday, today))
+        assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(noOut, yesterday, today))
+        assertTrue(!ActivityRules.present(noOut, yesterday, today))
         assertTrue(ActivityRules.noCheckOut(noOut, yesterday, today))
-        assertTrue(!ActivityRules.noCheckOut(noOut.copy(date = today.toString()), today, today))
+        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(noOut.copy(date = today.toString()), today, today))
+        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(noOut.copy(clockOut = punch("17:30", yesterday)), yesterday, today))
         assertEquals(AttendanceStatus.ABSENT, ActivityRules.attendanceStatus(Attendance(11, yesterday.toString()), yesterday, today))
         // Every day is a workday, Sunday included: no check in on a past Sunday = Absen.
         val sunday = today.minusDays(3)
@@ -64,20 +67,25 @@ class ActivityRulesTest {
     }
 
     @Test
-    fun zoneOfTheCheckInLocationDecides() {
-        // Q6 (2026-10-19, replacing the area zone of S8): the zone of the check-in location decides Tepat Waktu.
-        assertEquals("Asia/Jakarta", ActivityRules.zoneAt(-6.2, 106.8).id) // Jakarta
-        assertEquals("Asia/Makassar", ActivityRules.zoneAt(-5.15, 119.43).id) // Makassar
-        assertEquals("Asia/Makassar", ActivityRules.zoneAt(-8.65, 115.2).id) // Denpasar
-        assertEquals("Asia/Jayapura", ActivityRules.zoneAt(-2.53, 140.7).id) // Jayapura
-        // Siti (Makassar) checking in 09:30 at a place in WIB: on time, read in WIB (10:30 WITA would be late).
-        val wib = java.time.ZoneId.of("Asia/Jakarta")
-        val at = today.atTime(LocalTime.of(9, 30)).atZone(wib).toInstant().toEpochMilli()
-        assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, -6.2, 106.8, zone = "Asia/Jakarta")), today, today))
-        assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, -5.15, 119.43, zone = "Asia/Makassar")), today, today))
-        // Visit check-in opens at 12:00 in the toko's zone.
-        assertTrue(ActivityRules.visitOpen(today.atTime(LocalTime.of(11, 30)).atZone(wib).toInstant(), java.time.ZoneId.of("Asia/Makassar")))
-        assertTrue(!ActivityRules.visitOpen(today.atTime(LocalTime.of(11, 30)).atZone(wib).toInstant(), wib))
+    fun areaZoneDecides() {
+        // PRD Scope 2 S8 (decision 2026-10-20): server time in the zone of the user's area, whatever the place or device.
+        val original = ActivityRules.systemZone
+        try {
+            ActivityRules.systemZone = { java.time.ZoneId.of("Asia/Jakarta") }
+            val wib = java.time.ZoneId.of("Asia/Jakarta")
+            // Siti (Makassar, WITA) checking in 09:30 WIB = 10:30 WITA: late, even at a place in WIB.
+            val at = today.atTime(LocalTime.of(9, 30)).atZone(wib).toInstant().toEpochMilli()
+            val out = today.atTime(LocalTime.of(17, 0)).atZone(wib).toInstant().toEpochMilli()
+            assertEquals(AttendanceStatus.LATE, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(at, -6.2, 106.8, zone = "Asia/Jakarta"), Punch(out, -6.2, 106.8)), today, today))
+            // 08:50 WIB = 09:50 WITA: on time.
+            val early = today.atTime(LocalTime.of(8, 50)).atZone(wib).toInstant().toEpochMilli()
+            assertEquals(AttendanceStatus.ON_TIME, ActivityRules.attendanceStatus(Attendance(11, today.toString(), Punch(early, -6.2, 106.8)), today, today))
+            // Visit check-in opens at 12:00 WITA: 11:30 WIB (12:30 WITA) is open.
+            assertTrue(ActivityRules.visitOpen(today.atTime(LocalTime.of(11, 30)).atZone(wib).toInstant(), ActivityRules.zoneOf(11)))
+            assertTrue(!ActivityRules.visitOpen(today.atTime(LocalTime.of(10, 59)).atZone(wib).toInstant(), ActivityRules.zoneOf(11)))
+        } finally {
+            ActivityRules.systemZone = original
+        }
     }
 
     @Test

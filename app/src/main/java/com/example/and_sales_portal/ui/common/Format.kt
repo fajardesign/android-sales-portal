@@ -7,7 +7,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Dates and times in Indonesian; check in/out times in the zone of their location (WIB, WITA, WIT; Q6). */
+/** Dates and times in Indonesian; check in/out times in the zone of the user's area (WIB, WITA, WIT; PRD Scope 2 S8). */
 object Fmt {
     private val id = Locale("id", "ID")
     private val time = DateTimeFormatter.ofPattern("HH:mm", id)
@@ -28,10 +28,10 @@ object Fmt {
         return "${time.format(Instant.ofEpochMilli(p.at).atZone(zone))} ${ActivityRules.label(zone)}"
     }
 
-    /** "08:30 WITA" of the check in that counts (a TL correction, else the punch), in the zone of its location. */
+    /** "08:30 WITA" of the check in that counts (a TL correction, else the punch), in the zone of the user's area (S8). */
     fun checkInLabel(a: com.example.and_sales_portal.data.activity.Attendance): String? {
         val at = a.checkInAt ?: return null
-        val zone = a.clockIn?.let { ActivityRules.zoneOf(it, a.employeeId) } ?: ActivityRules.zoneOf(a.employeeId)
+        val zone = ActivityRules.zoneOf(a.employeeId)
         return "${time.format(Instant.ofEpochMilli(at).atZone(zone))} ${ActivityRules.label(zone)}"
     }
 

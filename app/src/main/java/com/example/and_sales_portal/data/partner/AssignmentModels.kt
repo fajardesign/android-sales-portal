@@ -57,10 +57,18 @@ data class AppNotification(
     val employeeId: Long,
     val event: AssignmentEvent? = null,
     val revision: RevisionNotice? = null,
+    val storeCancelled: StoreCancelNotice? = null,
     val read: Boolean = false,
 ) {
-    val at: Long get() = event?.at ?: revision?.at ?: 0
+    val at: Long get() = event?.at ?: revision?.at ?: storeCancelled?.at ?: 0
 }
+
+/**
+ * The Admin cancelled the Permintaan tambah toko of the TL/SR who added it (PRD 1.1 C7 FR-023, decision 2026-10-20):
+ * "Permintaan tambah toko {toko} ({partner}) dibatalkan: {alasan}."
+ */
+@Serializable
+data class StoreCancelNotice(val at: Long, val storeId: String, val storeName: String, val partnerId: String, val partnerName: String, val reason: String)
 
 /** Assignment history and notifications on the device (shared by every account, like partners). */
 @Serializable
@@ -70,7 +78,7 @@ data class AssignmentData(
     val notifications: List<AppNotification> = emptyList(),
 ) {
     companion object {
-        /** 4: sample notification older than 30 days (decision 2026-10-19). */
-        const val VERSION = 4
+        /** 5: cancelled Permintaan tambah toko notifications (decision 2026-10-20). */
+        const val VERSION = 5
     }
 }

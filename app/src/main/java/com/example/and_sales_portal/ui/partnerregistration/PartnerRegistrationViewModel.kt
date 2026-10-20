@@ -7,7 +7,6 @@ import com.example.and_sales_portal.data.demo.DemoStore
 import com.example.and_sales_portal.data.device.LocationResult
 import com.example.and_sales_portal.data.partner.DocType
 import com.example.and_sales_portal.data.partner.Keys
-import com.example.and_sales_portal.data.partner.Consent
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.PartnerDoc
 import com.example.and_sales_portal.data.partner.PartnerRepository
@@ -84,7 +83,6 @@ class PartnerRegistrationViewModel(
     private var regionJob: Job? = null
 
     init {
-        loadConsentPage()
         viewModelScope.launch {
             val provinces = repository.provinces()
             _state.update { it.copy(regions = it.regions.copy(provinces = provinces)) }
@@ -128,19 +126,6 @@ class PartnerRegistrationViewModel(
             )
         }
         viewModelScope.launch { loadRegionsFor(_state.value.partner) }
-    }
-
-    /** Only once the consent page is loaded (decision 2026-10-19 Q2). */
-    fun setConsent(value: Boolean) = _state.update { if (it.consentPage == ConsentPage.Loaded) it.copy(consent = value) else it }
-
-    /** Loads the REG-12 page; on failure the screens show "Halaman tidak dapat dimuat. Coba lagi." with a retry. */
-    fun loadConsentPage() {
-        if (_state.value.consentPage == ConsentPage.Loaded) return
-        _state.update { it.copy(consentPage = ConsentPage.Loading) }
-        viewModelScope.launch {
-            val ok = repository.loadConsentPage()
-            _state.update { it.copy(consentPage = if (ok) ConsentPage.Loaded else ConsentPage.Failed, consent = it.consent && ok) }
-        }
     }
 
     /** "Mulai Baru". */
@@ -293,10 +278,10 @@ class PartnerRegistrationViewModel(
     fun submit() {
         val s = _state.value
         val location = s.location ?: return
-        // PRD Scope 1 v2 C5: consent is required and saved with the first submission only (not on Kirim Ulang).
-        if (s.submitting || s.submitted != null || location.mock || !s.consent || s.consentPage != ConsentPage.Loaded) return
+        // PRD Scope 1 v1.1 C5 (decision 2026-10-20): no consent; the summary and the location are enough.
+        if (s.submitting || s.submitted != null || location.mock) return
         _state.update { it.copy(submitting = true) }
-        val p = partners.submit(s.toPartner(partners.now(), location).copy(consent = Consent(partners.now(), Consent.VERSION, user.id)))
+        val p = partners.submit(s.toPartner(partners.now(), location))
         store.deleteDraft(user.id)
         _state.update { it.copy(submitting = false, submitted = Submitted(p.registrationNumber, p.name, p.submittedAt)) }
     }

@@ -61,6 +61,14 @@ class SimulationFragment : ComposeFragment() {
                     val ok = container.partners.aplAssignTl(STORE_TAMALANREA, TL_BAGUS, APL_HASAN)
                     toast = getString(if (ok) R.string.sim_apl_assign_done else R.string.sim_apl_assign_failed)
                 },
+                onCancelStoreRequest = {
+                    val st = container.partners.latestStoreRequest()
+                    toast = if (st != null && container.partners.adminCancelStoreRequest(st.id, getString(R.string.sim_cancel_store_reason))) {
+                        getString(R.string.sim_admin_cancel_store_done, st.name)
+                    } else {
+                        getString(R.string.sim_admin_cancel_store_none)
+                    }
+                },
                 onAplReleaseTl = {
                     val released = container.partners.aplReleaseTl(STORE_SUDIANG, APL_HASAN)
                     toast = if (released == null) getString(R.string.sim_apl_release_failed) else getString(R.string.sim_apl_release_done, released.size)
@@ -105,6 +113,8 @@ class AdminSimulation(
     val onDisableSa: () -> Unit,
     val onAplAssignTl: () -> Unit = {},
     val onAplReleaseTl: () -> Unit = {},
+    /** C7 (decision 2026-10-20): the Admin cancels the latest Permintaan tambah toko. */
+    val onCancelStoreRequest: () -> Unit = {},
     val onMoveSubordinate: () -> Unit = {},
 )
 
@@ -134,7 +144,6 @@ fun SimulationScreen(
             }
             Switch(R.string.sim_mock, sim.mockLocation) { v -> onChange { it.copy(mockLocation = v) } }
             Switch(R.string.sim_offline, sim.offline) { v -> onChange { it.copy(offline = v) } }
-            Switch(R.string.sim_consent_fails, sim.consentFails) { v -> onChange { it.copy(consentFails = v) } }
         }
         admin?.let { a ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
@@ -145,6 +154,7 @@ fun SimulationScreen(
                 AmarButton(stringResource(R.string.sim_apl_assign), a.onAplAssignTl, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
                 AmarButton(stringResource(R.string.sim_apl_release), a.onAplReleaseTl, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
                 Text(stringResource(R.string.sim_apl_note), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+                AmarButton(stringResource(R.string.sim_admin_cancel_store), a.onCancelStoreRequest, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
                 AmarButton(stringResource(R.string.sim_admin_move), a.onMoveSubordinate, Modifier.fillMaxWidth(), type = AmarButtonType.Secondary, size = AmarButtonSize.Medium)
             }
         }
