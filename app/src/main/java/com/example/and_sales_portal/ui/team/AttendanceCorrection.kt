@@ -119,7 +119,7 @@ class AttendanceCorrectionFragment : ComposeFragment() {
         val a = remember(ops) { o.attendanceOf(employeeId, date) }
         if (!initialised) {
             // Start from the current values, so the TL changes only what is wrong.
-            val st = ActivityRules.attendanceStatus(a, date, today).takeIf { it != AttendanceStatus.NOT_YET }
+            val st = ActivityRules.attendanceStatus(a, date, today).takeIf { it != AttendanceStatus.NOT_YET && it != AttendanceStatus.NO_CHECKIN }
             val t = a?.checkInAt?.let { Fmt.time(it, a.clockIn?.let { p -> ActivityRules.zoneOf(p, employeeId) } ?: ActivityRules.zoneOf(employeeId)) }.orEmpty()
             form = CorrectionForm(st, t)
             initialised = true

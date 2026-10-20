@@ -31,7 +31,7 @@ data class OpsData(
 ) {
     companion object {
         /** 9: area zone (S8) and Absen without check out (S13) again, decisions 2026-10-20. */
-        const val VERSION = 9
+        const val VERSION = 10
         fun key(employeeId: Long, date: LocalDate) = "$employeeId:$date"
     }
 }
@@ -118,7 +118,11 @@ data class Visit(
  * workday, weekends, holidays and leave included (Q6). "Sudah Check In" / "Sudah Check Out" come from [Attendance].
  */
 @Serializable
-enum class AttendanceStatus { NOT_YET, ON_TIME, LATE, ABSENT }
+/**
+ * Status of a day. [ABSENT] "Absen" = a check in without check out before 23:59 (S13, a violation); [NO_CHECKIN]
+ * "Tidak check in" = a past day without check in (OQ-S2-03, decision 2026-10-20, neutral). Neither counts toward the 6.
+ */
+enum class AttendanceStatus { NOT_YET, ON_TIME, LATE, ABSENT, NO_CHECKIN }
 
 /** Attendance of one week (Monday–Sunday): days present (not Absen, S13) over the target of 6 (Q6). */
 data class AttendanceWeek(val start: LocalDate, val checkIns: Int, val target: Int = ActivityRules.WEEKLY_CHECKINS) {
@@ -221,14 +225,14 @@ object ActivityRules {
         places.map { it to distanceMeters(lat, lng, it.lat, it.lng) }.minByOrNull { it.second }
 
     /**
-     * Status of [date]: the TL's correction first; else, once the day is over, Absen without check in or without check
-     * out (S13, decision 2026-10-20); else Tepat Waktu / Terlambat from the check-in time in the zone of the user's area.
+     * Status of [date]: the TL's correction first; else, once the day is over, "Tidak check in" without check in
+     * (OQ-S2-03) and Absen with a check in but no check out (S13, decision 2026-10-20); else Tepat Waktu / Terlambat from the check-in time in the zone of the user's area.
      */
     fun attendanceStatus(a: Attendance?, date: LocalDate, today: LocalDate): AttendanceStatus {
         a?.statusOverride?.let { return it }
         val inAt = a?.checkInAt
         return when {
-            inAt == null -> if (date < today) AttendanceStatus.ABSENT else AttendanceStatus.NOT_YET
+            inAt == null -> if (date < today) AttendanceStatus.NO_CHECKIN else AttendanceStatus.NOT_YET
             a.clockOut == null && date < today -> AttendanceStatus.ABSENT
             Instant.ofEpochMilli(inAt).atZone(zoneOf(a.employeeId)).toLocalTime().truncatedTo(ChronoUnit.MINUTES) <= CLOCK_IN_LIMIT -> AttendanceStatus.ON_TIME
             else -> AttendanceStatus.LATE
@@ -238,7 +242,7 @@ object ActivityRules {
     /** "Tidak check out": a past day with a check in and no check out, shown next to Absen (S13). */
     fun noCheckOut(a: Attendance?, date: LocalDate, today: LocalDate): Boolean = a != null && a.hasCheckIn && a.clockOut == null && date < today
 
-    /** A day that counts toward the 6 check-ins of the week: present, not Absen (S13). */
+    /** A day that counts toward the 6 check-ins of the week: present, neither Absen (S13) nor "Tidak check in" (OQ-S2-03). */
     fun present(a: Attendance?, date: LocalDate, today: LocalDate): Boolean = attendanceStatus(a, date, today).let { it == AttendanceStatus.ON_TIME || it == AttendanceStatus.LATE }
 
     /** Visit check-in is open from [VISIT_START] in the zone of the user's area (S8). */

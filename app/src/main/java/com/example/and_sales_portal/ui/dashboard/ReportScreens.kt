@@ -85,8 +85,8 @@ fun ProductivityCard(title: String, p: Productivity, modifier: Modifier = Modifi
     AmarCard(modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = onClick) {
         Text(title, color = c.content.primary, style = AmarTheme.typography.headingSm)
         Text(stringResource(R.string.prod_attendance, p.present, p.workdays, p.onTime, p.late), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        // TL-07 (PRD alignment 2026-10-09, same as the APL report): Absen and the average check in time.
-        if (team) Text(stringResource(R.string.prod_absent_avg, p.absent, p.avgClockIn ?: "-"), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        // TL-07 (same as the APL report): Absen, "Tidak check in" (OQ-S2-03) and the average check in time.
+        if (team) Text(stringResource(R.string.prod_absent_avg, p.absent, p.noCheckIn, p.avgClockIn ?: "-"), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         // Like the web portal: the current week, then the other weeks whose Monday is in the period.
         (listOf(p.thisWeek) + p.weeks.filter { it.start != p.thisWeek.start }.sortedByDescending { it.start }).forEach { w ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

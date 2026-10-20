@@ -211,9 +211,10 @@ class ActivityRepositoryTest {
         // Still Sunday: the day is not over, 6 check ins.
         assertEquals(6, ops.attendanceWeek(11, week).checkIns)
         assertTrue(ops.attendanceWeek(11, week).met)
-        // Monday: Wednesday without check in and Sunday without check out are Absen; Saturday counts like any day.
+        // Monday: Wednesday without check in is "Tidak check in" (OQ-S2-03), Sunday without check out is Absen (S13);
+        // neither counts. Saturday counts like any day.
         now = at(week.plusDays(7), "09:00")
-        assertEquals(AttendanceStatus.ABSENT, ops.attendanceStatus(11, week.plusDays(2)))
+        assertEquals(AttendanceStatus.NO_CHECKIN, ops.attendanceStatus(11, week.plusDays(2)))
         assertEquals(AttendanceStatus.ABSENT, ops.attendanceStatus(11, week.plusDays(6)))
         assertEquals(AttendanceStatus.ON_TIME, ops.attendanceStatus(11, week.plusDays(5)))
         assertTrue(ActivityRules.noCheckOut(ops.attendanceOf(11, week.plusDays(6)), week.plusDays(6), week.plusDays(7)))
@@ -224,11 +225,31 @@ class ActivityRepositoryTest {
     }
 
     @Test
+    fun teamReportSeparatesAbsenAndTidakCheckIn() {
+        // OQ-S2-03 (decision 2026-10-20), TL-02 detail bawahan: Absen and "Tidak check in" are counted apart, neither present.
+        val week = next.with(java.time.DayOfWeek.MONDAY)
+        val r = siti()
+        now = at(week, "09:00")
+        r.clockIn(Punch(now.toEpochMilli(), -5.15, 119.43)) // Monday: no check out → Absen
+        now = at(week.plusDays(1), "09:00")
+        r.clockIn(Punch(now.toEpochMilli(), -5.15, 119.43))
+        r.clockOut(Punch(now.plusSeconds(8 * 3600).toEpochMilli(), -5.15, 119.43)) // Tuesday: Tepat Waktu
+        now = at(week.plusDays(3), "09:00") // Wednesday without check in → Tidak check in
+        val p = com.example.and_sales_portal.data.team.TeamService(partners, ops).productivity(11, week..week.plusDays(2))
+        assertEquals(1, p.present)
+        assertEquals(1, p.absent)
+        assertEquals(1, p.noCheckIn)
+        assertEquals(1, ops.attendanceWeek(11, week).checkIns)
+    }
+
+    @Test
     fun tlCorrectsUntilTheEndOfTheFollowingWeek() {
         // Decision 2026-10-19: Andi (TL 6) corrects Siti's day with a reason; old and new values are kept.
         val day = next // Wednesday of next week: Siti did not check in
         now = at(day.plusDays(1), "09:00")
-        assertEquals(AttendanceStatus.ABSENT, ops.attendanceStatus(11, day))
+        assertEquals(AttendanceStatus.NO_CHECKIN, ops.attendanceStatus(11, day))
+        // "Tidak check in" is not a status the TL sets.
+        assertEquals(CorrectionError.NoChange, ops.correct(6, 11, day, AttendanceStatus.NO_CHECKIN, null, "x"))
         assertEquals(CorrectionError.NotLeader, ops.correct(7, 11, day, AttendanceStatus.ON_TIME, LocalTime.of(9, 0), "x"))
         assertEquals(CorrectionError.ReasonRequired, ops.correct(6, 11, day, AttendanceStatus.ON_TIME, LocalTime.of(9, 0), " "))
         assertEquals(CorrectionError.TimeRequired, ops.correct(6, 11, day, AttendanceStatus.ON_TIME, null, "Ponsel rusak"))
@@ -238,7 +259,7 @@ class ActivityRepositoryTest {
         assertEquals(AttendanceStatus.ON_TIME, ops.attendanceStatus(11, day))
         val c = a.corrections.single()
         assertEquals(6L, c.by)
-        assertEquals(AttendanceStatus.ABSENT, c.fromStatus)
+        assertEquals(AttendanceStatus.NO_CHECKIN, c.fromStatus)
         assertEquals(AttendanceStatus.ON_TIME, c.toStatus)
         assertEquals("Ponsel rusak", c.reason)
         assertTrue(a.hasCheckIn) // counts as a check in of the week
@@ -254,12 +275,12 @@ class ActivityRepositoryTest {
 
     @Test
     fun sampleCorrectionsMatchTheWeb() {
-        // Same as the web sample: Siti, last week, Absen → Tepat Waktu and Terlambat → Tepat Waktu with the reasons.
+        // Same as the web sample: Siti, last week, Tidak check in → Tepat Waktu and Terlambat → Tepat Waktu with the reasons.
         val lastMon = ActivityRules.weekStart(wednesday).minusWeeks(1)
         val corrected = (0L..6L).mapNotNull { ops.attendanceOf(11, lastMon.plusDays(it)) }.filter { it.corrected }
         assertEquals(2, corrected.size)
         val reasons = corrected.associate { it.corrections.single().fromStatus to it.corrections.single().reason }
-        assertEquals("Ponsel rusak, hadir di kantor sesuai daftar hadir manual", reasons[AttendanceStatus.ABSENT])
+        assertEquals("Ponsel rusak, hadir di kantor sesuai daftar hadir manual", reasons[AttendanceStatus.NO_CHECKIN])
         assertEquals("Gangguan sinyal saat check in, sudah di lokasi sebelum 10:00", reasons[AttendanceStatus.LATE])
         corrected.forEach { assertEquals(AttendanceStatus.ON_TIME, ops.attendanceStatus(11, LocalDate.parse(it.date))) }
     }

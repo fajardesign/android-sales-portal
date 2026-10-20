@@ -76,7 +76,7 @@ object DemoSeed {
             }
             val rnd = seededRandom(userId * 1_000_003 + d.toEpochDay())
             val r = rnd.nextDouble()
-            if (r < 0.05) return@forEach // absent: no attendance, no visit
+            if (r < 0.05) return@forEach // "Tidak check in": no attendance, no visit
             val late = r < 0.2
             val inAt = d.atTime(if (late) LocalTime.of(10, 1 + rnd.nextInt(59)) else LocalTime.of(9, 25 + rnd.nextInt(35)))
             val outAt = d.atTime(LocalTime.of(18 + rnd.nextInt(2), rnd.nextInt(60)))
@@ -135,7 +135,7 @@ object DemoSeed {
                 userId, d.toString(),
                 clockOut = Punch(d.atTime(17, 10).atZone(z).toInstant().toEpochMilli(), office.lat, office.lng, place = office.name, distance = 0, zone = z.id),
                 statusOverride = AttendanceStatus.ON_TIME, clockInOverride = inAt,
-                corrections = listOf(AttendanceCorrection(d.plusDays(2).atTime(9, 12).atZone(wib).toInstant().toEpochMilli(), tl, AttendanceStatus.ABSENT, null, AttendanceStatus.ON_TIME, inAt, REASON_ABSENT)),
+                corrections = listOf(AttendanceCorrection(d.plusDays(2).atTime(9, 12).atZone(wib).toInstant().toEpochMilli(), tl, AttendanceStatus.NO_CHECKIN, null, AttendanceStatus.ON_TIME, inAt, REASON_ABSENT)),
             )
         }
         out.indexOfFirst { a -> LocalDate.parse(a.date) in week && a.statusOverride == null && ActivityRules.attendanceStatus(a, LocalDate.parse(a.date), today) == AttendanceStatus.LATE }.takeIf { it >= 0 }?.let { i ->
