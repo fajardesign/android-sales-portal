@@ -23,8 +23,9 @@ android {
         applicationId = "com.example.and_sales_portal"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        // Versi = PRD yang dibangun (keputusan 2026-10-22): PRD 2.0 beku di tag prd-v2.0, PRD 1.1 di prd-v1.1.
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
