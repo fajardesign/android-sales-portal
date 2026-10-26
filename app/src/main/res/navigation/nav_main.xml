@@ -11,10 +11,15 @@
     <fragment android:id="@+id/tl_home" android:name="com.example.and_sales_portal.ui.dashboard.TlHomeFragment" />
     <fragment android:id="@+id/sales_home" android:name="com.example.and_sales_portal.ui.dashboard.SalesHomeFragment" />
     <fragment android:id="@+id/partner_tab" android:name="com.example.and_sales_portal.ui.partner.PartnerTabFragment" />
-    <fragment android:id="@+id/team_tab" android:name="com.example.and_sales_portal.ui.team.TeamTabFragment" />
+    <!-- Performa (PRD Scope 3, PRF-01 … PRF-05): TL tab with Pipeline, Penghasilan, Tim; SA/SR tab with Pipeline, Penghasilan, Produktivitas. -->
+    <fragment android:id="@+id/tl_performance_tab" android:name="com.example.and_sales_portal.ui.performance.TlPerformanceTabFragment" />
     <fragment android:id="@+id/activity_tab" android:name="com.example.and_sales_portal.ui.shell.ActivityTabFragment" />
     <fragment android:id="@+id/visits_tab" android:name="com.example.and_sales_portal.ui.visits.VisitsTabFragment" />
-    <fragment android:id="@+id/performance_tab" android:name="com.example.and_sales_portal.ui.dashboard.PerformanceTabFragment" />
+    <fragment android:id="@+id/performance_tab" android:name="com.example.and_sales_portal.ui.performance.SalesPerformanceTabFragment" />
+    <!-- Spec: PRF-03 Detail Pinjaman, PRF-04 detail bulan, PRF-04 Penghasilan SA/SR dilihat TL (read-only). -->
+    <fragment android:id="@+id/loan_detail" android:name="com.example.and_sales_portal.ui.performance.LoanDetailFragment" />
+    <fragment android:id="@+id/income_month" android:name="com.example.and_sales_portal.ui.performance.IncomeMonthFragment" />
+    <fragment android:id="@+id/member_income" android:name="com.example.and_sales_portal.ui.performance.MemberIncomeFragment" />
     <fragment android:id="@+id/account_tab" android:name="com.example.and_sales_portal.ui.shell.AccountFragment" />
 
     <!-- Absensi & Kunjungan (ATT-01 … ATT-05, PRD v3 D2, D3, C8). -->
@@ -37,14 +42,11 @@
     <fragment android:id="@+id/assign" android:name="com.example.and_sales_portal.ui.team.AssignFragment" />
     <fragment android:id="@+id/schedule" android:name="com.example.and_sales_portal.ui.team.ScheduleFragment" />
 
-    <!-- Laporan TL (TL-07 … TL-10; PRD v3 C9). -->
+    <!-- Laporan TL (TL-07; TL-08 … TL-10 replaced by Performa, PRD Scope 3). -->
     <fragment android:id="@+id/team_productivity" android:name="com.example.and_sales_portal.ui.dashboard.TeamProductivityFragment" />
     <fragment android:id="@+id/evidence" android:name="com.example.and_sales_portal.ui.dashboard.EvidenceFragment" />
     <!-- Spec: TL-11 Koreksi Absensi (decision 2026-10-19). -->
     <fragment android:id="@+id/attendance_correction" android:name="com.example.and_sales_portal.ui.team.AttendanceCorrectionFragment" />
-    <fragment android:id="@+id/team_sales" android:name="com.example.and_sales_portal.ui.dashboard.TeamSalesFragment" />
-    <fragment android:id="@+id/team_loans" android:name="com.example.and_sales_portal.ui.dashboard.TeamLoansFragment" />
-    <fragment android:id="@+id/team_incentive" android:name="com.example.and_sales_portal.ui.dashboard.TeamIncentiveFragment" />
 
     <!-- Debug simulation panel. -->
     <fragment android:id="@+id/simulation" android:name="com.example.and_sales_portal.ui.simulation.SimulationFragment" />

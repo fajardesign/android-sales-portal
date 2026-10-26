@@ -26,20 +26,24 @@ enum class SalesTab(
         R.id.partner_tab, R.string.nav_partner, R.drawable.ds_ic_menu_store_24,
         (0..5).map { AmarNavIconLayer(storeLayers[it], inverse = it % 2 == 1) },
     ),
-    Team(R.id.team_tab, R.string.nav_tim, R.drawable.ds_ic_contact_24, listOf(AmarNavIconLayer(R.drawable.ds_ic_contact_24))),
+    /** TL "Performa" (PRD Scope 3, replacing the Tim tab): Pipeline, Penghasilan, Tim. */
+    TlPerformance(R.id.tl_performance_tab, R.string.nav_performa, R.drawable.ds_ic_target_24_l0, targetLayers, targetLayers),
     Activity(R.id.activity_tab, R.string.nav_aktivitas, R.drawable.ds_ic_todo_line_24, listOf(AmarNavIconLayer(R.drawable.ds_ic_todo_fill_24))),
     Visits(R.id.visits_tab, R.string.nav_kunjungan, R.drawable.ds_ic_location_24, listOf(AmarNavIconLayer(R.drawable.ds_ic_location_24))),
     Performance(
-        R.id.performance_tab, R.string.nav_kinerja, R.drawable.ds_ic_target_24_l0,
+        R.id.performance_tab, R.string.nav_performa, R.drawable.ds_ic_target_24_l0,
         targetLayers, targetLayers,
     ),
     Account(R.id.account_tab, R.string.nav_akun, R.drawable.ds_ic_menu_profile_24, listOf(AmarNavIconLayer(R.drawable.ds_ic_menu_profile_filled_24))),
     ;
 
     companion object {
-        /** PRD v3 "Login on mobile": TL Beranda, Partner, Tim, Aktivitas, Akun; SA/SR Beranda, Kunjungan, Partner, Kinerja, Akun. */
+        /**
+         * PRD v3 "Login on mobile", PRD Scope 3 (Performa replaces TL Tim and SA/SR Kinerja; still at most 5 tabs): TL Beranda,
+         * Partner, Performa, Aktivitas, Akun; SA/SR Beranda, Kunjungan, Partner, Performa, Akun.
+         */
         fun forRole(role: SalesRole): List<SalesTab> = when (role) {
-            SalesRole.TL -> listOf(TlHome, Partner, Team, Activity, Account)
+            SalesRole.TL -> listOf(TlHome, Partner, TlPerformance, Activity, Account)
             SalesRole.SR, SalesRole.SA -> listOf(SalesHome, Visits, Partner, Performance, Account)
         }
 

@@ -32,7 +32,7 @@ private const val ARG_EMPLOYEE = "employee_id"
 private const val NONE = -1L
 
 /** Team members of [tlId] with today's attendance and assigned partners. */
-private fun AppContainer.members(tlId: Long): List<Member> {
+internal fun AppContainer.members(tlId: Long): List<Member> {
     val today = operations.today()
     return team.teamOf(tlId).map { p ->
         Member(p, if (p.status == "ACTIVE") operations.attendanceStatus(p.id, today) else null, partners.assignedStores(p.id))
@@ -41,18 +41,6 @@ private fun AppContainer.members(tlId: Long): List<Member> {
 
 /** Active SA/SR the TL can assign and plan for. */
 private fun AppContainer.activeTeam(tlId: Long) = team.teamOf(tlId).filter { it.status == "ACTIVE" }
-
-/** Spec: TL-01 Tim (TL tab). */
-class TeamTabFragment : ComposeFragment() {
-    @Composable
-    override fun ScreenContent() {
-        val tl = session ?: return
-        val ops by container.operations.data.collectAsState()
-        val partners by container.partners.partners.collectAsState()
-        val members = remember(ops, partners) { container.members(tl.user.id) }
-        TeamListScreen(members) { navigate(R.id.team_detail, bundleOf(ARG_EMPLOYEE to it.person.id)) }
-    }
-}
 
 /** Spec: TL-02 Detail Anggota. */
 class MemberDetailFragment : ComposeFragment() {

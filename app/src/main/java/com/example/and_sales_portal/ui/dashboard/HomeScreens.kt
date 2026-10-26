@@ -15,8 +15,8 @@ import com.example.and_sales_portal.R
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.PartnerStatus
-import com.example.and_sales_portal.data.sales.Incentive
-import com.example.and_sales_portal.data.sales.SalesSummary
+import com.example.and_sales_portal.ui.performance.PerformanceCard
+import com.example.and_sales_portal.ui.performance.PerformanceCardState
 import com.example.and_sales_portal.designsystem.components.actions.AmarButton
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSize
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
@@ -72,16 +72,16 @@ data class SalesHomeState(
     /** This week's toko by partner with "Sudah dikunjungi minggu ini" / "Belum dikunjungi" (PRD alignment 2026-10-09). */
     val groups: List<WeekPartner>,
     val partners: List<Partner>,
-    val month: SalesSummary,
-    val incentive: Incentive,
+    /** PRF-01 "Performa bulan ini" (PRD Scope 3 SCR-3-01). */
+    val performance: PerformanceCardState,
     /** Unread in-app notifications (FR-MP-004), newest first. */
     val unread: List<AppNotification> = emptyList(),
 )
 
 /**
  * Spec: SLS-01 Beranda SA/SR (PRD v3 D1; revision 2026-10-08; UI refresh 2026-10-17): Absensi card first (the day's first
- * task), this week's visits as progress ("n dari m toko dikunjungi") with the toko as rows, this month's sales, incentive
- * estimate, and the partners as rows.
+ * task), this week's visits as progress ("n dari m toko dikunjungi") with the toko as rows, "Performa bulan ini" (PRD
+ * Scope 3 SCR-3-01, replacing this month's sales and the old incentive estimate), and the partners as rows.
  */
 @Composable
 fun SalesHomeScreen(
@@ -89,8 +89,9 @@ fun SalesHomeScreen(
     attendance: AttendanceActions,
     onVisits: () -> Unit,
     onPartners: () -> Unit,
-    onIncentive: () -> Unit,
+    onPerformance: () -> Unit,
     onNotifications: () -> Unit = {},
+    onRetry: () -> Unit = {},
 ) {
     val c = AmarTheme.colors
     ScreenScaffold(stringResource(R.string.home_greeting, s.firstName), onBack = null, onNotifications = onNotifications) {
@@ -103,8 +104,7 @@ fun SalesHomeScreen(
         }
         AttendanceCard(s.attendance, s.online, attendance.onClockIn, attendance.onClockOut, onHistory = attendance.onHistory)
         WeekVisitsCard(s.week, s.visitedToday, s.groups, onVisits)
-        SalesSummaryCard(stringResource(R.string.home_this_month), s.month)
-        IncentiveHero(s.incentive, onIncentive)
+        PerformanceCard(s.performance, onPerformance, onRetry)
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
             SectionHeader(stringResource(R.string.home_partners), stringResource(R.string.home_see_all), onPartners)
             if (s.partners.isEmpty()) Text(stringResource(R.string.ptn_mine_empty), color = c.content.secondary, style = AmarTheme.typography.bodySm)
@@ -134,8 +134,8 @@ data class TlHomeState(
     val teamCompleteWeek: Int,
     val teamSize: Int,
     val submissions: Map<PartnerStatus, Int>,
-    val teamMonth: SalesSummary,
-    val incentive: Incentive,
+    /** PRF-01 "Performa bulan ini" with "Total take home pay tim" (PRD Scope 3 SCR-3-01). */
+    val performance: PerformanceCardState,
     val contribution: List<Pair<String, Double>>,
     /** Unread notifications (DD review point 2: revision requests), newest first. */
     val unread: List<AppNotification> = emptyList(),
@@ -148,8 +148,9 @@ class TlHomeActions(
     val onRegister: () -> Unit,
     val onSchedule: () -> Unit,
     val onAssign: () -> Unit,
-    val onIncentive: () -> Unit,
+    val onPerformance: () -> Unit,
     val onNotifications: () -> Unit = {},
+    val onRetry: () -> Unit = {},
 )
 
 /** This week's visits: progress over the target, today, and the toko as rows (at most [MAX_STORES], then "+n toko lainnya"). */
@@ -185,7 +186,8 @@ private const val MAX_STORES = 3
 /**
  * Spec: TL-06 Beranda TL (PRD v3 C1; Figma "01 | Team Leader Dashboard"; UI refresh 2026-10-17): own Absensi card first,
  * Pintasan as a row of tiles, the team today (attendance and visits), own visits this week as progress, Pengajuan Partner
- * by status with Revision Required highlighted, this month's team sales, own incentive estimate and team contribution.
+ * by status with Revision Required highlighted, "Performa bulan ini" with the team total (PRD Scope 3 SCR-3-01) and team
+ * contribution (share of the TL's Cair dihitung).
  * Figma's Lead and RTS metrics are out of scope (PRD) and replaced by today's activity.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -243,8 +245,7 @@ fun TlHomeScreen(s: TlHomeState, attendance: AttendanceActions, a: TlHomeActions
                 }
             }
         }
-        SalesSummaryCard(stringResource(R.string.home_this_month_team), s.teamMonth)
-        IncentiveHero(s.incentive, a.onIncentive)
+        PerformanceCard(s.performance, a.onPerformance, a.onRetry)
         if (s.contribution.isNotEmpty()) ContributionCard(s.contribution)
     }
 }

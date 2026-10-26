@@ -78,25 +78,23 @@ private fun MemberBadges(m: Member) {
     }
 }
 
-/** Spec: TL-01 Tim (PRD v3 C5): SA/SR under the TL with role, registration date, contact, partners and today's attendance. */
+/**
+ * Spec: TL-01 member card (PRD v3 C5): role, registration date, contact, partners and today's attendance. Since PRD Scope 3
+ * it is shown in Performa › Tim for SA/SR without a monthly row (accounts not active yet).
+ */
 @Composable
-fun TeamListScreen(members: List<Member>, onOpen: (Member) -> Unit) {
+fun MemberCard(m: Member, onOpen: (Member) -> Unit) {
     val c = AmarTheme.colors
-    ScreenScaffold(stringResource(R.string.nav_tim), onBack = null) {
-        if (members.isEmpty()) AmarInfoBox(stringResource(R.string.team_empty), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
-        members.forEach { m ->
-            AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onOpen(m) }) {
-                Text(m.person.fullName, color = c.content.primary, style = AmarTheme.typography.headingSm)
-                MemberBadges(m)
-                Text("${m.person.email} · +62 ${m.person.phone}", color = c.content.secondary, style = AmarTheme.typography.bodySm)
-                Text(stringResource(R.string.team_registered, date(m.person.createdAt)), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
-                Text(
-                    if (m.stores.isEmpty()) stringResource(R.string.team_no_store) else stringResource(R.string.team_stores, m.stores.size, m.stores.joinToString { it.second.name }),
-                    color = c.content.secondary,
-                    style = AmarTheme.typography.bodySm,
-                )
-            }
-        }
+    AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { onOpen(m) }) {
+        Text(m.person.fullName, color = c.content.primary, style = AmarTheme.typography.headingSm)
+        MemberBadges(m)
+        Text("${m.person.email} · +62 ${m.person.phone}", color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        Text(stringResource(R.string.team_registered, date(m.person.createdAt)), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+        Text(
+            if (m.stores.isEmpty()) stringResource(R.string.team_no_store) else stringResource(R.string.team_stores, m.stores.size, m.stores.joinToString { it.second.name }),
+            color = c.content.secondary,
+            style = AmarTheme.typography.bodySm,
+        )
     }
 }
 

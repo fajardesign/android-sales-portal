@@ -24,6 +24,8 @@ import com.example.and_sales_portal.designsystem.components.actions.AmarButtonSi
 import com.example.and_sales_portal.designsystem.components.actions.AmarButtonType
 import com.example.and_sales_portal.ui.common.WithToast
 import com.example.and_sales_portal.data.device.LocationMode
+import com.example.and_sales_portal.data.device.PerfData
+import com.example.and_sales_portal.data.device.S3Date
 import com.example.and_sales_portal.data.device.Simulation
 import com.example.and_sales_portal.designsystem.components.actions.AmarChip
 import com.example.and_sales_portal.designsystem.components.inputs.AmarToggle
@@ -144,6 +146,25 @@ fun SimulationScreen(
             }
             Switch(R.string.sim_mock, sim.mockLocation) { v -> onChange { it.copy(mockLocation = v) } }
             Switch(R.string.sim_offline, sim.offline) { v -> onChange { it.copy(offline = v) } }
+        }
+        // PRD Scope 3: demo date of the month status (web DevToolbar "Tanggal Scope 3"), sample payments, Performa states.
+        AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
+            Text(stringResource(R.string.sim_s3_title), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold)
+            Text(stringResource(R.string.sim_s3_date), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
+                listOf(S3Date.DEVICE to R.string.sim_s3_date_device, S3Date.OCT_3 to R.string.sim_s3_date_oct3, S3Date.OCT_7 to R.string.sim_s3_date_oct7, S3Date.OCT_12 to R.string.sim_s3_date_oct12).forEach { (d, label) ->
+                    AmarChip(stringResource(label), selected = sim.s3Date == d, onClick = { onChange { it.copy(s3Date = d) } })
+                }
+            }
+            Text(stringResource(R.string.sim_s3_payments_note), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+            Switch(R.string.sim_s3_unpaid, sim.s3UnpaidLatest) { v -> onChange { it.copy(s3UnpaidLatest = v) } }
+            Switch(R.string.sim_s3_paid, sim.s3PaidLatest) { v -> onChange { it.copy(s3PaidLatest = v) } }
+            Text(stringResource(R.string.sim_perf_data), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap), verticalArrangement = Arrangement.spacedBy(AmarActivityTokens.TileGap)) {
+                listOf(PerfData.NORMAL to R.string.sim_perf_normal, PerfData.LOADING to R.string.sim_perf_loading, PerfData.ERROR to R.string.sim_perf_error, PerfData.LMT_ERROR to R.string.sim_perf_lmt).forEach { (d, label) ->
+                    AmarChip(stringResource(label), selected = sim.perfData == d, onClick = { onChange { it.copy(perfData = d) } })
+                }
+            }
         }
         admin?.let { a ->
             AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {

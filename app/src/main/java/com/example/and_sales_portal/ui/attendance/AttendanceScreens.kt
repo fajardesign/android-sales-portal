@@ -163,13 +163,13 @@ fun PresenceBadge(a: Attendance?) {
  * week's "n/6 check-in", "Tidak check out", and the TL's corrections with "Dikoreksi TL").
  */
 @Composable
-fun AttendanceScreen(state: AttendanceUiState, onBack: () -> Unit, onClockIn: () -> Unit, onClockOut: () -> Unit) {
+fun AttendanceScreen(state: AttendanceUiState, onBack: () -> Unit, onClockIn: () -> Unit, onClockOut: () -> Unit, historyTitle: String? = null) {
     ScreenScaffold(stringResource(R.string.att_title), onBack) {
         if (!state.online) AmarInfoBox(stringResource(R.string.att_offline), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
         Text(Fmt.longDate(state.today.date), color = AmarTheme.colors.content.secondary, style = AmarTheme.typography.bodySm)
         AttendanceCard(state.today, state.online, onClockIn, onClockOut)
         Text(stringResource(R.string.att_rule), color = AmarTheme.colors.content.tertiary, style = AmarTheme.typography.captionSm)
-        SectionTitle(stringResource(R.string.att_history))
+        SectionTitle(historyTitle ?: stringResource(R.string.att_history))
         state.history.forEach { HistoryRow(it) }
     }
 }

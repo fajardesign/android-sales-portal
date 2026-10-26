@@ -18,8 +18,14 @@ import java.time.LocalTime
  */
 object DemoSeed {
 
-    /** Days of history generated before the first day the user opens the app. */
+    /** Days of visit history generated before the first day the user opens the app. */
     private const val HISTORY_DAYS = 14L
+
+    /**
+     * Attendance history starts on the 1st of the month three months back (not before the account was created), so the
+     * monthly rows of PRD Scope 3 (valid days, basic salary) and "Lihat absensi" have data; visits stay [HISTORY_DAYS].
+     */
+    private const val ATTENDANCE_MONTHS = 3L
 
     /** Toko the user works at: SA/SR their assigned toko, TL the toko they hold (PRD Scope 1 v2: TL per toko). */
     fun storesOf(partners: List<Partner>, userId: Long, role: SalesRole): List<Store> {
@@ -49,7 +55,7 @@ object DemoSeed {
         return OpsData(attendance = parts.flatMap { it.attendance }, visits = parts.flatMap { it.visits })
     }
 
-    /** [HISTORY_DAYS] of attendance and visits before [today] of one person. */
+    /** Attendance since [ATTENDANCE_MONTHS] months back and [HISTORY_DAYS] of visits before [today] of one person. */
     private fun initialOf(userId: Long, role: SalesRole, areaId: Int?, today: LocalDate, partners: List<Partner>): OpsData {
         val stores = storesOf(partners, userId, role)
         val places = attendancePlaces(partners, userId, role)
@@ -59,7 +65,10 @@ object DemoSeed {
         val visits = mutableListOf<Visit>()
         // Q6 (decision 2026-10-19): every day is a workday. Like the web sample, Sundays use a fixed pattern (some check
         // ins at the office, the rest Absen) so the random Monday–Saturday days stay the same.
-        val days = (HISTORY_DAYS downTo 1).map { today.minusDays(it) }
+        val created = DemoDirectory.person(userId)?.createdAt?.let { java.time.Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+        val from = maxOf(today.minusMonths(ATTENDANCE_MONTHS).withDayOfMonth(1), created ?: today.minusDays(HISTORY_DAYS))
+        val visitsFrom = today.minusDays(HISTORY_DAYS)
+        val days = generateSequence(minOf(from, visitsFrom)) { it.plusDays(1) }.takeWhile { it.isBefore(today) }.toList()
         var visitSeq = 0
         days.forEach { d ->
             if (d.dayOfWeek == java.time.DayOfWeek.SUNDAY) {
@@ -93,6 +102,7 @@ object DemoSeed {
                 clockIn = Punch(inAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
                 clockOut = if (noOut) null else Punch(outAt.atZone(zone).toInstant().toEpochMilli(), lat, lng, place = ref.name, distance = distance, zone = zone.id),
             )
+            if (d.isBefore(visitsFrom)) return@forEach
             // PRD alignment 2026-10-09: each toko once a week, on its own weekday (a toko is missed about 1 week in 7),
             // 12:00–16:59 local, near the toko.
             stores.filterIndexed { j, _ -> (j + userId.toInt()) % 6 == d.dayOfWeek.value - 1 }.forEach { s ->

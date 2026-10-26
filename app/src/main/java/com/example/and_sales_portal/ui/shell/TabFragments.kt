@@ -108,9 +108,6 @@ class ActivityTabFragment : ComposeFragment() {
             ),
             R.string.act_reports to listOf(
                 Entry(R.string.act_productivity, R.string.act_productivity_desc) { navigate(R.id.team_productivity) },
-                Entry(R.string.act_sales, R.string.act_sales_desc) { navigate(R.id.team_sales) },
-                Entry(R.string.act_loans, R.string.act_loans_desc) { navigate(R.id.team_loans) },
-                Entry(R.string.act_incentive, R.string.act_incentive_desc) { navigate(R.id.team_incentive) },
             ),
         )
         ScreenScaffold(stringResource(R.string.nav_aktivitas), onBack = null) {

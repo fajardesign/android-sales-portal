@@ -43,6 +43,21 @@ object Fmt {
     fun longDate(date: LocalDate): String = longDate.format(date)
     fun shortDate(date: LocalDate): String = shortDate.format(date)
 
+    private val day = DateTimeFormatter.ofPattern("d MMM yyyy", id)
+    private val month = DateTimeFormatter.ofPattern("MMMM yyyy", id)
+
+    /** "5 Okt 2026" (PRD Scope 3 dates: lock, payout, paid). */
+    fun day(date: LocalDate): String = day.format(date)
+
+    /** "Oktober 2026". */
+    fun month(ym: java.time.YearMonth): String = month.format(ym)
+
+    /** "7 Okt 2026, 10:30 WIB" in WIB, the zone of the loan system and of the month (PRD Scope 3). */
+    fun dateTimeWib(millis: Long): String {
+        val t = Instant.ofEpochMilli(millis).atZone(ActivityRules.LOCK_ZONE)
+        return "${day.format(t)}, ${time.format(t)} WIB"
+    }
+
     /** Elapsed time as `HH:MM:SS` (visit timer). */
     fun clock(millis: Long): String {
         val s = (millis / 1000).coerceAtLeast(0)

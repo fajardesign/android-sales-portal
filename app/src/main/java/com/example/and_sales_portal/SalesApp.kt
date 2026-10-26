@@ -47,10 +47,12 @@ class AppContainer(app: Application) {
     val directory = DirectoryRepository(demo, partners)
     val operations = OperationsRepository(demo, partners)
     val team = TeamService(partners, operations)
-    val sales = SalesRepository(partners, operations)
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val simulation = SimulationSettings(app)
+    val sales = SalesRepository(partners, operations, simulation = { simulation.value })
+
+    /** One-shot sub-tab for the Performa tab (Beranda "Lihat tim" opens sub-tab Tim). */
+    var pendingPerformanceTab: Int? = null
     val connectivity = Connectivity(app, simulation, scope)
     val location = LocationService(app, simulation)
 

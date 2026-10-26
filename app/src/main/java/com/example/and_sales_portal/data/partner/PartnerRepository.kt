@@ -323,6 +323,19 @@ class PartnerRepository(private val store: DemoStore, private val clock: () -> I
         return _assignments.value.notifications.filter { it.employeeId == employeeId && it.at >= from }.asReversed().sortedByDescending { it.at }
     }
 
+    /**
+     * PRD Scope 3 income notices of [employeeId] (FR-IN-005, FR-PY-006): keeps exactly [notices] (by id, read state kept)
+     * and drops income notices that no longer apply (e.g. the Simulasi date moved back before the lock).
+     */
+    fun syncIncomeNotices(employeeId: Long, notices: List<AppNotification>) {
+        val current = _assignments.value.notifications.filter { it.employeeId == employeeId && it.income != null }
+        if (current.map { it.id }.toSet() == notices.map { it.id }.toSet()) return
+        val read = current.filter { it.read }.map { it.id }.toSet()
+        changeAssignments { d ->
+            d.copy(notifications = d.notifications.filterNot { it.employeeId == employeeId && it.income != null } + notices.map { if (it.id in read) it.copy(read = true) else it })
+        }
+    }
+
     /** Opening the Notifikasi list marks every notification read (PRD 1.1 §1.7 AC-014, decision 2026-10-20). */
     fun markNotificationsRead(employeeId: Long) = changeAssignments { d ->
         d.copy(notifications = d.notifications.map { if (it.employeeId == employeeId) it.copy(read = true) else it })

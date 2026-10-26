@@ -44,12 +44,14 @@ class StoreHolderHistoryTest {
     fun salesAndIncentiveStayWithTheSaWhoHeldTheToko() {
         val toko = "REG2026-0139-1" // Eko (SA 15)
         val before = sales.loansOfSales(15).map { it.id }
-        val incentive = sales.salesIncentive(15, SalesRole.SA)
+        val month = java.time.YearMonth.of(2026, 10)
+        val row = sales.salesRow(15, month)
         assertTrue(before.isNotEmpty())
 
         partners.unassign(15, toko, 6)
         assertEquals(before, sales.loansOfSales(15).map { it.id })
-        assertEquals(incentive, sales.salesIncentive(15, SalesRole.SA))
+        // PRD Scope 3 attribution (FR-LP-002): loans keep the SA/SR of their submission date, so the figures stay.
+        assertEquals(row?.calc, sales.salesRow(15, month)?.calc)
 
         // The next holder gets only loans submitted after their Tugaskan (none yet), not Eko's past.
         assertEquals(null, partners.assign(6, 16, toko))
