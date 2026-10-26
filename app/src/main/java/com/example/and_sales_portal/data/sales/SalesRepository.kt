@@ -69,18 +69,6 @@ data class Pipeline(
     val asOf: Long,
 )
 
-/** Payment of a Final row (FR-PY-006): amount to pay = take home pay + Admin correction. */
-data class Payment(
-    val status: PayStatus,
-    val correction: Long,
-    val note: String,
-    val amountToPay: Long,
-    val paidAt: LocalDate?,
-    val paidAmount: Long?,
-    val scheduledAt: LocalDate,
-    val overdue: Boolean,
-)
-
 /** One person's month (web `salesRow`): figures, month status and payment. */
 data class SalesRow(
     val userId: Long,
@@ -93,10 +81,13 @@ data class SalesRow(
     val month: YearMonth,
     val monthStatus: MonthStatus,
     val payment: Payment?,
-)
+) {
+    /** Take home pay final (with Koreksi) once the month is past Berjalan, else the calculated estimate. */
+    val takeHomePay: Long get() = payment?.finalAmount ?: calc.takeHomePay
+}
 
-/** Team or overall totals of rows (TL Tim, Beranda "Total take home pay tim"). */
-data class Totals(val basicSalary: Long, val incentive: Long, val takeHomePay: Long, val actual: Long, val people: Int)
+/** Team or overall totals of rows (TL Tim, Beranda "Total take home pay tim"); take home pay final, with Koreksi. */
+data class Totals(val basicSalary: Long, val incentive: Long, val takeHomePay: Long, val actual: Long, val people: Int, val correction: Long = 0)
 
 /**
  * Loans (synced from the loan system) and PRD Scope 3 monthly figures of the prototype. Loans are generated the same way
@@ -209,7 +200,7 @@ class SalesRepository(
     fun canView(viewerId: Long, employeeId: Long): Boolean =
         viewerId == employeeId || DemoDirectory.person(employeeId)?.let { it.supervisorId == viewerId && it.role in setOf("SA", "SR") } == true
 
-    fun totals(rows: List<SalesRow>) = Totals(rows.sumOf { it.calc.basicSalary }, rows.sumOf { it.calc.incentive }, rows.sumOf { it.calc.takeHomePay }, rows.sumOf { it.calc.actual }, rows.size)
+    fun totals(rows: List<SalesRow>) = Totals(rows.sumOf { it.calc.basicSalary }, rows.sumOf { it.calc.incentive }, rows.sumOf { it.takeHomePay }, rows.sumOf { it.calc.actual }, rows.size, rows.sumOf { it.payment?.correction ?: 0L })
 
     /** Income history: the last 12 months with a row, newest first. */
     fun history(employeeId: Long): List<SalesRow> = months().mapNotNull { salesRow(employeeId, it) }
@@ -241,49 +232,53 @@ class SalesRepository(
 
     // region PRD Scope 3: payment and notifications
 
-    /** The latest Final month (Simulasi "Admin tandai dibayar"). */
+    /** The latest Final month (Simulasi "Admin tandai Dibayar / Tidak dibayar"). */
     private fun latestFinal(): YearMonth? = months().firstOrNull { monthStatus(it) == MonthStatus.FINAL }
 
-    /** Payment of a Final row (FR-PY): sample data paid up to August 2026; SR Siti August with a correction of Rp 150.000. */
-    fun paymentOf(employeeId: Long, ym: YearMonth, finalAmount: Long): Payment? {
-        if (monthStatus(ym) != MonthStatus.FINAL) return null
-        val r = PAYMENTS[employeeId to ym]
-        val correction = r?.first ?: 0L
-        val amount = maxOf(0L, finalAmount + correction)
-        val scheduled = Scope3.payoutDate(ym)
-        val simPaid = if (simulation().s3PaidLatest && ym == latestFinal()) s3Today() else null
-        val paidAt = simPaid ?: if (ym <= PAID_THROUGH && amount > 0) scheduled else null
-        val status = when {
-            paidAt != null && amount > 0 -> PayStatus.DIBAYAR
-            amount > 0 -> PayStatus.MENUNGGU
-            else -> PayStatus.TIDAK_ADA
-        }
-        return Payment(
-            status, correction, r?.second.orEmpty(), amount, paidAt.takeIf { status == PayStatus.DIBAYAR },
-            amount.takeIf { status == PayStatus.DIBAYAR }, scheduled, status == PayStatus.MENUNGGU && s3Today().isAfter(scheduled),
-        )
+    /**
+     * Admin record of [employeeId] in [ym]: sample data (web `s3Payments`, plus the AC-024 example Koreksi of SR Siti in
+     * September), then the Simulasi marks on the latest Final month: Tidak dibayar ("Rekening tidak valid") and/or Dibayar on
+     * the demo date. Both on = marked Tidak dibayar, then Dibayar (AC-053).
+     */
+    fun recordOf(employeeId: Long, ym: YearMonth): PaymentRecord? {
+        val base = PAYMENTS[employeeId to ym]
+        if (ym != latestFinal()) return base
+        val sim = simulation()
+        var r = base ?: PaymentRecord()
+        if (sim.s3UnpaidLatest) r = r.copy(unpaidNote = SIM_UNPAID_NOTE, unpaidAt = s3Today())
+        if (sim.s3PaidLatest) r = r.copy(paidAt = s3Today())
+        return if (r == PaymentRecord()) base else r
     }
 
+    /** Payment of a row past Berjalan (FR-PY, web `paymentOf`). */
+    fun paymentOf(employeeId: Long, ym: YearMonth, calculated: Long): Payment? =
+        Scope3.paymentOf(monthStatus(ym), ym, calculated, recordOf(employeeId, ym), PAID_THROUGH, s3Today())
+
     /**
-     * Income notifications of [employeeId] (FR-IN-005, FR-PY-006): "sudah final" at the lock (00:00 WIB) and "sudah dibayar"
-     * on the payment date (10:00 WIB), up to the demo date. Kept 30 days like every notification.
+     * Income notifications of [employeeId] (FR-IN-005, FR-PY-006), up to the demo date, kept 30 days like every notification:
+     * "sudah final" at the cut-off (00:00 WIB), "tidak dibayar" when marked (09:00 WIB), "sudah dibayar" on the payment date
+     * (10:00 WIB). A row marked Tidak dibayar and later Dibayar has both, the keterangan stays.
      */
     fun incomeNotices(employeeId: Long): List<AppNotification> = months().filter { monthStatus(it) == MonthStatus.FINAL }.flatMap { ym ->
         val row = salesRow(employeeId, ym) ?: return@flatMap emptyList()
-        val lockAt = Scope3.lockDate(ym).atStartOfDay(ActivityRules.LOCK_ZONE).toInstant().toEpochMilli()
+        val p = row.payment ?: return@flatMap emptyList()
+        fun at(d: LocalDate, h: Int) = d.atTime(h, 0).atZone(ActivityRules.LOCK_ZONE).toInstant().toEpochMilli()
         val c = row.calc
         val final = AppNotification(
             "N-S3-FINAL-$ym-$employeeId", employeeId,
-            income = IncomeNotice(lockAt, ym.toString(), paid = false, takeHomePay = c.takeHomePay, basicSalary = c.basicSalary, incentive = c.incentive, payoutDate = Scope3.payoutDate(ym).toString()),
+            income = IncomeNotice(
+                at(Scope3.lockDate(ym), 0), ym.toString(), IncomeNotice.FINAL, takeHomePay = p.finalAmount, basicSalary = c.basicSalary,
+                incentive = c.incentive, correction = p.correction, payoutDate = p.scheduledAt.toString(),
+            ),
         )
-        val p = row.payment
-        val paid = if (p?.status == PayStatus.DIBAYAR && p.paidAt != null && !p.paidAt.isAfter(s3Today())) {
-            AppNotification(
-                "N-S3-PAID-$ym-$employeeId", employeeId,
-                income = IncomeNotice(p.paidAt.atTime(10, 0).atZone(ActivityRules.LOCK_ZONE).toInstant().toEpochMilli(), ym.toString(), paid = true, amount = p.paidAmount ?: 0, correction = p.correction),
-            )
-        } else null
-        listOfNotNull(final, paid)
+        val unpaidNote = p.unpaidNote.ifBlank { p.previousUnpaidNote }
+        val unpaid = p.unpaidAt?.takeIf { unpaidNote.isNotBlank() && !it.isAfter(s3Today()) }?.let {
+            AppNotification("N-S3-UNPAID-$ym-$employeeId", employeeId, income = IncomeNotice(at(it, 9), ym.toString(), IncomeNotice.UNPAID, unpaidNote = unpaidNote))
+        }
+        val paid = p.paidAt?.takeIf { p.status == PayStatus.DIBAYAR && !it.isAfter(s3Today()) }?.let {
+            AppNotification("N-S3-PAID-$ym-$employeeId", employeeId, income = IncomeNotice(at(it, 10), ym.toString(), IncomeNotice.PAID, amount = p.paidAmount ?: 0))
+        }
+        listOfNotNull(final, unpaid, paid)
     }
 
     /** Puts the income notifications of [employeeId] in the inbox (read state kept). */
@@ -353,8 +348,17 @@ class SalesRepository(
         /** Sample payments (web `s3Payments`): Final months up to August 2026 paid on the scheduled date. */
         val PAID_THROUGH: YearMonth = YearMonth.of(2026, 8)
 
-        /** Admin corrections (amount, note) per person and month: SR Siti Rahmawati, August 2026, +Rp 150.000. */
-        val PAYMENTS: Map<Pair<Long, YearMonth>, Pair<Long, String>> = mapOf((11L to YearMonth.of(2026, 8)) to (150_000L to "Koreksi Juli 2026"))
+        /**
+         * Admin records per person and month: SR Siti Rahmawati August 2026 +Rp 150.000 "Koreksi Juli 2026" (web `s3Payments`)
+         * and September 2026 −Rp 150.000 "Potongan seragam hilang" entered during reconciliation (PRD AC-024, AC-058).
+         */
+        val PAYMENTS: Map<Pair<Long, YearMonth>, PaymentRecord> = mapOf(
+            (11L to YearMonth.of(2026, 8)) to PaymentRecord(150_000L, "Koreksi Juli 2026"),
+            (11L to YearMonth.of(2026, 9)) to PaymentRecord(-150_000L, "Potongan seragam hilang"),
+        )
+
+        /** Keterangan of the Simulasi "Admin tandai Tidak dibayar" (PRD AC-052). */
+        const val SIM_UNPAID_NOTE = "Rekening tidak valid"
 
         fun dateOf(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ActivityRules.ZONE).toLocalDate()
 

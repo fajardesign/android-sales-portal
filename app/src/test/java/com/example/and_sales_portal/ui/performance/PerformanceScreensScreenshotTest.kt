@@ -68,6 +68,9 @@ class PerformanceScreensScreenshotTest {
         capture("01_card_zero") { PerformanceCard(sr.copy(row = zero), {}, {}) }
         sim = Simulation(s3Date = S3Date.OCT_3)
         capture("01_card_tl_before_lock") { PerformanceCard(performanceCardState(sales, 6, SalesRole.TL, true, PerfData.NORMAL), {}, {}) }
+        // AC-058: Siti on 3 Okt, September in reconciliation with Koreksi −Rp 150.000; LMT error banner with last data.
+        capture("01_card_sr_recon_koreksi") { PerformanceCard(performanceCardState(sales, 11, SalesRole.SR, true, PerfData.NORMAL), {}, {}) }
+        capture("01_card_lmt_error") { PerformanceCard(performanceCardState(sales, 11, SalesRole.SR, true, PerfData.LMT_ERROR), {}, {}) }
     }
 
     @Test
@@ -94,6 +97,18 @@ class PerformanceScreensScreenshotTest {
         capture("04_income_aug_paid") { ScreenScaffold("Performa", null) { IncomeSection(IncomeState(PerfData.NORMAL, aug, months(), sales.salesRow(11, aug), "Makassar", history, sales.asOf()), actions) } }
         val loans = sales.pipeline(sep, salesId = 11).rows.filter { it.counted || it.paidLater }
         capture("04_month_detail") { IncomeMonthScreen(sales.salesRow(11, sep), sep, null, "Makassar", loans, {}, {}) }
+        // Round 10: Tidak dibayar (12 Okt), then Dibayar with the earlier keterangan; Rekonsiliasi with Koreksi (3 Okt).
+        sim = Simulation(s3Date = S3Date.OCT_12, s3UnpaidLatest = true)
+        capture("04_income_sep_unpaid") { ScreenScaffold("Performa", null) { IncomeSection(IncomeState(PerfData.NORMAL, sep, months(), sales.salesRow(11, sep), "Makassar", sales.history(11), sales.asOf()), actions) } }
+        sim = Simulation(s3Date = S3Date.OCT_12, s3UnpaidLatest = true, s3PaidLatest = true)
+        capture("04_income_sep_paid_after_unpaid") { ScreenScaffold("Performa", null) { IncomeSection(IncomeState(PerfData.NORMAL, sep, months(), sales.salesRow(11, sep), "Makassar", sales.history(11), sales.asOf()), actions) } }
+        sim = Simulation(s3Date = S3Date.OCT_3)
+        capture("04_income_sep_recon") { ScreenScaffold("Performa", null) { IncomeSection(IncomeState(PerfData.NORMAL, sep, months(), sales.salesRow(11, sep), "Makassar", sales.history(11), sales.asOf()), actions) } }
+        sim = Simulation(s3Date = S3Date.OCT_7)
+        // States: no valid attendance, daily fee not set, history empty, LMT error.
+        val r = sales.salesRow(11, oct)!!
+        val noFee = r.copy(calc = com.example.and_sales_portal.data.sales.Scope3.calcSales(com.example.and_sales_portal.data.sales.Scope3.SALES, com.example.and_sales_portal.data.sales.Scope3.FEE.copy(fees = emptyMap()), r.role, r.calc.actual, 0, r.areaId))
+        capture("04_income_states") { ScreenScaffold("Performa", null) { IncomeSection(IncomeState(PerfData.LMT_ERROR, oct, months(), noFee, "Makassar", emptyList(), sales.asOf()), actions) } }
         capture("04_income_loading") { ScreenScaffold("Performa", null) { IncomeSection(IncomeState(PerfData.LOADING, oct, months(), null, "Makassar", history, sales.asOf()), actions) } }
     }
 
@@ -107,13 +122,18 @@ class PerformanceScreensScreenshotTest {
         }
         val state = TeamState(PerfData.NORMAL, sep, months(), rows, sales.totals(rows), rows.first().calc.actual, emptyMap(), stores, 3, sales.asOf())
         capture("05_team_sep") { ScreenScaffold("Performa", null) { TeamSection(state, TeamActions({}, {}, {}, {}), { "$it (Anda)" }) } }
+        sim = Simulation(s3Date = S3Date.OCT_12, s3UnpaidLatest = true)
+        val unpaidRows = sales.rowsFor(6, SalesRole.TL, sep)
+        capture("05_team_sep_unpaid") { ScreenScaffold("Performa", null) { TeamSection(state.copy(rows = unpaidRows, totals = sales.totals(unpaidRows), stores = emptyList()), TeamActions({}, {}, {}, {}), { "$it (Anda)" }) } }
         capture("05_team_empty") { ScreenScaffold("Performa", null) { TeamSection(state.copy(rows = rows.take(1), teamSize = 0, stores = emptyList()), TeamActions({}, {}, {}, {}), { "$it (Anda)" }) } }
     }
 
     @Test
     fun notifications() {
         sales.syncIncomeNotices(11)
-        sim = Simulation(s3Date = S3Date.OCT_7, s3PaidLatest = true)
+        sim = Simulation(s3Date = S3Date.OCT_7, s3UnpaidLatest = true)
+        sales.syncIncomeNotices(11)
+        sim = Simulation(s3Date = S3Date.OCT_7, s3UnpaidLatest = true, s3PaidLatest = true)
         sales.syncIncomeNotices(11)
         val items = partners.notificationsOf(11).filter { it.income != null }
         capture("06_notifications") { Column { com.example.and_sales_portal.ui.notifications.NotificationsScreen(items, {}) {} } }

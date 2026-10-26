@@ -174,21 +174,63 @@ fun PerfError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     AmarInfoBox(stringResource(R.string.s3_error), modifier.fillMaxWidth(), type = AmarInfoBoxType.Error, buttonLabel = stringResource(R.string.s3_retry), onButtonClick = onRetry)
 }
 
-/** Payment line of a Final month (FR-PY-006) and the Admin correction, if any. */
+/**
+ * Payment chip (PRD 3.0 round 10): Rekonsiliasi Info (blue), Menunggu pembayaran Warning (orange), Dibayar Success (green),
+ * Tidak dibayar Error (red). Tidak ada pembayaran has no chip (the DS Badge has no grey type; shown as grey text).
+ */
 @Composable
-fun PaymentLines(p: Payment?) {
+fun PaymentBadge(p: Payment?) {
+    p ?: return
+    val (label, type) = when (p.status) {
+        PayStatus.REKONSILIASI -> R.string.s3_pay_chip_recon to AmarBadgeType.Info
+        PayStatus.MENUNGGU -> R.string.s3_pay_chip_waiting to AmarBadgeType.Warning
+        PayStatus.DIBAYAR -> R.string.s3_pay_chip_paid to AmarBadgeType.Success
+        PayStatus.TIDAK_DIBAYAR -> R.string.s3_pay_chip_unpaid to AmarBadgeType.Error
+        PayStatus.TIDAK_ADA -> return
+    }
+    AmarBadge(stringResource(label), type = type, size = AmarBadgeSize.Small)
+}
+
+/** "Koreksi −Rp 150.000: Potongan seragam hilang" (FR-PY-002, shown from reconciliation on). */
+@Composable
+fun correctionText(p: Payment): String {
+    val corr = signedRupiah(p.correction)
+    return if (p.note.isBlank()) stringResource(R.string.s3_correction, corr) else stringResource(R.string.s3_correction_note, corr, p.note)
+}
+
+/**
+ * Payment lines of a month past Berjalan (§ Month and payment status, FR-PY-006): the status line ("Menunggu rekonsiliasi —
+ * final {tanggal}", "Menunggu pembayaran (jadwal {tanggal})" also after the date, "Dibayar {tanggal}: Rp {jumlah}",
+ * "Tidak dibayar: {keterangan}. Hubungi TL Anda.", "Tidak ada pembayaran"), the Koreksi line, and an earlier keterangan.
+ */
+@Composable
+fun PaymentLines(p: Payment?, showCorrection: Boolean = true) {
     p ?: return
     val c = AmarTheme.colors
     val (text, color) = when (p.status) {
+        PayStatus.REKONSILIASI -> stringResource(R.string.s3_note_recon, Fmt.day(p.lockAt)) to c.feedback.info.text
         PayStatus.DIBAYAR -> stringResource(R.string.s3_pay_paid, Fmt.day(requireNotNull(p.paidAt)), rupiah(p.paidAmount ?: 0)) to c.feedback.success.text
         PayStatus.MENUNGGU -> stringResource(R.string.s3_pay_waiting, Fmt.day(p.scheduledAt)) to c.feedback.warning.text
+        PayStatus.TIDAK_DIBAYAR -> stringResource(R.string.s3_pay_unpaid, p.unpaidNote) to c.feedback.error.text
         PayStatus.TIDAK_ADA -> stringResource(R.string.s3_pay_none) to c.content.secondary
     }
     Text(text, color = color, style = AmarTheme.typography.bodySm)
-    if (p.correction != 0L) {
-        val corr = signedRupiah(p.correction)
-        Text(if (p.note.isBlank()) stringResource(R.string.s3_correction, corr) else stringResource(R.string.s3_correction_note, corr, p.note), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-    }
+    if (showCorrection && p.correction != 0L) Text(correctionText(p), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+    if (p.previousUnpaidNote.isNotBlank()) Text(stringResource(R.string.s3_pay_prev_unpaid, p.previousUnpaidNote), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
+}
+
+/** "Gaji pokok Rp a + insentif Rp b" (+ " + koreksi ±Rp c" when there is a Koreksi). */
+@Composable
+fun thpFormula(r: SalesRow): String {
+    val corr = r.payment?.correction ?: 0L
+    return if (corr != 0L) stringResource(R.string.s3_thp_formula_correction, rupiah(r.calc.basicSalary), rupiah(r.calc.incentive), signedRupiah(corr))
+    else stringResource(R.string.s3_thp_formula, rupiah(r.calc.basicSalary), rupiah(r.calc.incentive))
+}
+
+/** LMT error (FR-LP-001, PRD §11): the last stored data is shown with this banner. */
+@Composable
+fun LmtBanner(asOf: Long) {
+    AmarInfoBox(stringResource(R.string.s3_lmt_error, Fmt.dateTimeWib(asOf)), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
 }
 
 @Composable
@@ -261,6 +303,9 @@ fun BasicSalaryBlock(r: SalesRow, areaName: String, onAttendance: (() -> Unit)?)
     val m = multiplierText(r.calc.multiplier)
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border) {
         Text(stringResource(R.string.s3_basic), color = c.content.primary, style = AmarTheme.typography.headingSm)
+        // States of SCR-3-04: daily fee not set, no valid attendance.
+        if (r.calc.dailyFee == 0L) AmarInfoBox(stringResource(R.string.s3_fee_not_set, areaName), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Warning)
+        if (r.calc.validDays == 0) AmarInfoBox(stringResource(R.string.s3_no_valid_days), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
         Text(stringResource(R.string.s3_income_days, r.calc.validDays, rupiah(r.calc.dailyFee), areaName), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         if (r.calc.capped) Text(stringResource(R.string.s3_income_cap, r.calc.maxDays), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         if (r.calc.multiplierEligible) {
@@ -290,14 +335,23 @@ fun IncentiveBlock(r: SalesRow) {
     }
 }
 
-/** Take home pay block: total, formula, payment line, and the question line of a Final month. */
+/**
+ * Take home pay block (FR-IN-004, SCR-3-04 round 10): Gaji pokok, Insentif, Koreksi with its note, Take home pay final, the
+ * payment status, and the question line of a Final month.
+ */
 @Composable
 fun TakeHomePayBlock(r: SalesRow) {
     val c = AmarTheme.colors
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
-        ValueRow(stringResource(R.string.s3_thp), rupiah(r.calc.takeHomePay))
-        Text(stringResource(R.string.s3_thp_formula, rupiah(r.calc.basicSalary), rupiah(r.calc.incentive)), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-        PaymentLines(r.payment)
+        ValueRow(stringResource(R.string.s3_basic), rupiah(r.calc.basicSalary)) { MultiplierBadge(r) }
+        ValueRow(stringResource(R.string.s3_incentive), rupiah(r.calc.incentive))
+        // "Koreksi {±Rp}: {catatan}" (FR-PY-002); without a note just the amount.
+        r.payment?.takeIf { it.correction != 0L }?.let { p ->
+            if (p.note.isBlank()) ValueRow(stringResource(R.string.s3_correction_label), signedRupiah(p.correction))
+            else Text(correctionText(p), color = c.content.primary, style = AmarTheme.typography.bodySm)
+        }
+        ValueRow(stringResource(R.string.s3_thp), rupiah(r.takeHomePay)) { PaymentBadge(r.payment) }
+        PaymentLines(r.payment, showCorrection = false)
         if (r.monthStatus == MonthStatus.FINAL) Text(stringResource(R.string.s3_final_question), color = c.content.tertiary, style = AmarTheme.typography.bodySm)
     }
 }

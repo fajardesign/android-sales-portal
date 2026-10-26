@@ -24,8 +24,42 @@ enum class MonthStatus { BERJALAN, REKONSILIASI, FINAL }
 /** Achievement band (FSD §12): Tercapai ≥ 100, On Track 70–99,9, Berisiko < 70. */
 enum class Band { TERCAPAI, ON_TRACK, BERISIKO }
 
-/** Payment of a Final row (FR-PY): Menunggu pembayaran, Dibayar, Tidak ada pembayaran (amount Rp 0). */
-enum class PayStatus { MENUNGGU, DIBAYAR, TIDAK_ADA }
+/**
+ * Payment status of a person's month (PRD 3.0 round 10, § Month and payment status; web `paymentOf`): REKONSILIASI from the
+ * 1st of M+1 until the cut-off (Admin Koreksi allowed), then MENUNGGU (final > 0), DIBAYAR, TIDAK_DIBAYAR (with keterangan;
+ * can later become Dibayar) or TIDAK_ADA (final Rp 0).
+ */
+enum class PayStatus { REKONSILIASI, MENUNGGU, DIBAYAR, TIDAK_DIBAYAR, TIDAK_ADA }
+
+/** Admin record of a row (FR-PY-002/004): Koreksi with note, paid date, Tidak dibayar keterangan (and the earlier one once paid). */
+data class PaymentRecord(
+    val correction: Long = 0,
+    val note: String = "",
+    val paidAt: LocalDate? = null,
+    val unpaidNote: String = "",
+    /** When the row was marked Tidak dibayar (WIB date); kept after it is later marked Dibayar (AC-053). */
+    val unpaidAt: LocalDate? = null,
+)
+
+/** Payment of a month: final amount = calculated take home pay + Koreksi, rounded down, never negative. */
+data class Payment(
+    val status: PayStatus,
+    val calculated: Long,
+    val correction: Long,
+    val note: String,
+    val finalAmount: Long,
+    val scheduledAt: LocalDate,
+    val lockAt: LocalDate,
+    val paidAt: LocalDate?,
+    val paidAmount: Long?,
+    /** Keterangan while Tidak dibayar. */
+    val unpaidNote: String,
+    /** Keterangan of an earlier Tidak dibayar of a row that is now Dibayar (history). */
+    val previousUnpaidNote: String,
+    val unpaidAt: LocalDate?,
+    /** Still Menunggu pembayaran after the scheduled date (AC-030: same copy). */
+    val overdue: Boolean,
+)
 
 /** Tier "> from, ≤ to" (from `null` = from 0, to `null` = no upper bound); [rate] in percent. */
 data class S3Tier(val from: Double?, val to: Double?, val rate: Double)
@@ -145,6 +179,34 @@ object Scope3 {
     fun countsFor(l: Loan, ym: YearMonth): Boolean =
         portalStatus(l) == PortalStatus.CAIR && YearMonth.from(SalesRepository.dateOf(l.submittedAt)) == ym &&
             l.paidOutAt != null && YearMonth.from(SalesRepository.dateOf(l.paidOutAt)) == ym
+
+    /** Final amount = calculated + Koreksi, rounded down, never negative (FR-DF-002, FR-PY-002). */
+    fun finalAmount(calculated: Long, correction: Long): Long = maxOf(0L, calculated + correction)
+
+    /**
+     * Payment of a row in [ym] (web `scope3.js` `paymentOf`): `null` while the month is Berjalan; Rekonsiliasi until the
+     * cut-off; then Dibayar (recorded date, or the scheduled date for months up to [paidThrough]), Tidak ada pembayaran (final
+     * Rp 0), Tidak dibayar (keterangan) or Menunggu pembayaran.
+     */
+    fun paymentOf(status: MonthStatus, ym: YearMonth, calculated: Long, r: PaymentRecord?, paidThrough: YearMonth, today: LocalDate): Payment? {
+        if (status == MonthStatus.BERJALAN) return null
+        val rec = r ?: PaymentRecord()
+        val final = finalAmount(calculated, rec.correction)
+        val scheduled = payoutDate(ym)
+        fun p(st: PayStatus, paidAt: LocalDate? = null) = Payment(
+            st, calculated, rec.correction, rec.note, final, scheduled, lockDate(ym), paidAt, paidAt?.let { final },
+            if (st == PayStatus.TIDAK_DIBAYAR) rec.unpaidNote else "", if (st == PayStatus.DIBAYAR) rec.unpaidNote else "",
+            rec.unpaidAt.takeIf { rec.unpaidNote.isNotBlank() }, st == PayStatus.MENUNGGU && today.isAfter(scheduled),
+        )
+        if (status == MonthStatus.REKONSILIASI) return p(PayStatus.REKONSILIASI)
+        val paidAt = rec.paidAt ?: if (ym <= paidThrough && final > 0) scheduled else null
+        return when {
+            paidAt != null -> p(PayStatus.DIBAYAR, paidAt)
+            final == 0L -> p(PayStatus.TIDAK_ADA)
+            rec.unpaidNote.isNotBlank() -> p(PayStatus.TIDAK_DIBAYAR)
+            else -> p(PayStatus.MENUNGGU)
+        }
+    }
 
     /** Lock of [ym]: the lock day of the next month, 00:00 WIB. */
     fun lockDate(ym: YearMonth, sales: SalesConfig = SALES): LocalDate = ym.plusMonths(1).atDay(sales.lockDay)

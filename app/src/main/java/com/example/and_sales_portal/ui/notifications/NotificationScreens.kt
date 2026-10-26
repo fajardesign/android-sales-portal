@@ -63,17 +63,21 @@ fun notificationText(n: AppNotification): String =
         ?: n.income?.let { incomeText(it) }.orEmpty()
 
 /**
- * PRD Scope 3 income (FR-IN-005, FR-PY-006): "Penghasilan {bulan} sudah final: Rp {take home pay} (gaji pokok Rp {x} +
- * insentif Rp {y}). Dijadwalkan dibayar {tanggal}." and "Penghasilan {bulan} sudah dibayar: Rp {jumlah}{, termasuk koreksi
- * {±Rp}}."
+ * PRD Scope 3 income (FR-IN-005, FR-PY-006, round 10): "Penghasilan {bulan} sudah final: Rp {take home pay} (gaji pokok Rp {x}
+ * + insentif Rp {y}{ + koreksi {±Rp}}). Dijadwalkan dibayar {tanggal}.", "Penghasilan {bulan} sudah dibayar: Rp {jumlah}." and
+ * "Penghasilan {bulan} tidak dibayar: {keterangan}. Hubungi TL Anda."
  */
 @Composable
 fun incomeText(i: IncomeNotice): String {
     val month = Fmt.month(YearMonth.parse(i.month))
-    return when {
-        !i.paid -> stringResource(R.string.notif_income_final, month, rupiah(i.takeHomePay), rupiah(i.basicSalary), rupiah(i.incentive), Fmt.day(LocalDate.parse(i.payoutDate)))
-        i.correction != 0L -> stringResource(R.string.notif_income_paid_correction, month, rupiah(i.amount), signedRupiah(i.correction))
-        else -> stringResource(R.string.notif_income_paid, month, rupiah(i.amount))
+    return when (i.kind) {
+        IncomeNotice.PAID -> stringResource(R.string.notif_income_paid, month, rupiah(i.amount))
+        IncomeNotice.UNPAID -> stringResource(R.string.notif_income_unpaid, month, i.unpaidNote)
+        else -> {
+            val payout = Fmt.day(LocalDate.parse(i.payoutDate))
+            if (i.correction != 0L) stringResource(R.string.notif_income_final_correction, month, rupiah(i.takeHomePay), rupiah(i.basicSalary), rupiah(i.incentive), signedRupiah(i.correction), payout)
+            else stringResource(R.string.notif_income_final, month, rupiah(i.takeHomePay), rupiah(i.basicSalary), rupiah(i.incentive), payout)
+        }
     }
 }
 

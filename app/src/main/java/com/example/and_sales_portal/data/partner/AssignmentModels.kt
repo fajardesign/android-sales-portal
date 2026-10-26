@@ -65,23 +65,33 @@ data class AppNotification(
 }
 
 /**
- * PRD Scope 3 income of a month (FR-IN-005, FR-PY-006): final at the lock ("Penghasilan {bulan} sudah final: …") or paid
- * ("Penghasilan {bulan} sudah dibayar: …"). Tapping opens the month detail of Penghasilan. [month] is "YYYY-MM".
+ * PRD Scope 3 income of a month (FR-IN-005, FR-PY-006): final at the cut-off ("Penghasilan {bulan} sudah final: …"), paid
+ * ("… sudah dibayar: …") or not paid ("… tidak dibayar: {keterangan}. Hubungi TL Anda."). Tapping opens the month detail of Penghasilan. [month] is "YYYY-MM".
  */
 @Serializable
 data class IncomeNotice(
     val at: Long,
     val month: String,
-    val paid: Boolean,
+    /** [FINAL] at the cut-off, [PAID] or [UNPAID] when the Admin logs the result. */
+    val kind: String,
+    /** Final take home pay (with Koreksi), its parts and the Koreksi (final). */
     val takeHomePay: Long = 0,
     val basicSalary: Long = 0,
     val incentive: Long = 0,
+    val correction: Long = 0,
     /** Scheduled payout date "YYYY-MM-DD" (final). */
     val payoutDate: String? = null,
-    /** Paid amount and the Admin correction included in it (paid). */
+    /** Paid amount (paid). */
     val amount: Long = 0,
-    val correction: Long = 0,
-)
+    /** Keterangan (unpaid). */
+    val unpaidNote: String = "",
+) {
+    companion object {
+        const val FINAL = "FINAL"
+        const val PAID = "PAID"
+        const val UNPAID = "UNPAID"
+    }
+}
 
 /**
  * The Admin cancelled the Permintaan tambah toko of the TL/SR who added it (PRD 1.1 C7 FR-023, decision 2026-10-20):
@@ -98,7 +108,7 @@ data class AssignmentData(
     val notifications: List<AppNotification> = emptyList(),
 ) {
     companion object {
-        /** 5: cancelled Permintaan tambah toko notifications (decision 2026-10-20). */
-        const val VERSION = 5
+        /** 6: PRD Scope 3 round 10 income notices (final with Koreksi, paid, unpaid). */
+        const val VERSION = 6
     }
 }

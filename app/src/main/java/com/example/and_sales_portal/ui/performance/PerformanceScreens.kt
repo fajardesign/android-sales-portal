@@ -84,12 +84,15 @@ fun PerformanceCard(s: PerformanceCardState, onDetail: () -> Unit, onRetry: () -
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.s3_card_title), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.headingSm)
-            if (s.load == PerfData.NORMAL) AmarButton(stringResource(R.string.s3_see_detail), onDetail, type = AmarButtonType.Naked, size = AmarButtonSize.Small)
+            if (s.load == PerfData.NORMAL || s.load == PerfData.LMT_ERROR) AmarButton(stringResource(R.string.s3_see_detail), onDetail, type = AmarButtonType.Naked, size = AmarButtonSize.Small)
         }
         when {
             s.load == PerfData.LOADING -> PerfLoading()
             s.load == PerfData.ERROR -> PerfError(onRetry)
-            else -> s.row?.let { r -> CardContent(s, r) }
+            else -> {
+                if (s.load == PerfData.LMT_ERROR) LmtBanner(s.asOf)
+                s.row?.let { r -> CardContent(s, r) }
+            }
         }
     }
 }
@@ -97,9 +100,10 @@ fun PerformanceCard(s: PerformanceCardState, onDetail: () -> Unit, onRetry: () -
 @Composable
 private fun CardContent(s: PerformanceCardState, r: SalesRow) {
     val c = AmarTheme.colors
-    Text(stringResource(R.string.s3_card_thp, rupiah(r.calc.takeHomePay)), color = c.content.primary, style = AmarTheme.typography.headingMd)
+    Text(stringResource(R.string.s3_card_thp, rupiah(r.takeHomePay)), color = c.content.primary, style = AmarTheme.typography.headingMd)
     ValueRow(stringResource(R.string.s3_basic), rupiah(r.calc.basicSalary)) { MultiplierBadge(r) }
     ValueRow(stringResource(R.string.s3_incentive), rupiah(r.calc.incentive))
+    r.payment?.takeIf { it.correction != 0L }?.let { ValueRow(stringResource(R.string.s3_correction_label), signedRupiah(it.correction)) }
     if (!s.hasStore) {
         AmarInfoBox(stringResource(R.string.s3_no_store), Modifier.fillMaxWidth(), type = AmarInfoBoxType.Neutral)
     } else {
@@ -108,10 +112,14 @@ private fun CardContent(s: PerformanceCardState, r: SalesRow) {
         AchievementBar(r)
         if (r.calc.actual == 0L) Text(stringResource(R.string.s3_zero), color = c.content.secondary, style = AmarTheme.typography.bodySm)
     }
+    // FR-IN-003, AC-058: last month until the cut-off, take home pay with the Koreksi.
     s.prev?.let { p ->
         AmarDivider()
-        Text(stringResource(R.string.s3_prev_month, Fmt.month(p.month), rupiah(p.calc.takeHomePay)), color = c.content.primary, style = AmarTheme.typography.bodySm)
-        Text(monthNote(p.month, p.monthStatus), color = c.content.secondary, style = AmarTheme.typography.captionSm)
+        Text(stringResource(R.string.s3_prev_month, Fmt.month(p.month), rupiah(p.takeHomePay)), color = c.content.primary, style = AmarTheme.typography.bodySm)
+        p.payment?.let { pay ->
+            Text(stringResource(R.string.s3_note_recon, Fmt.day(pay.lockAt)), color = c.content.secondary, style = AmarTheme.typography.captionSm)
+            if (pay.correction != 0L) Text(correctionText(pay), color = c.content.secondary, style = AmarTheme.typography.captionSm)
+        } ?: Text(monthNote(p.month, p.monthStatus), color = c.content.secondary, style = AmarTheme.typography.captionSm)
     }
     s.teamThp?.let { Text(stringResource(R.string.s3_team_thp, rupiah(it)), color = c.content.primary, style = AmarTheme.typography.labelMdSemibold) }
     AsOfLine(s.asOf)
@@ -288,6 +296,7 @@ fun ColumnScope.IncomeSection(s: IncomeState, a: IncomeActions) {
     when (s.load) {
         PerfData.LOADING -> { PerfLoading(); return }
         PerfData.ERROR -> { PerfError(a.onRetry); return }
+        PerfData.LMT_ERROR -> LmtBanner(s.asOf)
         PerfData.NORMAL -> Unit
     }
     val r = s.row
@@ -302,15 +311,15 @@ fun ColumnScope.IncomeSection(s: IncomeState, a: IncomeActions) {
     }
     AsOfLine(s.asOf)
     SectionTitle(stringResource(R.string.s3_history))
+    if (s.history.isEmpty()) Text(stringResource(R.string.s3_history_empty), color = c.content.secondary, style = AmarTheme.typography.bodySm)
     s.history.forEach { h ->
         AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Border, onClick = { a.onMonthDetail(h.month) }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(Fmt.month(h.month), Modifier.weight(1f), c.content.primary, style = AmarTheme.typography.labelMdSemibold)
                 MonthStatusBadge(h.monthStatus)
             }
-            ValueRow(stringResource(R.string.s3_thp), rupiah(h.calc.takeHomePay))
-            Text(stringResource(R.string.s3_thp_formula, rupiah(h.calc.basicSalary), rupiah(h.calc.incentive)), color = c.content.secondary, style = AmarTheme.typography.bodySm)
-            if (h.monthStatus == MonthStatus.REKONSILIASI) Text(monthNote(h.month, h.monthStatus), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+            ValueRow(stringResource(R.string.s3_thp), rupiah(h.takeHomePay)) { PaymentBadge(h.payment) }
+            Text(thpFormula(h), color = c.content.secondary, style = AmarTheme.typography.bodySm)
             PaymentLines(h.payment)
         }
     }
@@ -395,13 +404,18 @@ fun ColumnScope.TeamSection(s: TeamState, a: TeamActions, youLabel: (String) -> 
     when (s.load) {
         PerfData.LOADING -> { PerfLoading(); return }
         PerfData.ERROR -> { PerfError(a.onRetry); return }
+        PerfData.LMT_ERROR -> LmtBanner(s.asOf)
         PerfData.NORMAL -> Unit
     }
     AmarCard(Modifier.fillMaxWidth(), style = AmarCardStyle.Shadow) {
         Text(stringResource(R.string.s3_team_summary), color = c.content.primary, style = AmarTheme.typography.headingSm)
         ValueRow(stringResource(R.string.s3_team_counted), rupiah(s.teamCounted))
         ValueRow(stringResource(R.string.s3_team_total_thp), rupiah(s.totals.takeHomePay))
-        Text(stringResource(R.string.s3_thp_formula, rupiah(s.totals.basicSalary), rupiah(s.totals.incentive)), color = c.content.secondary, style = AmarTheme.typography.bodySm)
+        Text(
+            if (s.totals.correction != 0L) stringResource(R.string.s3_thp_formula_correction, rupiah(s.totals.basicSalary), rupiah(s.totals.incentive), signedRupiah(s.totals.correction))
+            else stringResource(R.string.s3_thp_formula, rupiah(s.totals.basicSalary), rupiah(s.totals.incentive)),
+            color = c.content.secondary, style = AmarTheme.typography.bodySm,
+        )
         val bands = s.rows.groupingBy { it.calc.band }.eachCount()
         Text(stringResource(R.string.s3_team_bands, bands[Band.TERCAPAI] ?: 0, bands[Band.ON_TRACK] ?: 0, bands[Band.BERISIKO] ?: 0), color = c.content.secondary, style = AmarTheme.typography.bodySm)
         AsOfLine(s.asOf)
@@ -420,8 +434,10 @@ fun ColumnScope.TeamSection(s: TeamState, a: TeamActions, youLabel: (String) -> 
             ValueRow(stringResource(R.string.s3_tier), "${tierText(r.calc.tier)} · ${rateText(r.calc.coefficient)}%")
             ValueRow(stringResource(R.string.s3_basic), rupiah(r.calc.basicSalary)) { MultiplierBadge(r) }
             ValueRow(stringResource(R.string.s3_incentive), rupiah(r.calc.incentive))
-            ValueRow(stringResource(R.string.s3_thp), rupiah(r.calc.takeHomePay))
-            if (r.monthStatus == MonthStatus.FINAL) PaymentLines(r.payment)
+            // Round 10: Koreksi and payment status per person from reconciliation on (FR-TG-002).
+            r.payment?.takeIf { it.correction != 0L }?.let { ValueRow(stringResource(R.string.s3_correction_label), signedRupiah(it.correction)) }
+            ValueRow(stringResource(R.string.s3_thp), rupiah(r.takeHomePay)) { PaymentBadge(r.payment) }
+            PaymentLines(r.payment)
             if (!own) AmarButton(stringResource(R.string.s3_member_detail), { a.onMember(r.userId) }, type = AmarButtonType.Naked, size = AmarButtonSize.Small)
         }
     }

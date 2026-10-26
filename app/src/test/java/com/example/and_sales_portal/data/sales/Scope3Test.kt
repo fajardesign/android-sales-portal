@@ -157,4 +157,41 @@ class Scope3Test {
         // A Sunday: the Sunday of the following week.
         assertEquals(LocalDate.of(2026, 10, 18), Scope3.correctionDeadline(LocalDate.of(2026, 10, 11)))
     }
+
+    @Test
+    fun finalTakeHomePayWithKoreksi() {
+        // AC-024: Siti's calculated September take home pay Rp 3.525.000, Koreksi −150.000 → Rp 3.375.000; never negative.
+        val calc = Scope3.calcSales(S3Role.SA, 90_000_000, 23, sby).takeHomePay
+        assertEquals(3_525_000L, calc)
+        assertEquals(3_375_000L, Scope3.finalAmount(calc, -150_000))
+        assertEquals(0L, Scope3.finalAmount(calc, -4_000_000))
+    }
+
+    @Test
+    fun paymentStatusThroughTheMonth() {
+        // Same as web `paymentOf`: Berjalan none, Rekonsiliasi until the cut-off with Koreksi, then Menunggu (also after the
+        // payout day, AC-030), Tidak dibayar with keterangan, later Dibayar with the earlier keterangan kept (AC-053).
+        val sep = YearMonth.of(2026, 9)
+        val paidThrough = YearMonth.of(2026, 8)
+        val koreksi = PaymentRecord(-150_000, "Potongan seragam hilang")
+        assertEquals(null, Scope3.paymentOf(MonthStatus.BERJALAN, sep, 3_525_000, koreksi, paidThrough, LocalDate.of(2026, 9, 30)))
+        val recon = requireNotNull(Scope3.paymentOf(MonthStatus.REKONSILIASI, sep, 3_525_000, koreksi, paidThrough, LocalDate.of(2026, 10, 2)))
+        assertEquals(PayStatus.REKONSILIASI, recon.status)
+        assertEquals(3_375_000L, recon.finalAmount)
+        assertEquals(LocalDate.of(2026, 10, 5), recon.lockAt)
+        val waiting = requireNotNull(Scope3.paymentOf(MonthStatus.FINAL, sep, 3_525_000, koreksi, paidThrough, LocalDate.of(2026, 10, 12)))
+        assertEquals(PayStatus.MENUNGGU, waiting.status)
+        assertTrue(waiting.overdue)
+        assertEquals(LocalDate.of(2026, 10, 10), waiting.scheduledAt)
+        val unpaid = koreksi.copy(unpaidNote = "Rekening tidak valid", unpaidAt = LocalDate.of(2026, 10, 11))
+        val u = requireNotNull(Scope3.paymentOf(MonthStatus.FINAL, sep, 3_525_000, unpaid, paidThrough, LocalDate.of(2026, 10, 12)))
+        assertEquals(PayStatus.TIDAK_DIBAYAR, u.status)
+        assertEquals("Rekening tidak valid", u.unpaidNote)
+        val paid = requireNotNull(Scope3.paymentOf(MonthStatus.FINAL, sep, 3_525_000, unpaid.copy(paidAt = LocalDate.of(2026, 10, 19)), paidThrough, LocalDate.of(2026, 10, 20)))
+        assertEquals(PayStatus.DIBAYAR, paid.status)
+        assertEquals(3_375_000L, paid.paidAmount)
+        assertEquals("Rekening tidak valid", paid.previousUnpaidNote)
+        assertEquals(PayStatus.TIDAK_ADA, Scope3.paymentOf(MonthStatus.FINAL, sep, 0, null, paidThrough, LocalDate.of(2026, 10, 7))?.status)
+        assertEquals(PayStatus.DIBAYAR, Scope3.paymentOf(MonthStatus.FINAL, YearMonth.of(2026, 8), 100, null, paidThrough, LocalDate.of(2026, 10, 7))?.status)
+    }
 }

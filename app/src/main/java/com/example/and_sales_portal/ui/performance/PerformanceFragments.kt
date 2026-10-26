@@ -80,7 +80,9 @@ abstract class PerformanceBase : ComposeFragment() {
         when (sim.perfData) {
             PerfData.LOADING -> PerfLoading()
             PerfData.ERROR -> PerfError(::retry)
-            PerfData.NORMAL -> PipelineSection(
+            PerfData.NORMAL, PerfData.LMT_ERROR -> {
+                if (sim.perfData == PerfData.LMT_ERROR) LmtBanner(pipeline.asOf)
+                PipelineSection(
                 PipelineState(ym, container.monthOptions(), pipeline, status?.let { PortalStatus.valueOf(it) }, stores, storeId, team, salesFilter),
                 PipelineActions(
                     onMonth = { month = it.toString() },
@@ -90,6 +92,7 @@ abstract class PerformanceBase : ComposeFragment() {
                     onOpen = { navigate(R.id.loan_detail, bundleOf(ARG_LOAN to it.id, ARG_MONTH to month)) },
                 ),
             )
+            }
         }
     }
 

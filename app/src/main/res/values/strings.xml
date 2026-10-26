@@ -740,8 +740,20 @@
     <string name="s3_pay_waiting">Menunggu pembayaran (jadwal %1$s)</string>
     <string name="s3_pay_paid">Dibayar %1$s: %2$s</string>
     <string name="s3_pay_none">Tidak ada pembayaran</string>
+    <string name="s3_pay_unpaid">Tidak dibayar: %1$s. Hubungi TL Anda.</string>
+    <string name="s3_pay_prev_unpaid">Sebelumnya tidak dibayar: %1$s</string>
+    <string name="s3_pay_chip_recon">Rekonsiliasi</string>
+    <string name="s3_pay_chip_waiting">Menunggu pembayaran</string>
+    <string name="s3_pay_chip_paid">Dibayar</string>
+    <string name="s3_pay_chip_unpaid">Tidak dibayar</string>
+    <string name="s3_correction_label">Koreksi</string>
+    <string name="s3_thp_formula_correction">Gaji pokok %1$s + insentif %2$s + koreksi %3$s</string>
+    <string name="s3_lmt_error">Data belum bisa diperbarui. Menampilkan data per %1$s.</string>
+    <string name="s3_no_valid_days">Belum ada absensi valid di bulan ini. Hari valid = check in dan check out.</string>
+    <string name="s3_fee_not_set">Daily fee area %1$s belum diatur.</string>
+    <string name="s3_history_empty">Belum ada riwayat penghasilan.</string>
     <string name="s3_correction">Koreksi %1$s</string>
-    <string name="s3_correction_note">Koreksi %1$s · %2$s</string>
+    <string name="s3_correction_note">Koreksi %1$s: %2$s</string>
     <string name="s3_final_question">Ada pertanyaan tentang angka ini? Hubungi TL Anda.</string>
     <string name="s3_history">Riwayat penghasilan</string>
     <string name="s3_month_detail">Lihat detail bulan</string>
@@ -762,14 +774,18 @@
     <string name="s3_member_subtitle">%1$s · %2$s</string>
     <string name="notif_income_final">Penghasilan %1$s sudah final: %2$s (gaji pokok %3$s + insentif %4$s). Dijadwalkan dibayar %5$s.</string>
     <string name="notif_income_paid">Penghasilan %1$s sudah dibayar: %2$s.</string>
-    <string name="notif_income_paid_correction">Penghasilan %1$s sudah dibayar: %2$s, termasuk koreksi %3$s.</string>
+    <string name="notif_income_final_correction">Penghasilan %1$s sudah final: %2$s (gaji pokok %3$s + insentif %4$s + koreksi %5$s). Dijadwalkan dibayar %6$s.</string>
+    <string name="notif_income_unpaid">Penghasilan %1$s tidak dibayar: %2$s. Hubungi TL Anda.</string>
     <string name="sim_s3_title">Performa (PRD Scope 3)</string>
     <string name="sim_s3_date">Tanggal Scope 3</string>
     <string name="sim_s3_date_device">Tanggal perangkat</string>
     <string name="sim_s3_date_oct7">7 Okt 2026 (September Final)</string>
     <string name="sim_s3_date_oct3">3 Okt 2026 (September Menunggu rekonsiliasi)</string>
+    <string name="sim_s3_date_oct12">12 Okt 2026 (sales tahap pencatatan)</string>
+    <string name="sim_s3_unpaid">Admin tandai Tidak dibayar (Rekening tidak valid)</string>
+    <string name="sim_perf_lmt">Gagal LMT (data terakhir)</string>
     <string name="sim_s3_paid">Admin tandai bulan Final terbaru dibayar</string>
-    <string name="sim_s3_payments_note">Contoh pembayaran: Agustus 2026 dibayar 10 Sep 2026 (SR Siti Rahmawati dengan koreksi +Rp 150.000); September 2026 menunggu pembayaran.</string>
+    <string name="sim_s3_payments_note">Contoh pembayaran: Agustus 2026 dibayar 10 Sep 2026 (SR Siti Rahmawati dengan koreksi +Rp 150.000); September 2026: koreksi −Rp 150.000 "Potongan seragam hilang" untuk Siti saat rekonsiliasi, lalu menunggu pembayaran. Tanda di bawah berlaku untuk bulan Final terbaru; keduanya aktif = Tidak dibayar lalu Dibayar.</string>
     <string name="sim_perf_data">Data performa</string>
     <string name="sim_perf_normal">Normal</string>
     <string name="sim_perf_loading">Memuat</string>
