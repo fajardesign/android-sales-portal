@@ -58,10 +58,30 @@ data class AppNotification(
     val event: AssignmentEvent? = null,
     val revision: RevisionNotice? = null,
     val storeCancelled: StoreCancelNotice? = null,
+    val income: IncomeNotice? = null,
     val read: Boolean = false,
 ) {
-    val at: Long get() = event?.at ?: revision?.at ?: storeCancelled?.at ?: 0
+    val at: Long get() = event?.at ?: revision?.at ?: storeCancelled?.at ?: income?.at ?: 0
 }
+
+/**
+ * PRD Scope 3 income of a month (FR-IN-005, FR-PY-006): final at the lock ("Penghasilan {bulan} sudah final: …") or paid
+ * ("Penghasilan {bulan} sudah dibayar: …"). Tapping opens the month detail of Penghasilan. [month] is "YYYY-MM".
+ */
+@Serializable
+data class IncomeNotice(
+    val at: Long,
+    val month: String,
+    val paid: Boolean,
+    val takeHomePay: Long = 0,
+    val basicSalary: Long = 0,
+    val incentive: Long = 0,
+    /** Scheduled payout date "YYYY-MM-DD" (final). */
+    val payoutDate: String? = null,
+    /** Paid amount and the Admin correction included in it (paid). */
+    val amount: Long = 0,
+    val correction: Long = 0,
+)
 
 /**
  * The Admin cancelled the Permintaan tambah toko of the TL/SR who added it (PRD 1.1 C7 FR-023, decision 2026-10-20):

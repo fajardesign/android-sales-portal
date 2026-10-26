@@ -35,9 +35,9 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 
 | Role | Bottom navigation |
 |---|---|
-| TL | Beranda · Partner · Tim · Aktivitas · Akun |
-| SR | Beranda · Kunjungan · Partner (+ Pengajuan, Daftarkan, Tambah Toko) · Kinerja · Akun |
-| SA | Beranda · Kunjungan · Partner (Partner Saya saja) · Kinerja · Akun |
+| TL | Beranda · Partner · Performa (Pipeline · Penghasilan · Tim) · Aktivitas · Akun |
+| SR | Beranda · Kunjungan · Partner (+ Pengajuan, Daftarkan, Tambah Toko) · Performa (Pipeline · Penghasilan · Produktivitas) · Akun |
+| SA | Beranda · Kunjungan · Partner (Partner Saya saja) · Performa (Pipeline · Penghasilan · Produktivitas) · Akun |
 
 ## Peta Flow ID → kode
 
@@ -47,21 +47,24 @@ Akun lain dari portal web (mis. `budi.santoso@amarbank.co.id`, `dewi.lestari@ama
 | ATT-01 … ATT-05 | Absensi, Check In/Out Kerja, Kunjungan (target mingguan), Check-in/out | `ui/attendance/`, `ui/visits/`, `data/activity/` |
 | REG-01 … REG-11 | Tab Partner, pendaftaran (tanpa persetujuan; dokumen wajib Formulir Persetujuan PDP), Pengajuan, revisi | `ui/partner/`, `ui/partnerregistration/`, `data/partner/` |
 | PRT-01, PRT-02 | Detail Partner, Tambah Toko | `ui/partner/` |
-| TL-01 … TL-04, TL-11 | Tim, Assign SA/SR (per toko), Jadwal Kunjungan (Senin–Minggu; TL-05 dihapus, Tandai Libur dihapus), Koreksi Absensi (TL-11, dari Bukti absensi) | `ui/team/`, `data/team/` |
-| TL-06 … TL-10 | Beranda TL, Produktivitas, Kinerja Penjualan, Pinjaman, Insentif | `ui/dashboard/`, `data/sales/` |
-| SLS-01 … SLS-04 | Beranda SA/SR, tab Kinerja | `ui/dashboard/` |
+| TL-01 … TL-04, TL-11 | Tim (sejak PRD Scope 3 di Performa › Tim), Assign SA/SR (per toko), Jadwal Kunjungan (Senin–Minggu; TL-05 dihapus, Tandai Libur dihapus), Koreksi Absensi (TL-11, dari Bukti absensi) | `ui/team/`, `data/team/` |
+| TL-06, TL-07 | Beranda TL, Produktivitas (TL-08 … TL-10 diganti Performa) | `ui/dashboard/` |
+| SLS-01 | Beranda SA/SR (SLS-02 … SLS-04 diganti Performa) | `ui/dashboard/` |
+| PRF-01 … PRF-06 | PRD Scope 3: kartu "Performa bulan ini", Pipeline, Detail Pinjaman, Penghasilan, Tim (TL), notifikasi penghasilan | `ui/performance/`, `data/sales/` (`Scope3.kt`, `SalesRepository.kt`) |
 | AKN-01 | Akun | `ui/account/`, `ui/shell/TabFragments.kt` |
 
 ## Arsitektur singkat
 
 - `MainActivity` + `nav_main` (satu Fragment per Flow ID, isi Compose lewat `ComposeFragment`); bottom navigation per role (`ui/shell/Shell.kt`). Pendaftaran partner adalah nav graph `nav_partner_registration` yang di-include, ViewModel di-scope ke graph.
-- `SalesApp.AppContainer`: Supabase (akun), `PartnerRepository` (partner bersama di perangkat), `OperationsRepository` (absensi dan kunjungan semua SA/SR/TL, zona area), `TeamService`, `SalesRepository` (pinjaman, target, insentif), `LocationService`, `Connectivity`, `SimulationSettings`.
+- `SalesApp.AppContainer`: Supabase (akun), `PartnerRepository` (partner bersama di perangkat), `OperationsRepository` (absensi dan kunjungan semua SA/SR/TL, zona area), `TeamService`, `SalesRepository` (pinjaman, baris bulanan PRD Scope 3: gaji pokok, insentif, take home pay, pembayaran), `LocationService`, `Connectivity`, `SimulationSettings`.
 - Data disimpan di `filesDir/demo/` (`partners.json`, `operations.json`, draf pendaftaran per akun, dokumen dan selfie). **Akun › Reset data demo** mengembalikan semuanya ke data contoh.
 - Design system: hanya komponen `designsystem/components/`; komponen baru di `components/extended/` (`AmarBottomNavigation`, `AmarProgressBar`), tercatat di `docs/design-system/components.md`.
 
 ## Simulasi (debug)
 
 **Akun › Simulasi (debug)**: lokasi (Di kantor / toko / GPS perangkat / Di luar radius ±9 km / Akurasi GPS buruk 240 m), lokasi palsu, mode offline. **Simulasi Admin dan APL** meniru web: Nonaktifkan TL Andi Pratama (kursi TL dan tim pindah ke Bagus Wicaksono), APL tugaskan TL Tamalanrea ke Bagus, APL lepas TL Andi dari Sudiang (Siti ikut dilepas), Pindahkan Bawahan Siti ke Bagus, Nonaktifkan SA Eko Saputra, dan Admin batalkan permintaan tambah toko terbaru (penambah mendapat notifikasi, toko tampil "Dibatalkan"). Di **Detail Pengajuan** ada **Simulasi Admin (debug)** untuk aksi Admin portal (Minta Revisi, Verifikasi, Kirim PKS, Isi kode referral dan QR, Aktifkan yang terkunci sampai semua toko punya kode dan QR, Ubah area partner, Tolak, Batalkan, Nonaktifkan). Setiap toko punya kursi TL ("Belum ada TL" bila kosong) dan kursi SA/SR (PRD Scope 1 v1.1); toko baru menunggu kode referral dan QR, lalu menunggu APL menugaskan TL.
+
+**Simulasi › Performa (PRD Scope 3)**: **Tanggal Scope 3** untuk status bulan, sama dengan DevToolbar web: *Tanggal perangkat* (bawaan), *7 Okt 2026 (September Final)*, *3 Okt 2026 (September Menunggu rekonsiliasi)*. Contoh pembayaran: Agustus 2026 dibayar 10 Sep 2026 (SR Siti Rahmawati dengan koreksi +Rp 150.000), September 2026 menunggu pembayaran; sakelar **Admin tandai bulan Final terbaru dibayar** memunculkan notifikasi "sudah dibayar". **Data performa** Normal / Memuat / Gagal untuk state memuat dan galat. Data absensi contoh kini mulai tanggal 1 tiga bulan ke belakang (hari valid gaji pokok).
 
 ## Batasan prototype
 

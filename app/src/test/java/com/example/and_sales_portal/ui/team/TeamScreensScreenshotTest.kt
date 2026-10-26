@@ -47,7 +47,7 @@ class TeamScreensScreenshotTest {
 
     @Test
     fun teamAndDetail() {
-        capture("01_team") { TeamListScreen(members) {} }
+        capture("01_member_card") { androidx.compose.foundation.layout.Column { members.forEach { MemberCard(it) {} } } }
         val pr = Productivity(6, 5, 4, 1, 1, 0, listOf(VisitWeek(today.minusDays(2), 2, 6)), VisitWeek(today.minusDays(2), 2, 6))
         capture("02_detail") { MemberDetailScreen(members[0], pr, {}, {}, {}) }
     }

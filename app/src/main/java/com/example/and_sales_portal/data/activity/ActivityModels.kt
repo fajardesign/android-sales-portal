@@ -31,7 +31,7 @@ data class OpsData(
 ) {
     companion object {
         /** 9: area zone (S8) and Absen without check out (S13) again, decisions 2026-10-20. */
-        const val VERSION = 10
+        const val VERSION = 11
         fun key(employeeId: Long, date: LocalDate) = "$employeeId:$date"
     }
 }

@@ -19,7 +19,8 @@ import com.example.and_sales_portal.data.device.Place
 import com.example.and_sales_portal.data.partner.PartnerRepository
 import com.example.and_sales_portal.data.partner.PartnerStatus
 import com.example.and_sales_portal.data.sales.SalesRepository
-import com.example.and_sales_portal.data.sales.SalesSummary
+import com.example.and_sales_portal.data.device.PerfData
+import com.example.and_sales_portal.ui.performance.performanceCardState
 import com.example.and_sales_portal.designsystem.theme.AmarTheme
 import com.example.and_sales_portal.ui.attendance.AttendanceDay
 import com.example.and_sales_portal.ui.attendance.CaptureActions
@@ -80,13 +81,13 @@ class FullScreensScreenshotTest {
         val groups = ops.weekPartners(11, ActivityRules.weekStart(today))
         val sr = SalesHomeState(
             "Siti", SalesRole.SR, today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, week, false, groups,
-            partners.myPartners(11, SalesRole.SR), SalesSummary.of(sales.loansOfSales(11), today.withDayOfMonth(1), today), sales.salesIncentive(11, SalesRole.SR),
+            partners.myPartners(11, SalesRole.SR), performanceCardState(sales, 11, SalesRole.SR, true, PerfData.NORMAL),
         )
         capture("sls_01_home") { SalesHomeScreen(sr, noop, {}, {}, {}) }
         val tl = TlHomeState(
             "Andi", today, AttendanceDay(today, null, AttendanceStatus.NOT_YET), true, ops.visitWeek(6, ActivityRules.weekStart(today)), 2, 1, 0, 1, 2, 0, 3,
             partners.submissionsFor(6, SalesRole.TL).groupingBy { it.status }.eachCount() + (PartnerStatus.REVISION_REQUIRED to 1),
-            SalesSummary.of(sales.loansOfTl(6), today.withDayOfMonth(1), today), sales.tlIncentive(6),
+            performanceCardState(sales, 6, SalesRole.TL, true, PerfData.NORMAL),
             listOf("Siti Rahmawati" to 52.4, "Eko Saputra" to 28.1, "Nurul Hidayah" to 19.5),
         )
         capture("tl_06_home") { TlHomeScreen(tl, noop, TlHomeActions({}, {}, {}, {}, {}, {}, {})) }

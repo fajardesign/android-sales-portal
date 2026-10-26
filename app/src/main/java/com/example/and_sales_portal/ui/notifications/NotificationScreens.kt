@@ -1,5 +1,11 @@
 package com.example.and_sales_portal.ui.notifications
 
+import com.example.and_sales_portal.data.partner.IncomeNotice
+import com.example.and_sales_portal.ui.partner.rupiah
+import com.example.and_sales_portal.ui.performance.IncomeMonthFragment
+import com.example.and_sales_portal.ui.performance.signedRupiah
+import java.time.LocalDate
+import java.time.YearMonth
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,7 +59,23 @@ fun notificationText(e: AssignmentEvent): String = when {
 fun notificationText(n: AppNotification): String =
     n.event?.let { notificationText(it) }
         ?: n.revision?.let { stringResource(R.string.notif_revision, it.partnerName) }
-        ?: n.storeCancelled?.let { stringResource(R.string.notif_store_cancelled, it.storeName, it.partnerName, it.reason) }.orEmpty()
+        ?: n.storeCancelled?.let { stringResource(R.string.notif_store_cancelled, it.storeName, it.partnerName, it.reason) }
+        ?: n.income?.let { incomeText(it) }.orEmpty()
+
+/**
+ * PRD Scope 3 income (FR-IN-005, FR-PY-006): "Penghasilan {bulan} sudah final: Rp {take home pay} (gaji pokok Rp {x} +
+ * insentif Rp {y}). Dijadwalkan dibayar {tanggal}." and "Penghasilan {bulan} sudah dibayar: Rp {jumlah}{, termasuk koreksi
+ * {±Rp}}."
+ */
+@Composable
+fun incomeText(i: IncomeNotice): String {
+    val month = Fmt.month(YearMonth.parse(i.month))
+    return when {
+        !i.paid -> stringResource(R.string.notif_income_final, month, rupiah(i.takeHomePay), rupiah(i.basicSalary), rupiah(i.incentive), Fmt.day(LocalDate.parse(i.payoutDate)))
+        i.correction != 0L -> stringResource(R.string.notif_income_paid_correction, month, rupiah(i.amount), signedRupiah(i.correction))
+        else -> stringResource(R.string.notif_income_paid, month, rupiah(i.amount))
+    }
+}
 
 /**
  * Spec: Notifikasi (FR-MP-004; PRD 1.1 §1.7 FR-006, AC-014, decision 2026-10-20): the last 30 days, newest first; an
@@ -81,13 +103,18 @@ class NotificationsFragment : ComposeFragment() {
     @Composable
     override fun ScreenContent() {
         val s = session ?: return
-        val items = remember { container.partners.notificationsOf(s.user.id) }
+        val items = remember {
+            container.sales.syncIncomeNotices(s.user.id)
+            container.partners.notificationsOf(s.user.id)
+        }
         LaunchedEffect(Unit) { container.partners.markNotificationsRead(s.user.id) }
         NotificationsScreen(items, ::back) { n ->
             when {
                 n.revision != null -> navigate(R.id.submission_detail, SubmissionDetailFragment.args(n.revision.partnerId))
                 n.event != null -> navigate(R.id.partner_detail, PartnerDetailFragment.args(n.event.partnerId, n.event.storeId))
                 n.storeCancelled != null -> navigate(R.id.partner_detail, PartnerDetailFragment.args(n.storeCancelled.partnerId, n.storeCancelled.storeId))
+                // PRD Scope 3: tapping an income notification opens the month detail (PRF-04).
+                n.income != null -> navigate(R.id.income_month, IncomeMonthFragment.args(s.user.id, YearMonth.parse(n.income.month)))
             }
         }
     }

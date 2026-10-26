@@ -179,8 +179,12 @@ class OperationsRepository(
 
     // region Koreksi absensi oleh TL (decision 2026-10-19, Q6)
 
-    /** The TL can correct a day up to the end (Sunday 23:59 WIB) of the following week. */
-    fun correctionDeadline(date: LocalDate): Long = ActivityRules.weekLock(ActivityRules.weekStart(date).plusWeeks(2)) - 1
+    /**
+     * The TL can correct a day up to 23:59 WIB of the end of the following week (Sunday) or of the day before the lock of
+     * its month (PRD Scope 3, FR-DF-006), whichever comes first; after the lock Koreksi Absensi is not available.
+     */
+    fun correctionDeadline(date: LocalDate): Long =
+        com.example.and_sales_portal.data.sales.Scope3.correctionDeadline(date).plusDays(1).atStartOfDay(ActivityRules.LOCK_ZONE).toInstant().toEpochMilli() - 1
 
     fun canCorrect(employeeId: Long, date: LocalDate): Boolean = !date.isAfter(todayOf(employeeId)) && clock().toEpochMilli() <= correctionDeadline(date)
 

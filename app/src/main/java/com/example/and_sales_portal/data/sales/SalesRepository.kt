@@ -6,6 +6,9 @@ import com.example.and_sales_portal.data.activity.OperationsRepository
 import com.example.and_sales_portal.data.auth.SalesRole
 import com.example.and_sales_portal.data.demo.DemoDirectory
 import com.example.and_sales_portal.data.demo.seededRandom
+import com.example.and_sales_portal.data.device.Simulation
+import com.example.and_sales_portal.data.partner.AppNotification
+import com.example.and_sales_portal.data.partner.IncomeNotice
 import com.example.and_sales_portal.data.partner.Partner
 import com.example.and_sales_portal.data.partner.PartnerRepository
 import com.example.and_sales_portal.data.partner.PartnerStatus
@@ -13,7 +16,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
-import kotlin.math.roundToLong
 
 /** CRM status of a loan application (web portal: Pengajuan, Diproses, Disetujui, Ditolak, Dicairkan). */
 enum class LoanStatus { SUBMITTED, IN_PROCESS, APPROVED, REJECTED, PAID_OUT }
@@ -37,52 +39,76 @@ data class Loan(
     /** PRD D5: application ID and customer name masked. */
     val maskedId: String get() = id.take(5) + "•••" + id.takeLast(2)
     val maskedCustomer: String get() = customer.split(' ').joinToString(" ") { it.take(2) + "•".repeat((it.length - 2).coerceAtLeast(1)) }
-}
 
-/** # submitted, # accepted, # paid out, paid-out units and amount (PRD C1, C9, D1, D6). */
-data class SalesSummary(val submitted: Int, val accepted: Int, val paidOut: Int, val paidOutUnits: Int, val paidOutAmount: Long) {
-    companion object {
-        fun of(loans: List<Loan>, from: LocalDate, to: LocalDate): SalesSummary {
-            val submitted = loans.filter { SalesRepository.dateOf(it.submittedAt) in from..to }
-            val paid = loans.filter { it.paidOutAt != null && SalesRepository.dateOf(it.paidOutAt) in from..to }
-            return SalesSummary(
-                submitted = submitted.size,
-                accepted = submitted.count { it.status == LoanStatus.APPROVED || it.status == LoanStatus.PAID_OUT },
-                paidOut = paid.size,
-                paidOutUnits = paid.sumOf { it.units },
-                paidOutAmount = paid.sumOf { it.amount },
-            )
-        }
+    /**
+     * Date of each portal status reached (SCR-3-03): Diajukan, then Disetujui, Ditolak or Cair. The sample keeps no approval
+     * time for a paid-out loan, so it is placed halfway between submission and payout (prototype data).
+     */
+    val statusDates: List<Pair<PortalStatus, Long>> get() = when (status) {
+        LoanStatus.SUBMITTED, LoanStatus.IN_PROCESS -> listOf(PortalStatus.DIAJUKAN to submittedAt)
+        LoanStatus.APPROVED -> listOf(PortalStatus.DIAJUKAN to submittedAt, PortalStatus.DISETUJUI to updatedAt)
+        LoanStatus.REJECTED -> listOf(PortalStatus.DIAJUKAN to submittedAt, PortalStatus.DITOLAK to updatedAt)
+        LoanStatus.PAID_OUT -> listOf(PortalStatus.DIAJUKAN to submittedAt, PortalStatus.DISETUJUI to submittedAt + (updatedAt - submittedAt) / 2, PortalStatus.CAIR to (paidOutAt ?: updatedAt))
     }
 }
 
-/** One incentive component ("Daily Fee", "Paid Out Incentive", …) with how it is computed. */
-data class IncentiveComponent(val kind: ComponentKind, val amount: Long, val days: Int = 0, val unitAmount: Long = 0, val ratePct: Double = 0.0, val base: Long = 0, val mfpPct: Double? = null)
+/** A loan of the pipeline with its portal status; [paidLater] = Cair in a later month, not counted (FR-LP-005). */
+data class PipelineLoan(val loan: Loan, val status: PortalStatus, val counted: Boolean, val paidLater: Boolean)
 
-enum class ComponentKind { DAILY_FEE, PAID_OUT, LEADER, VOLUME, COLLECTION, COMMISSION }
+/** Count and amount of one funnel card. */
+data class Funnel(val count: Int, val amount: Long)
 
-/** Monthly incentive estimate of a person or a partner (portal `computeIncentives`). */
-data class Incentive(
+/** Pipeline of a month (FR-LP-004/005): funnel per portal status, "Dihitung untuk insentif", and the filtered list. */
+data class Pipeline(
+    val funnel: Map<PortalStatus, Funnel>,
+    val total: Int,
+    val countedAmount: Long,
+    val countedCount: Int,
+    val paidLaterCount: Int,
+    val rows: List<PipelineLoan>,
+    val asOf: Long,
+)
+
+/** Payment of a Final row (FR-PY-006): amount to pay = take home pay + Admin correction. */
+data class Payment(
+    val status: PayStatus,
+    val correction: Long,
+    val note: String,
+    val amountToPay: Long,
+    val paidAt: LocalDate?,
+    val paidAmount: Long?,
+    val scheduledAt: LocalDate,
+    val overdue: Boolean,
+)
+
+/** One person's month (web `salesRow`): figures, month status and payment. */
+data class SalesRow(
+    val userId: Long,
+    val name: String,
+    val role: S3Role,
+    val leaderId: Long?,
+    val areaId: Int,
+    val loanCount: Int,
+    val calc: SalesCalc,
     val month: YearMonth,
-    val target: Long,
-    val paidOutAmount: Long,
-    /** Paid-out achievement, % of the target. */
-    val achievementPct: Double,
-    /** Tier as "> 85% s/d 100%"; `null` without tiers (commission). */
-    val tier: Tier?,
-    val components: List<IncentiveComponent>,
-) {
-    val total: Long get() = components.sumOf { it.amount }
-}
+    val monthStatus: MonthStatus,
+    val payment: Payment?,
+)
 
-data class Tier(val from: Double, val to: Double?, val ratePct: Double)
+/** Team or overall totals of rows (TL Tim, Beranda "Total take home pay tim"). */
+data class Totals(val basicSalary: Long, val incentive: Long, val takeHomePay: Long, val actual: Long, val people: Int)
 
 /**
- * Loans (synced from CRM), targets and incentive estimates of the prototype, generated the same way as the web portal
- * sample (`admin-sales-portal/src/api/db.js`, `mockApi.js computeIncentives`) and the BRD V2.2 schemes (PRD v3 §E1).
- * Spec: TL-06 … TL-10, SLS-01 … SLS-04 (PRD v3 C1, C9, D1, D5, D6).
+ * Loans (synced from the loan system) and PRD Scope 3 monthly figures of the prototype. Loans are generated the same way
+ * as the web portal sample (`admin-sales-portal/src/api/db.js`); the rules are the web's `scope3.js` ([Scope3]).
+ * Spec: PRF-01 … PRF-06 (SCR-3-01 … SCR-3-05; FR-LP, FR-IN, FR-DF, FR-TG, FR-PY-006).
  */
-class SalesRepository(private val partners: PartnerRepository, private val ops: OperationsRepository, private val clock: () -> Instant = Instant::now) {
+class SalesRepository(
+    private val partners: PartnerRepository,
+    private val ops: OperationsRepository,
+    private val simulation: () -> Simulation = { Simulation() },
+    private val clock: () -> Instant = Instant::now,
+) {
 
     private var cache: Pair<String, List<Loan>>? = null
 
@@ -101,79 +127,167 @@ class SalesRepository(private val partners: PartnerRepository, private val ops: 
     fun loansOfSales(employeeId: Long) = loans().filter { it.salesId == employeeId }
     fun loansOfTl(tlId: Long) = loans().filter { it.tlId == tlId }
     fun loansOfPartner(partnerId: String) = loans().filter { it.partnerId == partnerId }
+    fun loan(id: String): Loan? = loans().firstOrNull { it.id == id }
 
-    // region Incentive (schemes of the web portal, BRD V2.2)
+    // region PRD Scope 3: months
 
-    /** SA/SR: Daily Fee × days present + Paid Out Incentive (tier on own paid-out achievement). */
-    fun salesIncentive(employeeId: Long, role: SalesRole, month: YearMonth = YearMonth.from(today())): Incentive {
-        val loans = loansOfSales(employeeId)
-        val fee = if (role == SalesRole.SA) SA_DAILY_FEE else SR_DAILY_FEE
-        return personIncentive(employeeId, loans, month, fee, SALES_TIERS, ComponentKind.PAID_OUT)
+    /** "Today" of the month status: the Simulasi demo date ("Tanggal Scope 3") or the device date. */
+    fun s3Today(): LocalDate = simulation().s3Date.date ?: today()
+
+    fun currentMonth(): YearMonth = YearMonth.from(s3Today())
+
+    fun monthStatus(ym: YearMonth): MonthStatus = Scope3.monthStatus(ym, currentMonth(), s3Today())
+
+    /** Last 12 months with data, newest first (the configuration starts in May 2026). */
+    fun months(): List<YearMonth> {
+        val cur = currentMonth()
+        val first = maxOf(FIRST_MONTH, cur.minusMonths(11))
+        return generateSequence(cur) { it.minusMonths(1) }.takeWhile { it >= first }.toList()
     }
 
-    /** TL: Daily Fee (Senior/Junior) + Leader Incentive (tier on the team's paid-out achievement). */
-    fun tlIncentive(tlId: Long, month: YearMonth = YearMonth.from(today())): Incentive {
-        val senior = DemoDirectory.person(tlId)?.tlLevel == "SENIOR"
-        return personIncentive(tlId, loansOfTl(tlId), month, if (senior) TL_SENIOR_DAILY_FEE else TL_JUNIOR_DAILY_FEE, LEADER_TIERS, ComponentKind.LEADER)
-    }
+    /** "Data per": the time of the last fetch (prototype: now). */
+    fun asOf(): Long = clock().toEpochMilli()
 
-    /** Partner: Volume + Collection (MFP) for Store channel, Commission 5% for Non-Store (affiliate). */
-    fun partnerIncentive(p: Partner, month: YearMonth = YearMonth.from(today())): Incentive {
-        val paid = paidIn(loansOfPartner(p.id), month)
-        val amount = paid.sumOf { it.amount }
-        val target = targetOf(paid.map { it.storeId }.toSet(), month)
-        val ach = pct(amount, target)
-        if (p.channel == "NON_STORE") {
-            return Incentive(month, target, amount, ach, null, listOf(IncentiveComponent(ComponentKind.COMMISSION, (amount * AFFILIATE_RATE / 100).roundToLong(), ratePct = AFFILIATE_RATE, base = amount)))
-        }
-        val volume = tierFor(VOLUME_TIERS, ach)
-        val stores = paid.map { it.storeId }.toSet()
-        val mfp = if (stores.isEmpty()) 0.0 else stores.sumOf { mfpOf(it, month) } / stores.size
-        val collection = tierFor(COLLECTION_TIERS, mfp)
-        return Incentive(
-            month, target, amount, ach, volume,
-            listOf(
-                IncentiveComponent(ComponentKind.VOLUME, (amount * volume.ratePct / 100).roundToLong(), ratePct = volume.ratePct, base = amount),
-                IncentiveComponent(ComponentKind.COLLECTION, (amount * collection.ratePct / 100).roundToLong(), ratePct = collection.ratePct, base = amount, mfpPct = mfp),
-            ),
-        )
-    }
+    // endregion
 
-    private fun personIncentive(id: Long, loans: List<Loan>, month: YearMonth, fee: Long, tiers: List<Tier>, kind: ComponentKind): Incentive {
-        val paid = paidIn(loans, month)
-        val amount = paid.sumOf { it.amount }
-        val target = targetOf(paid.map { it.storeId }.toSet(), month)
-        val ach = pct(amount, target)
-        val tier = tierFor(tiers, ach)
-        val days = daysPresent(id, month)
-        return Incentive(
-            month, target, amount, ach, tier,
-            listOf(
-                IncentiveComponent(ComponentKind.DAILY_FEE, days * fee, days = days, unitAmount = fee),
-                IncentiveComponent(kind, (amount * tier.ratePct / 100).roundToLong(), ratePct = tier.ratePct, base = amount),
-            ),
-        )
-    }
+    // region PRD Scope 3: monthly rows
 
-    private fun daysPresent(id: Long, month: YearMonth): Int {
-        val today = today()
-        return generateSequence(month.atDay(1)) { it.plusDays(1) }
-            .takeWhile { !it.isAfter(month.atEndOfMonth()) && !it.isAfter(today) }
-            .count { ops.attendanceStatus(id, it).let { s -> s == AttendanceStatus.ON_TIME || s == AttendanceStatus.LATE } }
-    }
+    private val finals = mutableMapOf<Pair<YearMonth, Long>, Figures?>()
 
-    private fun paidIn(loans: List<Loan>, month: YearMonth) = loans.filter { it.paidOutAt != null && YearMonth.from(dateOf(it.paidOutAt)) == month }
+    private data class Figures(val name: String, val role: S3Role, val leaderId: Long?, val areaId: Int, val loanCount: Int, val calc: SalesCalc)
 
-    /** Target paid out per toko per month (read-only; source still TBD in the PRD). */
-    fun targetOf(storeIds: Set<String>, month: YearMonth): Long = storeIds.sumOf { sid ->
-        val paid = loans().filter { it.storeId == sid && it.paidOutAt != null && YearMonth.from(dateOf(it.paidOutAt)) == month }.sumOf { it.amount }
-        if (paid == 0L) 0L else {
-            val r = seededRandom(seed(sid) * 31 + month.monthValue + month.year * 12L)
-            Math.round(paid * (0.75 + r.nextDouble() * 0.65) / 1e6) * 1_000_000
+    /** Valid days (FR-DF-001): check in and check out, or corrected by the TL; Absen and Tidak check in are not valid. */
+    fun validDays(employeeId: Long, ym: YearMonth): Int {
+        val today = ops.todayOf(employeeId)
+        return ops.data.value.attendance.count { a ->
+            a.employeeId == employeeId && a.date.startsWith(ym.toString()) && LocalDate.parse(a.date).let { d ->
+                ActivityRules.attendanceStatus(a, d, today).let { it == AttendanceStatus.ON_TIME || it == AttendanceStatus.LATE } &&
+                    (a.clockOut != null || a.statusOverride != null)
+            }
         }
     }
 
-    private fun mfpOf(storeId: String, month: YearMonth): Double = seededRandom(seed(storeId) * 17 + month.monthValue).let { 6 + it.nextDouble() * 9 }
+    private fun roleOf(p: DemoDirectory.Person): S3Role? = runCatching { S3Role.valueOf(p.role) }.getOrNull()
+
+    /** SA/SR/TL with a row in [ym]: attributed loans or attendance in the month, or still active in the current month. */
+    private fun hasRow(p: DemoDirectory.Person, ym: YearMonth): Boolean {
+        if (roleOf(p) == null) return false
+        if (ym == currentMonth() && p.status == "ACTIVE") return true
+        if (loans().any { (it.salesId == p.id || it.tlId == p.id) && YearMonth.from(dateOf(it.submittedAt)) == ym }) return true
+        return ops.data.value.attendance.any { it.employeeId == p.id && it.date.startsWith(ym.toString()) }
+    }
+
+    private fun figures(p: DemoDirectory.Person, ym: YearMonth): Figures? {
+        val role = roleOf(p) ?: return null
+        if (!hasRow(p, ym)) return null
+        val ls = loans().filter { (if (role == S3Role.TL) it.tlId else it.salesId) == p.id && YearMonth.from(dateOf(it.submittedAt)) == ym }
+        val actual = ls.filter { Scope3.countsFor(it, ym) }.sumOf { it.amount }
+        val calc = Scope3.calcSales(role, actual, validDays(p.id, ym), p.areaId)
+        return Figures(p.fullName, role, if (role == S3Role.TL) null else p.supervisorId, p.areaId, ls.size, calc)
+    }
+
+    /** One person's month, or `null` when they have no row. Final rows are kept as first read after the lock. */
+    fun salesRow(employeeId: Long, ym: YearMonth): SalesRow? {
+        val p = DemoDirectory.person(employeeId) ?: return null
+        val status = monthStatus(ym)
+        val f = if (status == MonthStatus.FINAL) finals.getOrPut(ym to employeeId) { figures(p, ym) } else figures(p, ym)
+        f ?: return null
+        return SalesRow(employeeId, f.name, f.role, f.leaderId, f.areaId, f.loanCount, f.calc, ym, status, paymentOf(employeeId, ym, f.calc.takeHomePay))
+    }
+
+    /** Visibility (FR-IN-006): SA/SR only their own row; TL their own row then the SA/SR they lead; never peers. */
+    fun rowsFor(viewerId: Long, role: SalesRole, ym: YearMonth): List<SalesRow> {
+        val own = listOfNotNull(salesRow(viewerId, ym))
+        if (role != SalesRole.TL) return own
+        val team = DemoDirectory.people.filter { it.supervisorId == viewerId && it.role in setOf("SA", "SR") }
+            .mapNotNull { salesRow(it.id, ym) }
+            .sortedWith(compareBy<SalesRow>({ listOf(S3Role.TL, S3Role.SR, S3Role.SA).indexOf(it.role) }, { it.name }))
+        return own + team
+    }
+
+    /** Whether [viewerId] may see [employeeId]'s figures: themselves, or the TL of that SA/SR. */
+    fun canView(viewerId: Long, employeeId: Long): Boolean =
+        viewerId == employeeId || DemoDirectory.person(employeeId)?.let { it.supervisorId == viewerId && it.role in setOf("SA", "SR") } == true
+
+    fun totals(rows: List<SalesRow>) = Totals(rows.sumOf { it.calc.basicSalary }, rows.sumOf { it.calc.incentive }, rows.sumOf { it.calc.takeHomePay }, rows.sumOf { it.calc.actual }, rows.size)
+
+    /** Income history: the last 12 months with a row, newest first. */
+    fun history(employeeId: Long): List<SalesRow> = months().mapNotNull { salesRow(employeeId, it) }
+
+    // endregion
+
+    // region PRD Scope 3: pipeline
+
+    /**
+     * Loans submitted in [ym] in the scope ([salesId] for SA/SR, [tlId] for a TL), with their current portal status.
+     * Filters: [status], [storeId], [salesFilter] (`null` all, [SALES_NONE] loans without SA/SR, else that SA/SR).
+     */
+    fun pipeline(ym: YearMonth, salesId: Long? = null, tlId: Long? = null, status: PortalStatus? = null, storeId: String? = null, salesFilter: Long? = null): Pipeline {
+        val all = loans().filter { YearMonth.from(dateOf(it.submittedAt)) == ym && (salesId == null || it.salesId == salesId) && (tlId == null || it.tlId == tlId) }
+        val funnel = PortalStatus.entries.associateWith { st -> all.filter { Scope3.portalStatus(it) == st }.let { Funnel(it.size, it.sumOf { l -> l.amount }) } }
+        val counted = all.filter { Scope3.countsFor(it, ym) }
+        val rows = all.filter { l ->
+            (status == null || Scope3.portalStatus(l) == status) && (storeId == null || l.storeId == storeId) &&
+                (salesFilter == null || (if (salesFilter == SALES_NONE) l.salesId == null else l.salesId == salesFilter))
+        }.sortedByDescending { it.submittedAt }.map { l ->
+            val st = Scope3.portalStatus(l)
+            val c = Scope3.countsFor(l, ym)
+            PipelineLoan(l, st, c, st == PortalStatus.CAIR && !c)
+        }
+        return Pipeline(funnel, all.size, counted.sumOf { it.amount }, counted.size, all.count { Scope3.portalStatus(it) == PortalStatus.CAIR && !Scope3.countsFor(it, ym) }, rows, asOf())
+    }
+
+    // endregion
+
+    // region PRD Scope 3: payment and notifications
+
+    /** The latest Final month (Simulasi "Admin tandai dibayar"). */
+    private fun latestFinal(): YearMonth? = months().firstOrNull { monthStatus(it) == MonthStatus.FINAL }
+
+    /** Payment of a Final row (FR-PY): sample data paid up to August 2026; SR Siti August with a correction of Rp 150.000. */
+    fun paymentOf(employeeId: Long, ym: YearMonth, finalAmount: Long): Payment? {
+        if (monthStatus(ym) != MonthStatus.FINAL) return null
+        val r = PAYMENTS[employeeId to ym]
+        val correction = r?.first ?: 0L
+        val amount = maxOf(0L, finalAmount + correction)
+        val scheduled = Scope3.payoutDate(ym)
+        val simPaid = if (simulation().s3PaidLatest && ym == latestFinal()) s3Today() else null
+        val paidAt = simPaid ?: if (ym <= PAID_THROUGH && amount > 0) scheduled else null
+        val status = when {
+            paidAt != null && amount > 0 -> PayStatus.DIBAYAR
+            amount > 0 -> PayStatus.MENUNGGU
+            else -> PayStatus.TIDAK_ADA
+        }
+        return Payment(
+            status, correction, r?.second.orEmpty(), amount, paidAt.takeIf { status == PayStatus.DIBAYAR },
+            amount.takeIf { status == PayStatus.DIBAYAR }, scheduled, status == PayStatus.MENUNGGU && s3Today().isAfter(scheduled),
+        )
+    }
+
+    /**
+     * Income notifications of [employeeId] (FR-IN-005, FR-PY-006): "sudah final" at the lock (00:00 WIB) and "sudah dibayar"
+     * on the payment date (10:00 WIB), up to the demo date. Kept 30 days like every notification.
+     */
+    fun incomeNotices(employeeId: Long): List<AppNotification> = months().filter { monthStatus(it) == MonthStatus.FINAL }.flatMap { ym ->
+        val row = salesRow(employeeId, ym) ?: return@flatMap emptyList()
+        val lockAt = Scope3.lockDate(ym).atStartOfDay(ActivityRules.LOCK_ZONE).toInstant().toEpochMilli()
+        val c = row.calc
+        val final = AppNotification(
+            "N-S3-FINAL-$ym-$employeeId", employeeId,
+            income = IncomeNotice(lockAt, ym.toString(), paid = false, takeHomePay = c.takeHomePay, basicSalary = c.basicSalary, incentive = c.incentive, payoutDate = Scope3.payoutDate(ym).toString()),
+        )
+        val p = row.payment
+        val paid = if (p?.status == PayStatus.DIBAYAR && p.paidAt != null && !p.paidAt.isAfter(s3Today())) {
+            AppNotification(
+                "N-S3-PAID-$ym-$employeeId", employeeId,
+                income = IncomeNotice(p.paidAt.atTime(10, 0).atZone(ActivityRules.LOCK_ZONE).toInstant().toEpochMilli(), ym.toString(), paid = true, amount = p.paidAmount ?: 0, correction = p.correction),
+            )
+        } else null
+        listOfNotNull(final, paid)
+    }
+
+    /** Puts the income notifications of [employeeId] in the inbox (read state kept). */
+    fun syncIncomeNotices(employeeId: Long) = partners.syncIncomeNotices(employeeId, incomeNotices(employeeId))
 
     // endregion
 
@@ -229,23 +343,18 @@ class SalesRepository(private val partners: PartnerRepository, private val ops: 
 
     companion object {
         private const val DAY_MS = 86_400_000L
-        const val SA_DAILY_FEE = 108_000L
-        const val SR_DAILY_FEE = 126_000L
-        const val TL_SENIOR_DAILY_FEE = 165_000L
-        const val TL_JUNIOR_DAILY_FEE = 126_000L
-        const val AFFILIATE_RATE = 5.0
 
-        private fun t(vararg rows: Triple<Double, Double?, Double>) = rows.map { Tier(it.first, it.second, it.third) }
-        val SALES_TIERS = t(Triple(0.0, 55.0, 0.0), Triple(55.0, 70.0, 0.55), Triple(70.0, 85.0, 0.7), Triple(85.0, 100.0, 0.85), Triple(100.0, 120.0, 0.9), Triple(120.0, null, 1.0))
-        val LEADER_TIERS = t(Triple(0.0, 55.0, 0.0), Triple(55.0, 70.0, 0.18), Triple(70.0, 85.0, 0.23), Triple(85.0, 100.0, 0.28), Triple(100.0, 120.0, 0.3), Triple(120.0, null, 0.33))
-        val VOLUME_TIERS = t(Triple(0.0, 55.0, 0.0), Triple(55.0, 70.0, 0.05), Triple(70.0, 85.0, 0.1), Triple(85.0, 100.0, 0.2), Triple(100.0, null, 0.3))
-        val COLLECTION_TIERS = t(Triple(0.0, 10.0, 0.1), Triple(10.0, 13.0, 0.05), Triple(13.0, null, 0.0))
+        /** Pipeline filter "Tanpa SA/SR": loans of toko without an SA/SR on the submission date. */
+        const val SALES_NONE = -1L
 
-        /** Matches when value > from and ≤ to; the first tier starts at 0 inclusive (portal `tierFor`). */
-        fun tierFor(tiers: List<Tier>, value: Double): Tier =
-            tiers.firstOrNull { (value > it.from || it.from == 0.0) && (it.to == null || value <= it.to) } ?: tiers.last()
+        /** First month of the Scope 3 configuration (versions effective from May 2026, same as the web). */
+        val FIRST_MONTH: YearMonth = YearMonth.of(2026, 5)
 
-        fun pct(value: Long, target: Long): Double = if (target <= 0) 0.0 else Math.round(value * 1000.0 / target) / 10.0
+        /** Sample payments (web `s3Payments`): Final months up to August 2026 paid on the scheduled date. */
+        val PAID_THROUGH: YearMonth = YearMonth.of(2026, 8)
+
+        /** Admin corrections (amount, note) per person and month: SR Siti Rahmawati, August 2026, +Rp 150.000. */
+        val PAYMENTS: Map<Pair<Long, YearMonth>, Pair<Long, String>> = mapOf((11L to YearMonth.of(2026, 8)) to (150_000L to "Koreksi Juli 2026"))
 
         fun dateOf(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ActivityRules.ZONE).toLocalDate()
 

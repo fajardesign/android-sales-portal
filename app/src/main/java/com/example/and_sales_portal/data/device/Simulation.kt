@@ -18,6 +18,19 @@ enum class LocationMode {
 }
 
 /**
+ * Demo date for the month status of PRD Scope 3 ("Tanggal Scope 3", same as the web DevToolbar): the device date, or a
+ * fixed 7 Oct 2026 (September Final, lock 5 Oct) or 3 Oct 2026 (September Menunggu rekonsiliasi).
+ */
+enum class S3Date(val date: java.time.LocalDate?) {
+    DEVICE(null),
+    OCT_7(java.time.LocalDate.of(2026, 10, 7)),
+    OCT_3(java.time.LocalDate.of(2026, 10, 3)),
+}
+
+/** Loading and failure of the Performa data (PRF-01 … PRF-05 states "memuat" and "galat"). */
+enum class PerfData { NORMAL, LOADING, ERROR }
+
+/**
  * "Simulasi (debug)" panel (decision 2026-10-07): device conditions for trying every branch of ATT flows on an
  * emulator. Saved in plain preferences, shared by all accounts on the device.
  */
@@ -25,6 +38,10 @@ data class Simulation(
     val location: LocationMode = LocationMode.AT_STORE,
     val mockLocation: Boolean = false,
     val offline: Boolean = false,
+    val s3Date: S3Date = S3Date.DEVICE,
+    /** Admin marked the latest Final month paid for every SA/SR/TL on the demo date (FR-PY-003). */
+    val s3PaidLatest: Boolean = false,
+    val perfData: PerfData = PerfData.NORMAL,
 )
 
 class SimulationSettings(context: Context) {
@@ -41,6 +58,9 @@ class SimulationSettings(context: Context) {
             .putString(KEY_LOCATION, s.location.name)
             .putBoolean(KEY_MOCK, s.mockLocation)
             .putBoolean(KEY_OFFLINE, s.offline)
+            .putString(KEY_S3_DATE, s.s3Date.name)
+            .putBoolean(KEY_S3_PAID, s.s3PaidLatest)
+            .putString(KEY_PERF, s.perfData.name)
             .apply()
         _state.value = s
     }
@@ -49,11 +69,17 @@ class SimulationSettings(context: Context) {
         location = prefs.getString(KEY_LOCATION, null)?.let { runCatching { LocationMode.valueOf(it) }.getOrNull() } ?: LocationMode.AT_STORE,
         mockLocation = prefs.getBoolean(KEY_MOCK, false),
         offline = prefs.getBoolean(KEY_OFFLINE, false),
+        s3Date = prefs.getString(KEY_S3_DATE, null)?.let { runCatching { S3Date.valueOf(it) }.getOrNull() } ?: S3Date.DEVICE,
+        s3PaidLatest = prefs.getBoolean(KEY_S3_PAID, false),
+        perfData = prefs.getString(KEY_PERF, null)?.let { runCatching { PerfData.valueOf(it) }.getOrNull() } ?: PerfData.NORMAL,
     )
 
     private companion object {
         const val KEY_LOCATION = "location"
         const val KEY_MOCK = "mock_location"
         const val KEY_OFFLINE = "offline"
+        const val KEY_S3_DATE = "s3_date"
+        const val KEY_S3_PAID = "s3_paid_latest"
+        const val KEY_PERF = "perf_data"
     }
 }

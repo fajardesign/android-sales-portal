@@ -41,24 +41,34 @@ class AttendanceFragment : ComposeFragment() {
         val data by repo.data.collectAsState()
         val online by container.connectivity.online.collectAsState()
         val (toast, clearToast) = incomingToast()
-        val state = remember(data, online) { attendanceState(repo, online) }
+        // PRF-04 "Lihat absensi": the history of one month (PRD Scope 3 FR-DF-003).
+        val month = arguments?.getString(ARG_MONTH)?.let { java.time.YearMonth.parse(it) }
+        val state = remember(data, online) { attendanceState(repo, online, month) }
         WithToast(toast, clearToast) {
             AttendanceScreen(
                 state,
                 onBack = ::back,
                 onClockIn = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CLOCK_IN)) },
                 onClockOut = { navigate(R.id.capture, CaptureFragment.args(CaptureMode.CLOCK_OUT)) },
+                historyTitle = month?.let { androidx.compose.ui.res.stringResource(R.string.s3_attendance_month, Fmt.month(it)) },
             )
         }
     }
 
     companion object {
+        private const val ARG_MONTH = "month"
+
+        /** ATT-01 with the history of [month] (PRF-04 "Lihat absensi"). */
+        fun args(month: java.time.YearMonth) = bundleOf(ARG_MONTH to month.toString())
+
         /** Days shown in the history (every day is a workday, Q6). */
         private const val HISTORY_DAYS = 14L
 
-        fun attendanceState(repo: ActivityRepository, online: Boolean): AttendanceUiState {
+        fun attendanceState(repo: ActivityRepository, online: Boolean, month: java.time.YearMonth? = null): AttendanceUiState {
             val today = repo.today()
-            val history = (1..HISTORY_DAYS).map { today.minusDays(it) }.map { attendanceDay(repo.attendanceOf(it), it, today) }
+            val days = month?.let { m -> generateSequence(minOf(m.atEndOfMonth(), today)) { it.minusDays(1) }.takeWhile { !it.isBefore(m.atDay(1)) }.toList() }
+                ?: (1..HISTORY_DAYS).map { today.minusDays(it) }
+            val history = days.map { attendanceDay(repo.attendanceOf(it), it, today) }
             return AttendanceUiState(attendanceDay(repo.attendanceOf(today), today, today).copy(week = repo.attendanceWeek(today)), history, online)
         }
 
